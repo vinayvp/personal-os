@@ -9,7 +9,54 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      app_settings: {
+        Row: {
+          created_at: string
+          id: string
+          setting_key: string
+          setting_value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          setting_key: string
+          setting_value: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          setting_key?: string
+          setting_value?: string
+        }
+        Relationships: []
+      }
+      daily_tracking: {
+        Row: {
+          created_at: string
+          date: string
+          gym_day: boolean
+          id: string
+          relief_day: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          gym_day?: boolean
+          id?: string
+          relief_day?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          gym_day?: boolean
+          id?: string
+          relief_day?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
