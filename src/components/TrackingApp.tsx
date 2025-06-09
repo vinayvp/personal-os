@@ -19,7 +19,7 @@ interface DayRecord {
 const TrackingApp = () => {
   const [todayRecord, setTodayRecord] = useState<DayRecord | null>(null);
   const [recentRecords, setRecentRecords] = useState<DayRecord[]>([]);
-  const [stats, setStats] = useState({ gymDays: 0, reliefDays: 0, totalDays: 0 });
+  const [stats, setStats] = useState({ gymDays: 0, noNutDays: 0, totalDays: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -56,8 +56,8 @@ const TrackingApp = () => {
 
       if (allData) {
         const gymDays = allData.filter(record => record.gym_day).length;
-        const reliefDays = allData.filter(record => record.relief_day).length;
-        setStats({ gymDays, reliefDays, totalDays: allData.length });
+        const noNutDays = allData.filter(record => record.relief_day).length;
+        setStats({ gymDays, noNutDays, totalDays: allData.length });
       }
     } catch (error) {
       toast({
@@ -70,7 +70,7 @@ const TrackingApp = () => {
     }
   };
 
-  const toggleDay = async (type: 'gym' | 'relief') => {
+  const toggleDay = async (type: 'gym' | 'nonut') => {
     try {
       const newValue = type === 'gym' 
         ? !todayRecord?.gym_day 
@@ -94,7 +94,7 @@ const TrackingApp = () => {
           .insert({
             date: today,
             gym_day: type === 'gym' ? newValue : false,
-            relief_day: type === 'relief' ? newValue : false
+            relief_day: type === 'nonut' ? newValue : false
           });
 
         if (error) throw error;
@@ -102,7 +102,7 @@ const TrackingApp = () => {
 
       toast({
         title: "Updated!",
-        description: `${type === 'gym' ? 'Gym' : 'Relief'} day ${newValue ? 'marked' : 'unmarked'} for today.`,
+        description: `${type === 'gym' ? 'Gym' : 'NoNut'} day ${newValue ? 'marked' : 'unmarked'} for today.`,
       });
 
       fetchData();
@@ -138,7 +138,7 @@ const TrackingApp = () => {
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
-            <span className="hidden sm:inline">Fit & Relief Tracker</span>
+            <span className="hidden sm:inline">Fit & NoNut Tracker</span>
             <span className="sm:hidden">Tracker</span>
           </h1>
           <Button 
@@ -192,12 +192,12 @@ const TrackingApp = () => {
                   <Button
                     variant={todayRecord?.relief_day ? "default" : "outline"}
                     size="lg"
-                    onClick={() => toggleDay('relief')}
+                    onClick={() => toggleDay('nonut')}
                     className="h-20 flex flex-col gap-2"
                   >
                     <Heart className="w-6 h-6 sm:w-8 sm:h-8" />
                     <span className="text-sm font-medium">
-                      {todayRecord?.relief_day ? 'Relief Day ✓' : 'Mark Relief Day'}
+                      {todayRecord?.relief_day ? 'NoNut Day ✓' : 'Mark NoNut Day'}
                     </span>
                   </Button>
                 </div>
@@ -218,8 +218,8 @@ const TrackingApp = () => {
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-center">
-                    <div className="text-2xl sm:text-3xl font-bold text-red-600">{stats.reliefDays}</div>
-                    <p className="text-sm text-gray-600">Total Relief Days</p>
+                    <div className="text-2xl sm:text-3xl font-bold text-red-600">{stats.noNutDays}</div>
+                    <p className="text-sm text-gray-600">Total NoNut Days</p>
                   </div>
                 </CardContent>
               </Card>
@@ -257,7 +257,7 @@ const TrackingApp = () => {
                           {record.relief_day && (
                             <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium flex items-center gap-1">
                               <Heart className="w-3 h-3" />
-                              <span className="hidden sm:inline">Relief</span>
+                              <span className="hidden sm:inline">NoNut</span>
                             </span>
                           )}
                           {!record.gym_day && !record.relief_day && (

@@ -93,7 +93,7 @@ const CalendarView = () => {
             {record?.relief_day && (
               <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium flex items-center gap-1">
                 <Heart className="w-3 h-3" />
-                Relief
+                NoNut
               </span>
             )}
             {!record?.gym_day && !record?.relief_day && (
@@ -148,7 +148,7 @@ const CalendarView = () => {
                   const record = getRecordForDate(date);
                   return record?.gym_day || false;
                 },
-                reliefDay: (date) => {
+                noNutDay: (date) => {
                   const record = getRecordForDate(date);
                   return record?.relief_day || false;
                 }
@@ -159,7 +159,7 @@ const CalendarView = () => {
                   color: '#3730a3',
                   fontWeight: 'bold'
                 },
-                reliefDay: {
+                noNutDay: {
                   backgroundColor: '#fef2f2',
                   color: '#991b1b',
                   fontWeight: 'bold'
@@ -173,7 +173,7 @@ const CalendarView = () => {
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-red-100 rounded"></div>
-                <span>Relief Days</span>
+                <span>NoNut Days</span>
               </div>
             </div>
           </CardContent>
