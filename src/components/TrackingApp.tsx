@@ -3,9 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Dumbbell, Heart, TrendingUp, LogOut } from 'lucide-react';
+import { Calendar, Dumbbell, Heart, TrendingUp, LogOut, Home } from 'lucide-react';
 import { format } from 'date-fns';
+import CalendarView from './CalendarView';
 
 interface DayRecord {
   id: string;
@@ -133,10 +135,11 @@ const TrackingApp = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <TrendingUp className="w-6 h-6 text-indigo-600" />
-            Fit & Relief Tracker
+        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
+            <span className="hidden sm:inline">Fit & Relief Tracker</span>
+            <span className="sm:hidden">Tracker</span>
           </h1>
           <Button 
             variant="outline" 
@@ -145,117 +148,136 @@ const TrackingApp = () => {
             className="flex items-center gap-2"
           >
             <LogOut className="w-4 h-4" />
-            Logout
+            <span className="hidden sm:inline">Logout</span>
           </Button>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto p-4 space-y-6">
-        {/* Today's Tracking */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-indigo-600" />
-              Today - {format(new Date(), 'MMMM d, yyyy')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Button
-                variant={todayRecord?.gym_day ? "default" : "outline"}
-                size="lg"
-                onClick={() => toggleDay('gym')}
-                className="h-20 flex flex-col gap-2"
-              >
-                <Dumbbell className="w-8 h-8" />
-                <span className="text-sm font-medium">
-                  {todayRecord?.gym_day ? 'Gym Day ✓' : 'Mark Gym Day'}
-                </span>
-              </Button>
-              
-              <Button
-                variant={todayRecord?.relief_day ? "default" : "outline"}
-                size="lg"
-                onClick={() => toggleDay('relief')}
-                className="h-20 flex flex-col gap-2"
-              >
-                <Heart className="w-8 h-8" />
-                <span className="text-sm font-medium">
-                  {todayRecord?.relief_day ? 'Relief Day ✓' : 'Mark Relief Day'}
-                </span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="max-w-6xl mx-auto p-4">
+        <Tabs defaultValue="dashboard" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <Home className="w-4 h-4" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              <span className="hidden sm:inline">Calendar</span>
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-indigo-600">{stats.gymDays}</div>
-                <p className="text-sm text-gray-600">Total Gym Days</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-red-600">{stats.reliefDays}</div>
-                <p className="text-sm text-gray-600">Total Relief Days</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-green-600">{stats.totalDays}</div>
-                <p className="text-sm text-gray-600">Days Tracked</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Activity */}
-        {recentRecords.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {recentRecords.map((record) => (
-                  <div key={record.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span className="font-medium text-gray-900">
-                      {format(new Date(record.date), 'MMM d, yyyy')}
+          <TabsContent value="dashboard" className="space-y-6">
+            {/* Today's Tracking */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                  <Calendar className="w-5 h-5 text-indigo-600" />
+                  Today - {format(new Date(), 'MMM d, yyyy')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Button
+                    variant={todayRecord?.gym_day ? "default" : "outline"}
+                    size="lg"
+                    onClick={() => toggleDay('gym')}
+                    className="h-20 flex flex-col gap-2"
+                  >
+                    <Dumbbell className="w-6 h-6 sm:w-8 sm:h-8" />
+                    <span className="text-sm font-medium">
+                      {todayRecord?.gym_day ? 'Gym Day ✓' : 'Mark Gym Day'}
                     </span>
-                    <div className="flex gap-2">
-                      {record.gym_day && (
-                        <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium flex items-center gap-1">
-                          <Dumbbell className="w-3 h-3" />
-                          Gym
-                        </span>
-                      )}
-                      {record.relief_day && (
-                        <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium flex items-center gap-1">
-                          <Heart className="w-3 h-3" />
-                          Relief
-                        </span>
-                      )}
-                      {!record.gym_day && !record.relief_day && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
-                          Rest Day
-                        </span>
-                      )}
-                    </div>
+                  </Button>
+                  
+                  <Button
+                    variant={todayRecord?.relief_day ? "default" : "outline"}
+                    size="lg"
+                    onClick={() => toggleDay('relief')}
+                    className="h-20 flex flex-col gap-2"
+                  >
+                    <Heart className="w-6 h-6 sm:w-8 sm:h-8" />
+                    <span className="text-sm font-medium">
+                      {todayRecord?.relief_day ? 'Relief Day ✓' : 'Mark Relief Day'}
+                    </span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <div className="text-2xl sm:text-3xl font-bold text-indigo-600">{stats.gymDays}</div>
+                    <p className="text-sm text-gray-600">Total Gym Days</p>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <div className="text-2xl sm:text-3xl font-bold text-red-600">{stats.reliefDays}</div>
+                    <p className="text-sm text-gray-600">Total Relief Days</p>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <div className="text-2xl sm:text-3xl font-bold text-green-600">{stats.totalDays}</div>
+                    <p className="text-sm text-gray-600">Days Tracked</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Activity */}
+            {recentRecords.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Activity</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {recentRecords.map((record) => (
+                      <div key={record.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="font-medium text-gray-900 text-sm sm:text-base">
+                          {format(new Date(record.date), 'MMM d, yyyy')}
+                        </span>
+                        <div className="flex gap-2">
+                          {record.gym_day && (
+                            <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium flex items-center gap-1">
+                              <Dumbbell className="w-3 h-3" />
+                              <span className="hidden sm:inline">Gym</span>
+                            </span>
+                          )}
+                          {record.relief_day && (
+                            <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium flex items-center gap-1">
+                              <Heart className="w-3 h-3" />
+                              <span className="hidden sm:inline">Relief</span>
+                            </span>
+                          )}
+                          {!record.gym_day && !record.relief_day && (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
+                              Rest Day
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="calendar">
+            <CalendarView />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
