@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar } from '@/components/ui/calendar';
@@ -126,7 +127,11 @@ const CalendarView = () => {
     const isEditing = editingDate === dateString;
 
     return (
-      <Card key={date.toString()} className={`${isToday ? 'ring-2 ring-primary' : ''} ${isEditing ? 'ring-2 ring-blue-500' : ''} transition-all duration-200`}>
+      <Card key={date.toString()} className={`
+        transition-all duration-200 
+        ${isToday ? 'ring-2 ring-primary' : ''} 
+        ${isEditing ? 'ring-2 ring-blue-500 border-blue-500' : 'border-border'}
+      `}>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium flex justify-between items-center">
             <span>
