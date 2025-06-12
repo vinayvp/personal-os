@@ -71,16 +71,16 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-              <Lock className="w-6 h-6 text-indigo-600" />
+            <div className="mx-auto w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mb-4">
+              <Lock className="w-6 h-6 text-primary" />
             </div>
-            <CardTitle className="text-2xl font-bold text-gray-900">
-              Fit & Relief Tracker
+            <CardTitle className="text-2xl font-bold text-foreground">
+              Fit & NoNut Tracker
             </CardTitle>
-            <p className="text-gray-600">Enter your password to access your tracking app</p>
+            <p className="text-muted-foreground">Enter your password to access your tracking app</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">

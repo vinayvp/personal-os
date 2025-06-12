@@ -75,29 +75,29 @@ const CalendarView = () => {
     const isToday = isSameDay(date, new Date());
 
     return (
-      <Card key={date.toString()} className={`${isToday ? 'ring-2 ring-indigo-500' : ''}`}>
+      <Card key={date.toString()} className={`${isToday ? 'ring-2 ring-primary' : ''}`}>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">
             {format(date, 'EEE, MMM d')}
-            {isToday && <span className="ml-2 text-xs text-indigo-600">(Today)</span>}
+            {isToday && <span className="ml-2 text-xs text-primary">(Today)</span>}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-2">
             {record?.gym_day && (
-              <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium flex items-center gap-1">
+              <span className="px-2 py-1 bg-primary/20 text-primary rounded-full text-xs font-medium flex items-center gap-1">
                 <Dumbbell className="w-3 h-3" />
                 Gym
               </span>
             )}
             {record?.relief_day && (
-              <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium flex items-center gap-1">
+              <span className="px-2 py-1 bg-destructive/20 text-destructive rounded-full text-xs font-medium flex items-center gap-1">
                 <Heart className="w-3 h-3" />
                 NoNut
               </span>
             )}
             {!record?.gym_day && !record?.relief_day && (
-              <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
+              <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs">
                 Rest Day
               </span>
             )}
@@ -110,7 +110,7 @@ const CalendarView = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -119,7 +119,7 @@ const CalendarView = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-xl font-semibold flex items-center gap-2">
-          <CalendarIcon className="w-5 h-5 text-indigo-600" />
+          <CalendarIcon className="w-5 h-5 text-primary" />
           Calendar View
         </h2>
         
@@ -155,24 +155,24 @@ const CalendarView = () => {
               }}
               modifiersStyles={{
                 gymDay: {
-                  backgroundColor: '#e0e7ff',
-                  color: '#3730a3',
+                  backgroundColor: 'hsl(var(--primary) / 0.2)',
+                  color: 'hsl(var(--primary))',
                   fontWeight: 'bold'
                 },
                 noNutDay: {
-                  backgroundColor: '#fef2f2',
-                  color: '#991b1b',
+                  backgroundColor: 'hsl(var(--destructive) / 0.2)',
+                  color: 'hsl(var(--destructive))',
                   fontWeight: 'bold'
                 }
               }}
             />
             <div className="mt-4 space-y-2 text-sm">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-indigo-100 rounded"></div>
+                <div className="w-4 h-4 bg-primary/20 rounded"></div>
                 <span>Gym Days</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-red-100 rounded"></div>
+                <div className="w-4 h-4 bg-destructive/20 rounded"></div>
                 <span>NoNut Days</span>
               </div>
             </div>

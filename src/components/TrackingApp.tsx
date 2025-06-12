@@ -122,22 +122,22 @@ const TrackingApp = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your tracking data...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading your tracking data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-card shadow-sm border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             <span className="hidden sm:inline">Fit & NoNut Tracker</span>
             <span className="sm:hidden">Tracker</span>
           </h1>
@@ -171,7 +171,7 @@ const TrackingApp = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                  <Calendar className="w-5 h-5 text-indigo-600" />
+                  <Calendar className="w-5 h-5 text-primary" />
                   Today - {format(new Date(), 'MMM d, yyyy')}
                 </CardTitle>
               </CardHeader>
@@ -209,8 +209,8 @@ const TrackingApp = () => {
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-center">
-                    <div className="text-2xl sm:text-3xl font-bold text-indigo-600">{stats.gymDays}</div>
-                    <p className="text-sm text-gray-600">Total Gym Days</p>
+                    <div className="text-2xl sm:text-3xl font-bold text-primary">{stats.gymDays}</div>
+                    <p className="text-sm text-muted-foreground">Total Gym Days</p>
                   </div>
                 </CardContent>
               </Card>
@@ -218,8 +218,8 @@ const TrackingApp = () => {
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-center">
-                    <div className="text-2xl sm:text-3xl font-bold text-red-600">{stats.noNutDays}</div>
-                    <p className="text-sm text-gray-600">Total NoNut Days</p>
+                    <div className="text-2xl sm:text-3xl font-bold text-destructive">{stats.noNutDays}</div>
+                    <p className="text-sm text-muted-foreground">Total NoNut Days</p>
                   </div>
                 </CardContent>
               </Card>
@@ -227,8 +227,8 @@ const TrackingApp = () => {
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-center">
-                    <div className="text-2xl sm:text-3xl font-bold text-green-600">{stats.totalDays}</div>
-                    <p className="text-sm text-gray-600">Days Tracked</p>
+                    <div className="text-2xl sm:text-3xl font-bold text-primary">{stats.totalDays}</div>
+                    <p className="text-sm text-muted-foreground">Days Tracked</p>
                   </div>
                 </CardContent>
               </Card>
@@ -243,25 +243,25 @@ const TrackingApp = () => {
                 <CardContent>
                   <div className="space-y-3">
                     {recentRecords.map((record) => (
-                      <div key={record.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <span className="font-medium text-gray-900 text-sm sm:text-base">
+                      <div key={record.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <span className="font-medium text-foreground text-sm sm:text-base">
                           {format(new Date(record.date), 'MMM d, yyyy')}
                         </span>
                         <div className="flex gap-2">
                           {record.gym_day && (
-                            <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium flex items-center gap-1">
+                            <span className="px-2 py-1 bg-primary/20 text-primary rounded-full text-xs font-medium flex items-center gap-1">
                               <Dumbbell className="w-3 h-3" />
                               <span className="hidden sm:inline">Gym</span>
                             </span>
                           )}
                           {record.relief_day && (
-                            <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium flex items-center gap-1">
+                            <span className="px-2 py-1 bg-destructive/20 text-destructive rounded-full text-xs font-medium flex items-center gap-1">
                               <Heart className="w-3 h-3" />
                               <span className="hidden sm:inline">NoNut</span>
                             </span>
                           )}
                           {!record.gym_day && !record.relief_day && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
+                            <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs">
                               Rest Day
                             </span>
                           )}
