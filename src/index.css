@@ -1,4 +1,5 @@
 
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -95,5 +96,45 @@
 
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Ensure all text elements use proper dark theme colors */
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-foreground;
+  }
+
+  /* Override any default browser styles that might interfere */
+  input, textarea, select {
+    @apply bg-input text-foreground border-border;
+  }
+
+  /* Ensure buttons and interactive elements use theme colors */
+  button {
+    @apply text-foreground;
+  }
+
+  /* Make sure icons inherit proper colors */
+  svg {
+    @apply text-current;
+  }
+
+  /* Ensure proper scrollbar styling for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-md;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-accent;
   }
 }
+
