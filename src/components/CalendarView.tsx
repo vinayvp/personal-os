@@ -1,11 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar as CalendarIcon, Dumbbell, Heart } from 'lucide-react';
+import { Calendar as CalendarIcon, Dumbbell, Heart, Edit3 } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 
 interface DayRecord {
@@ -18,6 +18,7 @@ interface DayRecord {
 const CalendarView = () => {
   const [records, setRecords] = useState<DayRecord[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [editingDate, setEditingDate] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('month');
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -51,6 +52,54 @@ const CalendarView = () => {
     return records.find(record => record.date === dateString);
   };
 
+  const toggleDay = async (date: Date, type: 'gym' | 'nonut') => {
+    try {
+      const dateString = format(date, 'yyyy-MM-dd');
+      const existingRecord = getRecordForDate(date);
+      const newValue = type === 'gym' 
+        ? !existingRecord?.gym_day 
+        : !existingRecord?.relief_day;
+
+      if (existingRecord) {
+        // Update existing record
+        const { error } = await supabase
+          .from('daily_tracking')
+          .update({
+            [type === 'gym' ? 'gym_day' : 'relief_day']: newValue,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingRecord.id);
+
+        if (error) throw error;
+      } else {
+        // Create new record
+        const { error } = await supabase
+          .from('daily_tracking')
+          .insert({
+            date: dateString,
+            gym_day: type === 'gym' ? newValue : false,
+            relief_day: type === 'nonut' ? newValue : false
+          });
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Updated!",
+        description: `${type === 'gym' ? 'Gym' : 'NoNut'} day ${newValue ? 'marked' : 'unmarked'} for ${format(date, 'MMM d, yyyy')}.`,
+      });
+
+      fetchRecords();
+      setEditingDate(null);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update tracking data.",
+      });
+    }
+  };
+
   const getDaysToShow = () => {
     switch (viewMode) {
       case 'day':
@@ -73,35 +122,80 @@ const CalendarView = () => {
   const renderDayCard = (date: Date) => {
     const record = getRecordForDate(date);
     const isToday = isSameDay(date, new Date());
+    const dateString = format(date, 'yyyy-MM-dd');
+    const isEditing = editingDate === dateString;
 
     return (
-      <Card key={date.toString()} className={`${isToday ? 'ring-2 ring-primary' : ''}`}>
+      <Card key={date.toString()} className={`${isToday ? 'ring-2 ring-primary' : ''} ${isEditing ? 'ring-2 ring-blue-500' : ''} transition-all duration-200`}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">
-            {format(date, 'EEE, MMM d')}
-            {isToday && <span className="ml-2 text-xs text-primary">(Today)</span>}
+          <CardTitle className="text-sm font-medium flex justify-between items-center">
+            <span>
+              {format(date, 'EEE, MMM d')}
+              {isToday && <span className="ml-2 text-xs text-primary">(Today)</span>}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditingDate(isEditing ? null : dateString)}
+              className="h-6 w-6 p-0"
+            >
+              <Edit3 className="w-3 h-3" />
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2">
-            {record?.gym_day && (
-              <span className="px-2 py-1 bg-primary/20 text-primary rounded-full text-xs font-medium flex items-center gap-1">
-                <Dumbbell className="w-3 h-3" />
-                Gym
-              </span>
-            )}
-            {record?.relief_day && (
-              <span className="px-2 py-1 bg-destructive/20 text-destructive rounded-full text-xs font-medium flex items-center gap-1">
-                <Heart className="w-3 h-3" />
-                NoNut
-              </span>
-            )}
-            {!record?.gym_day && !record?.relief_day && (
-              <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs">
-                Rest Day
-              </span>
-            )}
-          </div>
+          {isEditing ? (
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant={record?.gym_day ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => toggleDay(date, 'gym')}
+                  className="text-xs flex items-center gap-1"
+                >
+                  <Dumbbell className="w-3 h-3" />
+                  Gym
+                </Button>
+                <Button
+                  variant={record?.relief_day ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => toggleDay(date, 'nonut')}
+                  className="text-xs flex items-center gap-1"
+                >
+                  <Heart className="w-3 h-3" />
+                  NoNut
+                </Button>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditingDate(null)}
+                className="w-full text-xs"
+              >
+                Done
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              {record?.gym_day && (
+                <span className="px-2 py-1 bg-primary/20 text-primary rounded-full text-xs font-medium flex items-center gap-1">
+                  <Dumbbell className="w-3 h-3" />
+                  Gym
+                </span>
+              )}
+              {record?.relief_day && (
+                <span className="px-2 py-1 bg-destructive/20 text-destructive rounded-full text-xs font-medium flex items-center gap-1">
+                  <Heart className="w-3 h-3" />
+                  NoNut
+                </span>
+              )}
+              {!record?.gym_day && !record?.relief_day && (
+                <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs">
+                  Rest Day
+                </span>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -174,6 +268,11 @@ const CalendarView = () => {
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-destructive/20 rounded"></div>
                 <span>NoNut Days</span>
+              </div>
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                <p className="text-xs text-muted-foreground">
+                  💡 Click the edit icon on any day card to mark gym or NoNut days
+                </p>
               </div>
             </div>
           </CardContent>
