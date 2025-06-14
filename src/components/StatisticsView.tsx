@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,106 +30,156 @@ const chartConfig = {
 };
 
 const StatisticsView = ({ records }: StatisticsViewProps) => {
+  console.log('StatisticsView rendered with records:', records);
+
   const weeklyData = useMemo(() => {
-    const weeks = new Map<string, { gym: number; nonut: number; week: string }>();
-    
-    records.forEach(record => {
-      const date = new Date(record.date);
-      const weekStart = startOfWeek(date);
-      const weekKey = format(weekStart, 'yyyy-MM-dd');
-      const weekLabel = format(weekStart, 'MMM d');
+    console.log('Computing weekly data...');
+    try {
+      const weeks = new Map<string, { gym: number; nonut: number; week: string }>();
       
-      if (!weeks.has(weekKey)) {
-        weeks.set(weekKey, { gym: 0, nonut: 0, week: weekLabel });
-      }
+      records.forEach(record => {
+        const date = new Date(record.date);
+        if (isNaN(date.getTime())) {
+          console.warn('Invalid date found:', record.date);
+          return;
+        }
+        
+        const weekStart = startOfWeek(date);
+        const weekKey = format(weekStart, 'yyyy-MM-dd');
+        const weekLabel = format(weekStart, 'MMM d');
+        
+        if (!weeks.has(weekKey)) {
+          weeks.set(weekKey, { gym: 0, nonut: 0, week: weekLabel });
+        }
+        
+        const weekData = weeks.get(weekKey)!;
+        if (record.gym_day) weekData.gym++;
+        if (record.relief_day) weekData.nonut++;
+      });
       
-      const weekData = weeks.get(weekKey)!;
-      if (record.gym_day) weekData.gym++;
-      if (record.relief_day) weekData.nonut++;
-    });
-    
-    return Array.from(weeks.values()).sort((a, b) => a.week.localeCompare(b.week));
+      const result = Array.from(weeks.values()).sort((a, b) => a.week.localeCompare(b.week));
+      console.log('Weekly data computed:', result);
+      return result;
+    } catch (error) {
+      console.error('Error computing weekly data:', error);
+      return [];
+    }
   }, [records]);
 
   const monthlyData = useMemo(() => {
-    const months = new Map<string, { gym: number; nonut: number; month: string }>();
-    
-    records.forEach(record => {
-      const date = new Date(record.date);
-      const monthKey = format(date, 'yyyy-MM');
-      const monthLabel = format(date, 'MMM yyyy');
+    console.log('Computing monthly data...');
+    try {
+      const months = new Map<string, { gym: number; nonut: number; month: string }>();
       
-      if (!months.has(monthKey)) {
-        months.set(monthKey, { gym: 0, nonut: 0, month: monthLabel });
-      }
+      records.forEach(record => {
+        const date = new Date(record.date);
+        if (isNaN(date.getTime())) {
+          console.warn('Invalid date found:', record.date);
+          return;
+        }
+        
+        const monthKey = format(date, 'yyyy-MM');
+        const monthLabel = format(date, 'MMM yyyy');
+        
+        if (!months.has(monthKey)) {
+          months.set(monthKey, { gym: 0, nonut: 0, month: monthLabel });
+        }
+        
+        const monthData = months.get(monthKey)!;
+        if (record.gym_day) monthData.gym++;
+        if (record.relief_day) monthData.nonut++;
+      });
       
-      const monthData = months.get(monthKey)!;
-      if (record.gym_day) monthData.gym++;
-      if (record.relief_day) monthData.nonut++;
-    });
-    
-    return Array.from(months.values()).sort((a, b) => a.month.localeCompare(b.month));
+      const result = Array.from(months.values()).sort((a, b) => a.month.localeCompare(b.month));
+      console.log('Monthly data computed:', result);
+      return result;
+    } catch (error) {
+      console.error('Error computing monthly data:', error);
+      return [];
+    }
   }, [records]);
 
   const yearlyData = useMemo(() => {
-    const years = new Map<number, { gym: number; nonut: number; year: string }>();
-    
-    records.forEach(record => {
-      const date = new Date(record.date);
-      const year = getYear(date);
+    console.log('Computing yearly data...');
+    try {
+      const years = new Map<number, { gym: number; nonut: number; year: string }>();
       
-      if (!years.has(year)) {
-        years.set(year, { gym: 0, nonut: 0, year: year.toString() });
-      }
+      records.forEach(record => {
+        const date = new Date(record.date);
+        if (isNaN(date.getTime())) {
+          console.warn('Invalid date found:', record.date);
+          return;
+        }
+        
+        const year = getYear(date);
+        
+        if (!years.has(year)) {
+          years.set(year, { gym: 0, nonut: 0, year: year.toString() });
+        }
+        
+        const yearData = years.get(year)!;
+        if (record.gym_day) yearData.gym++;
+        if (record.relief_day) yearData.nonut++;
+      });
       
-      const yearData = years.get(year)!;
-      if (record.gym_day) yearData.gym++;
-      if (record.relief_day) yearData.nonut++;
-    });
-    
-    return Array.from(years.values()).sort((a, b) => parseInt(a.year) - parseInt(b.year));
+      const result = Array.from(years.values()).sort((a, b) => parseInt(a.year) - parseInt(b.year));
+      console.log('Yearly data computed:', result);
+      return result;
+    } catch (error) {
+      console.error('Error computing yearly data:', error);
+      return [];
+    }
   }, [records]);
 
   const overallStats = useMemo(() => {
-    const totalGym = records.filter(r => r.gym_day).length;
-    const totalNoNut = records.filter(r => r.relief_day).length;
-    const totalBoth = records.filter(r => r.gym_day && r.relief_day).length;
-    const totalRest = records.filter(r => !r.gym_day && !r.relief_day).length;
-    
-    return [
-      { 
-        name: 'Gym Only', 
-        value: totalGym - totalBoth, 
-        color: '#4f46e5',
-        icon: '💪'
-      },
-      { 
-        name: 'NoNut Only', 
-        value: totalNoNut - totalBoth, 
-        color: '#dc2626',
-        icon: '❤️'
-      },
-      { 
-        name: 'Both Activities', 
-        value: totalBoth, 
-        color: '#059669',
-        icon: '🏆'
-      },
-      { 
-        name: 'Rest Days', 
-        value: totalRest, 
-        color: '#6b7280',
-        icon: '😴'
-      }
-    ].filter(item => item.value > 0);
+    console.log('Computing overall stats...');
+    try {
+      const totalGym = records.filter(r => r.gym_day).length;
+      const totalNoNut = records.filter(r => r.relief_day).length;
+      const totalBoth = records.filter(r => r.gym_day && r.relief_day).length;
+      const totalRest = records.filter(r => !r.gym_day && !r.relief_day).length;
+      
+      const result = [
+        { 
+          name: 'Gym Only', 
+          value: totalGym - totalBoth, 
+          color: '#4f46e5',
+          icon: '💪'
+        },
+        { 
+          name: 'NoNut Only', 
+          value: totalNoNut - totalBoth, 
+          color: '#dc2626',
+          icon: '❤️'
+        },
+        { 
+          name: 'Both Activities', 
+          value: totalBoth, 
+          color: '#059669',
+          icon: '🏆'
+        },
+        { 
+          name: 'Rest Days', 
+          value: totalRest, 
+          color: '#6b7280',
+          icon: '😴'
+        }
+      ].filter(item => item.value > 0);
+      
+      console.log('Overall stats computed:', result);
+      return result;
+    } catch (error) {
+      console.error('Error computing overall stats:', error);
+      return [];
+    }
   }, [records]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
-      const percentage = ((data.value / records.length) * 100).toFixed(1);
+      const percentage = records.length > 0 ? ((data.value / records.length) * 100).toFixed(1) : '0';
       return (
-        <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-lg">{data.icon}</span>
             <span className="font-medium text-foreground">{data.name}</span>
@@ -143,7 +194,7 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
   };
 
   const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
-    if (percent < 0.05) return null; // Don't show label if slice is too small
+    if (percent < 0.05) return null;
     
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
@@ -168,14 +219,14 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
   const CustomLegend = ({ payload }: any) => {
     return (
       <div className="flex flex-wrap justify-center gap-4 mt-4">
-        {payload.map((entry: any, index: number) => (
+        {payload?.map((entry: any, index: number) => (
           <div key={index} className="flex items-center gap-2">
             <div 
               className="w-3 h-3 rounded-full" 
               style={{ backgroundColor: entry.color }}
             />
             <span className="text-sm text-foreground flex items-center gap-1">
-              <span>{entry.payload.icon}</span>
+              <span>{entry.payload?.icon}</span>
               {entry.value}
             </span>
           </div>
@@ -184,35 +235,69 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
     );
   };
 
-  const renderBarChart = (data: any[], dataKey: string) => (
-    <ChartContainer config={chartConfig} className="h-[300px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey={dataKey} />
-          <YAxis />
-          <ChartTooltip content={<ChartTooltipContent />} />
-          <Bar dataKey="gym" fill="var(--color-gym)" name="Gym Days" />
-          <Bar dataKey="nonut" fill="var(--color-nonut)" name="NoNut Days" />
-        </BarChart>
-      </ResponsiveContainer>
-    </ChartContainer>
-  );
+  const renderBarChart = (data: any[], dataKey: string) => {
+    if (!data || data.length === 0) {
+      return (
+        <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+          No data available
+        </div>
+      );
+    }
 
-  const renderLineChart = (data: any[], dataKey: string) => (
-    <ChartContainer config={chartConfig} className="h-[300px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey={dataKey} />
-          <YAxis />
-          <ChartTooltip content={<ChartTooltipContent />} />
-          <Line type="monotone" dataKey="gym" stroke="var(--color-gym)" name="Gym Days" strokeWidth={2} />
-          <Line type="monotone" dataKey="nonut" stroke="var(--color-nonut)" name="NoNut Days" strokeWidth={2} />
-        </LineChart>
-      </ResponsiveContainer>
-    </ChartContainer>
-  );
+    return (
+      <ChartContainer config={chartConfig} className="h-[300px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={dataKey} />
+            <YAxis />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Bar dataKey="gym" fill="var(--color-gym)" name="Gym Days" />
+            <Bar dataKey="nonut" fill="var(--color-nonut)" name="NoNut Days" />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartContainer>
+    );
+  };
+
+  const renderLineChart = (data: any[], dataKey: string) => {
+    if (!data || data.length === 0) {
+      return (
+        <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+          No data available
+        </div>
+      );
+    }
+
+    return (
+      <ChartContainer config={chartConfig} className="h-[300px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={dataKey} />
+            <YAxis />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Line type="monotone" dataKey="gym" stroke="var(--color-gym)" name="Gym Days" strokeWidth={2} />
+            <Line type="monotone" dataKey="nonut" stroke="var(--color-nonut)" name="NoNut Days" strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
+      </ChartContainer>
+    );
+  };
+
+  // Safety check for records
+  if (!records || !Array.isArray(records)) {
+    console.warn('Invalid records data:', records);
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <p className="text-muted-foreground">No tracking data available</p>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('Rendering StatisticsView component');
 
   return (
     <div className="space-y-6">
@@ -275,54 +360,59 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[400px] flex flex-col">
-              <ResponsiveContainer width="100%" height="80%">
-                <PieChart>
-                  <Pie
-                    data={overallStats}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={CustomLabel}
-                    outerRadius={100}
-                    innerRadius={40}
-                    fill="#8884d8"
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {overallStats.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.color}
-                      />
-                    ))}
-                  </Pie>
-                  <ChartTooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <CustomLegend payload={overallStats} />
-            </div>
-            
-            {/* Summary stats below the chart */}
-            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Total Days:</span>
-                  <span className="ml-2 font-medium">{records.length}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Most Active:</span>
-                  <span className="ml-2 font-medium">
-                    {overallStats.length > 0 
-                      ? overallStats.reduce((prev, current) => 
-                          prev.value > current.value ? prev : current
-                        ).name
-                      : 'N/A'
-                    }
-                  </span>
+            {overallStats.length > 0 ? (
+              <div className="h-[400px] flex flex-col">
+                <ResponsiveContainer width="100%" height="80%">
+                  <PieChart>
+                    <Pie
+                      data={overallStats}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={CustomLabel}
+                      outerRadius={100}
+                      innerRadius={40}
+                      fill="#8884d8"
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {overallStats.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={entry.color}
+                        />
+                      ))}
+                    </Pie>
+                    <ChartTooltip content={<CustomTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <CustomLegend payload={overallStats} />
+                
+                <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Total Days:</span>
+                      <span className="ml-2 font-medium">{records.length}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Most Active:</span>
+                      <span className="ml-2 font-medium">
+                        {overallStats.length > 0 
+                          ? overallStats.reduce((prev, current) => 
+                              prev.value > current.value ? prev : current
+                            ).name
+                          : 'N/A'
+                        }
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="h-[400px] flex items-center justify-center text-muted-foreground">
+                No activity data available
+              </div>
+            )}
           </CardContent>
         </Card>
 
