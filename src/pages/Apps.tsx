@@ -8,7 +8,7 @@ import { TrendingUp, FileText } from 'lucide-react';
 
 type AppType = 'tracker' | 'notes';
 
-const App = () => {
+const Apps = () => {
   const [activeApp, setActiveApp] = useState<AppType>('tracker');
 
   const NotesApp = () => (
@@ -69,4 +69,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default Apps;

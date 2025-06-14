@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +16,8 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  const APP_PASSWORD = '4252617vp';
+
   useEffect(() => {
     // Check if user is already authenticated (stored in sessionStorage)
     const isAuth = sessionStorage.getItem('app_authenticated') === 'true';
@@ -28,27 +29,12 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from('app_settings')
-        .select('setting_value')
-        .eq('setting_key', 'app_password')
-        .single();
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to verify password. Please try again.",
-        });
-        return;
-      }
-
-      if (data.setting_value === password) {
+      if (password === APP_PASSWORD) {
         setIsAuthenticated(true);
         sessionStorage.setItem('app_authenticated', 'true');
         toast({
           title: "Welcome!",
-          description: "Successfully logged in to your tracking app.",
+          description: "Successfully logged in to your applications.",
         });
       } else {
         toast({
@@ -78,9 +64,9 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
               <Lock className="w-6 h-6 text-primary" />
             </div>
             <CardTitle className="text-2xl font-bold text-foreground">
-              Fit & NoNut Tracker
+              Applications
             </CardTitle>
-            <p className="text-muted-foreground">Enter your password to access your tracking app</p>
+            <p className="text-muted-foreground">Enter your password to access your applications</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
@@ -97,7 +83,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
                 className="w-full"
                 disabled={isLoading}
               >
-                {isLoading ? 'Verifying...' : 'Access App'}
+                {isLoading ? 'Verifying...' : 'Access Applications'}
               </Button>
             </form>
           </CardContent>
