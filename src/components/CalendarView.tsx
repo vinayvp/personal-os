@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar } from '@/components/ui/calendar';
@@ -125,6 +124,9 @@ const CalendarView = () => {
     const isToday = isSameDay(date, new Date());
     const dateString = format(date, 'yyyy-MM-dd');
     const isEditing = editingDate === dateString;
+    const hasGym = record?.gym_day || false;
+    const hasNoNut = record?.relief_day || false;
+    const hasBoth = hasGym && hasNoNut;
 
     return (
       <Card key={date.toString()} className={`
@@ -153,7 +155,7 @@ const CalendarView = () => {
             <div className="space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 <Button
-                  variant={record?.gym_day ? "default" : "outline"}
+                  variant={hasGym ? "default" : "outline"}
                   size="sm"
                   onClick={() => toggleDay(date, 'gym')}
                   className="text-xs flex items-center gap-1"
@@ -162,7 +164,7 @@ const CalendarView = () => {
                   Gym
                 </Button>
                 <Button
-                  variant={record?.relief_day ? "default" : "outline"}
+                  variant={hasNoNut ? "default" : "outline"}
                   size="sm"
                   onClick={() => toggleDay(date, 'nonut')}
                   className="text-xs flex items-center gap-1"
@@ -181,23 +183,41 @@ const CalendarView = () => {
               </Button>
             </div>
           ) : (
-            <div className="flex gap-2">
-              {record?.gym_day && (
-                <span className="px-2 py-1 bg-primary/20 text-primary rounded-full text-xs font-medium flex items-center gap-1">
-                  <Dumbbell className="w-3 h-3" />
-                  Gym
-                </span>
-              )}
-              {record?.relief_day && (
-                <span className="px-2 py-1 bg-destructive/20 text-destructive rounded-full text-xs font-medium flex items-center gap-1">
-                  <Heart className="w-3 h-3" />
-                  NoNut
-                </span>
-              )}
-              {!record?.gym_day && !record?.relief_day && (
-                <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs">
-                  Rest Day
-                </span>
+            <div className="space-y-2">
+              {hasBoth ? (
+                <div className="p-2 bg-gradient-to-r from-primary/20 to-destructive/20 rounded-lg border border-primary/30">
+                  <div className="flex items-center justify-center gap-2 text-xs font-medium">
+                    <div className="flex items-center gap-1 text-primary">
+                      <Dumbbell className="w-3 h-3" />
+                      <span>Gym</span>
+                    </div>
+                    <span className="text-muted-foreground">+</span>
+                    <div className="flex items-center gap-1 text-destructive">
+                      <Heart className="w-3 h-3" />
+                      <span>NoNut</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {hasGym && (
+                    <span className="px-2 py-1 bg-primary/20 text-primary rounded-full text-xs font-medium flex items-center gap-1 justify-center">
+                      <Dumbbell className="w-3 h-3" />
+                      Gym Day
+                    </span>
+                  )}
+                  {hasNoNut && (
+                    <span className="px-2 py-1 bg-destructive/20 text-destructive rounded-full text-xs font-medium flex items-center gap-1 justify-center">
+                      <Heart className="w-3 h-3" />
+                      NoNut Day
+                    </span>
+                  )}
+                  {!hasGym && !hasNoNut && (
+                    <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs text-center">
+                      Rest Day
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -273,6 +293,10 @@ const CalendarView = () => {
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-destructive/20 rounded"></div>
                 <span>NoNut Days</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-gradient-to-r from-primary/20 to-destructive/20 rounded border border-primary/30"></div>
+                <span>Both Gym & NoNut</span>
               </div>
               <div className="mt-4 p-3 bg-muted/50 rounded-lg">
                 <p className="text-xs text-muted-foreground">
