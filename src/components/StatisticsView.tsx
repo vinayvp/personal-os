@@ -97,10 +97,10 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
     const totalRest = records.filter(r => !r.gym_day && !r.relief_day).length;
     
     return [
-      { name: 'Gym Only', value: totalGym - totalBoth, color: 'hsl(var(--primary))' },
-      { name: 'NoNut Only', value: totalNoNut - totalBoth, color: 'hsl(var(--destructive))' },
-      { name: 'Both', value: totalBoth, color: 'hsl(var(--warning))' },
-      { name: 'Rest', value: totalRest, color: 'hsl(var(--muted))' }
+      { name: 'Gym Only', value: totalGym - totalBoth, color: '#3b82f6' },
+      { name: 'NoNut Only', value: totalNoNut - totalBoth, color: '#ef4444' },
+      { name: 'Both', value: totalBoth, color: '#f59e0b' },
+      { name: 'Rest', value: totalRest, color: '#6b7280' }
     ].filter(item => item.value > 0);
   }, [records]);
 
@@ -192,7 +192,7 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
             <CardTitle>Activity Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
+            <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -204,15 +204,23 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
+                    fontSize={12}
                   >
                     {overallStats.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <ChartTooltip />
+                  <ChartTooltip 
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px',
+                      color: 'hsl(var(--foreground))'
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
-            </ChartContainer>
+            </div>
           </CardContent>
         </Card>
 

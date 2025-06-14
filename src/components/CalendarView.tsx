@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar } from '@/components/ui/calendar';
@@ -137,9 +136,8 @@ const CalendarView = () => {
         className={`
           transition-all duration-200 cursor-pointer
           ${isToday ? 'ring-2 ring-primary' : ''} 
-          ${isSelected ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-border'}
+          ${isSelected ? 'ring-2 ring-blue-500 border-blue-500' : 'border-border'}
           ${isEditing ? 'ring-2 ring-blue-500 border-blue-500' : ''}
-          ${!hasGym && !hasNoNut && isSelected ? 'opacity-60' : ''}
         `}
         onClick={() => setSelectedDate(date)}
       >
@@ -225,7 +223,7 @@ const CalendarView = () => {
                     </span>
                   )}
                   {!hasGym && !hasNoNut && (
-                    <span className={`px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs text-center ${isSelected ? 'opacity-70' : ''}`}>
+                    <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs text-center">
                       Rest Day
                     </span>
                   )}
