@@ -1,9 +1,8 @@
-
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachWeekOfInterval, eachMonthOfInterval, getWeek, getMonth, getYear } from 'date-fns';
 import { Dumbbell, Heart, TrendingUp, Calendar } from 'lucide-react';
 
@@ -97,12 +96,93 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
     const totalRest = records.filter(r => !r.gym_day && !r.relief_day).length;
     
     return [
-      { name: 'Gym Only', value: totalGym - totalBoth, color: '#3b82f6' },
-      { name: 'NoNut Only', value: totalNoNut - totalBoth, color: '#ef4444' },
-      { name: 'Both', value: totalBoth, color: '#f59e0b' },
-      { name: 'Rest', value: totalRest, color: '#6b7280' }
+      { 
+        name: 'Gym Only', 
+        value: totalGym - totalBoth, 
+        color: '#4f46e5',
+        icon: '💪'
+      },
+      { 
+        name: 'NoNut Only', 
+        value: totalNoNut - totalBoth, 
+        color: '#dc2626',
+        icon: '❤️'
+      },
+      { 
+        name: 'Both Activities', 
+        value: totalBoth, 
+        color: '#059669',
+        icon: '🏆'
+      },
+      { 
+        name: 'Rest Days', 
+        value: totalRest, 
+        color: '#6b7280',
+        icon: '😴'
+      }
     ].filter(item => item.value > 0);
   }, [records]);
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      const percentage = ((data.value / records.length) * 100).toFixed(1);
+      return (
+        <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">{data.icon}</span>
+            <span className="font-medium text-foreground">{data.name}</span>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            <div>{data.value} days ({percentage}%)</div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+    if (percent < 0.05) return null; // Don't show label if slice is too small
+    
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill="white" 
+        textAnchor={x > cx ? 'start' : 'end'} 
+        dominantBaseline="central"
+        fontSize={12}
+        fontWeight="600"
+      >
+        {`${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
+  };
+
+  const CustomLegend = ({ payload }: any) => {
+    return (
+      <div className="flex flex-wrap justify-center gap-4 mt-4">
+        {payload.map((entry: any, index: number) => (
+          <div key={index} className="flex items-center gap-2">
+            <div 
+              className="w-3 h-3 rounded-full" 
+              style={{ backgroundColor: entry.color }}
+            />
+            <span className="text-sm text-foreground flex items-center gap-1">
+              <span>{entry.payload.icon}</span>
+              {entry.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const renderBarChart = (data: any[], dataKey: string) => (
     <ChartContainer config={chartConfig} className="h-[300px]">
@@ -189,37 +269,59 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Activity Distribution</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              Activity Distribution
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-[400px] flex flex-col">
+              <ResponsiveContainer width="100%" height="80%">
                 <PieChart>
                   <Pie
                     data={overallStats}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
+                    label={CustomLabel}
+                    outerRadius={100}
+                    innerRadius={40}
                     fill="#8884d8"
                     dataKey="value"
-                    fontSize={12}
+                    stroke="none"
                   >
                     {overallStats.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.color}
+                      />
                     ))}
                   </Pie>
-                  <ChartTooltip 
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '6px',
-                      color: 'hsl(var(--foreground))'
-                    }}
-                  />
+                  <ChartTooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
+              <CustomLegend payload={overallStats} />
+            </div>
+            
+            {/* Summary stats below the chart */}
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Total Days:</span>
+                  <span className="ml-2 font-medium">{records.length}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Most Active:</span>
+                  <span className="ml-2 font-medium">
+                    {overallStats.length > 0 
+                      ? overallStats.reduce((prev, current) => 
+                          prev.value > current.value ? prev : current
+                        ).name
+                      : 'N/A'
+                    }
+                  </span>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
