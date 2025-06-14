@@ -4,16 +4,21 @@ import AuthGuard from '@/components/AuthGuard';
 import TrackingApp from '@/components/TrackingApp';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, FileText } from 'lucide-react';
+import { TrendingUp, FileText, LogOut } from 'lucide-react';
 
 type AppType = 'tracker' | 'notes';
 
 const Apps = () => {
   const [activeApp, setActiveApp] = useState<AppType>('tracker');
 
+  const handleLogout = () => {
+    sessionStorage.removeItem('app_authenticated');
+    window.location.reload();
+  };
+
   const NotesApp = () => (
     <div className="min-h-screen bg-background flex items-center justify-center">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md glass-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
@@ -32,31 +37,44 @@ const Apps = () => {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-background">
-        {/* App Navigation */}
-        <nav className="border-b border-border bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
+        {/* App Navigation with Frosted Glass */}
+        <nav className="glass-nav sticky top-0 z-50">
           <div className="max-w-6xl mx-auto px-4 py-4">
-            <div className="flex items-center gap-4">
-              <h1 className="text-xl font-bold text-foreground">My Apps</h1>
-              <div className="flex gap-2">
-                <Button
-                  variant={activeApp === 'tracker' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setActiveApp('tracker')}
-                  className="flex items-center gap-2"
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  Tracker
-                </Button>
-                <Button
-                  variant={activeApp === 'notes' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setActiveApp('notes')}
-                  className="flex items-center gap-2"
-                >
-                  <FileText className="w-4 h-4" />
-                  Notes
-                </Button>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <h1 className="text-xl font-bold text-foreground">My Apps</h1>
+                <div className="flex gap-2">
+                  <Button
+                    variant={activeApp === 'tracker' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setActiveApp('tracker')}
+                    className="flex items-center gap-2 glass-button"
+                  >
+                    <TrendingUp className="w-4 h-4" />
+                    Tracker
+                  </Button>
+                  <Button
+                    variant={activeApp === 'notes' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setActiveApp('notes')}
+                    className="flex items-center gap-2 glass-button"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Notes
+                  </Button>
+                </div>
               </div>
+              
+              {/* Logout Button in Navbar */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleLogout}
+                className="flex items-center gap-2 glass-button"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
             </div>
           </div>
         </nav>

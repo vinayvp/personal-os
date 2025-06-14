@@ -173,3 +173,30 @@
     animation-delay: 0.8s;
   }
 }
+
+/* Frosted Glass Effects - Available for all future projects */
+@layer utilities {
+  .glass {
+    @apply bg-white/10 backdrop-blur-md border border-white/20;
+  }
+  
+  .glass-dark {
+    @apply bg-black/20 backdrop-blur-md border border-white/10;
+  }
+  
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-lg border border-white/10 shadow-lg;
+  }
+  
+  .glass-nav {
+    @apply bg-background/80 backdrop-blur-md border-b border-border/50;
+  }
+  
+  .glass-button {
+    @apply bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-200;
+  }
+
+  .glass-input {
+    @apply bg-white/5 backdrop-blur-sm border border-white/20 focus:border-white/40 transition-all duration-200;
+  }
+}
