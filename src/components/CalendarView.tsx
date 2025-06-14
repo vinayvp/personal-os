@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar } from '@/components/ui/calendar';
@@ -5,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar as CalendarIcon, Dumbbell, Heart, Edit3 } from 'lucide-react';
+import { Calendar as CalendarIcon, Dumbbell, Heart, Edit3, BarChart3 } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
+import StatisticsView from './StatisticsView';
 
 interface DayRecord {
   id: string;
@@ -122,6 +124,7 @@ const CalendarView = () => {
   const renderDayCard = (date: Date) => {
     const record = getRecordForDate(date);
     const isToday = isSameDay(date, new Date());
+    const isSelected = isSameDay(date, selectedDate);
     const dateString = format(date, 'yyyy-MM-dd');
     const isEditing = editingDate === dateString;
     const hasGym = record?.gym_day || false;
@@ -129,11 +132,17 @@ const CalendarView = () => {
     const hasBoth = hasGym && hasNoNut;
 
     return (
-      <Card key={date.toString()} className={`
-        transition-all duration-200 
-        ${isToday ? 'ring-2 ring-primary' : ''} 
-        ${isEditing ? 'ring-2 ring-blue-500 border-blue-500' : 'border-border'}
-      `}>
+      <Card 
+        key={date.toString()} 
+        className={`
+          transition-all duration-200 cursor-pointer
+          ${isToday ? 'ring-2 ring-primary' : ''} 
+          ${isSelected ? 'ring-2 ring-blue-500 border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-border'}
+          ${isEditing ? 'ring-2 ring-blue-500 border-blue-500' : ''}
+          ${!hasGym && !hasNoNut && isSelected ? 'opacity-60' : ''}
+        `}
+        onClick={() => setSelectedDate(date)}
+      >
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium flex justify-between items-center">
             <span>
@@ -143,7 +152,10 @@ const CalendarView = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setEditingDate(isEditing ? null : dateString)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditingDate(isEditing ? null : dateString);
+              }}
               className="h-6 w-6 p-0"
             >
               <Edit3 className="w-3 h-3" />
@@ -213,7 +225,7 @@ const CalendarView = () => {
                     </span>
                   )}
                   {!hasGym && !hasNoNut && (
-                    <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs text-center">
+                    <span className={`px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs text-center ${isSelected ? 'opacity-70' : ''}`}>
                       Rest Day
                     </span>
                   )}
@@ -251,77 +263,96 @@ const CalendarView = () => {
         </Tabs>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Select Date</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
-              className="w-full"
-              modifiers={{
-                gymDay: (date) => {
-                  const record = getRecordForDate(date);
-                  return record?.gym_day || false;
-                },
-                noNutDay: (date) => {
-                  const record = getRecordForDate(date);
-                  return record?.relief_day || false;
-                }
-              }}
-              modifiersStyles={{
-                gymDay: {
-                  backgroundColor: 'hsl(var(--primary) / 0.2)',
-                  color: 'hsl(var(--primary))',
-                  fontWeight: 'bold'
-                },
-                noNutDay: {
-                  backgroundColor: 'hsl(var(--destructive) / 0.2)',
-                  color: 'hsl(var(--destructive))',
-                  fontWeight: 'bold'
-                }
-              }}
-            />
-            <div className="mt-4 space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-primary/20 rounded"></div>
-                <span>Gym Days</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-destructive/20 rounded"></div>
-                <span>NoNut Days</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-gradient-to-r from-primary/20 to-destructive/20 rounded border border-primary/30"></div>
-                <span>Both Gym & NoNut</span>
-              </div>
-              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                <p className="text-xs text-muted-foreground">
-                  💡 Click the edit icon on any day card to mark gym or NoNut days
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <Tabs defaultValue="calendar" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="calendar" className="flex items-center gap-2">
+            <CalendarIcon className="w-4 h-4" />
+            Calendar
+          </TabsTrigger>
+          <TabsTrigger value="statistics" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Statistics
+          </TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {viewMode === 'day' && format(selectedDate, 'MMMM d, yyyy')}
-              {viewMode === 'week' && `Week of ${format(startOfWeek(selectedDate), 'MMM d, yyyy')}`}
-              {viewMode === 'month' && format(selectedDate, 'MMMM yyyy')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {getDaysToShow().map(renderDayCard)}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        <TabsContent value="calendar" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Select Date</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  className="w-full"
+                  modifiers={{
+                    gymDay: (date) => {
+                      const record = getRecordForDate(date);
+                      return record?.gym_day || false;
+                    },
+                    noNutDay: (date) => {
+                      const record = getRecordForDate(date);
+                      return record?.relief_day || false;
+                    }
+                  }}
+                  modifiersStyles={{
+                    gymDay: {
+                      backgroundColor: 'hsl(var(--primary) / 0.2)',
+                      color: 'hsl(var(--primary))',
+                      fontWeight: 'bold'
+                    },
+                    noNutDay: {
+                      backgroundColor: 'hsl(var(--destructive) / 0.2)',
+                      color: 'hsl(var(--destructive))',
+                      fontWeight: 'bold'
+                    }
+                  }}
+                />
+                <div className="mt-4 space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-primary/20 rounded"></div>
+                    <span>Gym Days</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-destructive/20 rounded"></div>
+                    <span>NoNut Days</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-gradient-to-r from-primary/20 to-destructive/20 rounded border border-primary/30"></div>
+                    <span>Both Gym & NoNut</span>
+                  </div>
+                  <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                    <p className="text-xs text-muted-foreground">
+                      💡 Click any day card to highlight it, then use the edit icon to mark gym or NoNut days
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  {viewMode === 'day' && format(selectedDate, 'MMMM d, yyyy')}
+                  {viewMode === 'week' && `Week of ${format(startOfWeek(selectedDate), 'MMM d, yyyy')}`}
+                  {viewMode === 'month' && format(selectedDate, 'MMMM yyyy')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {getDaysToShow().map(renderDayCard)}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="statistics">
+          <StatisticsView records={records} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
