@@ -1,13 +1,8 @@
 
-import AuthGuard from '@/components/AuthGuard';
-import TrackingApp from '@/components/TrackingApp';
+import { Navigate } from 'react-router-dom';
 
 const Index = () => {
-  return (
-    <AuthGuard>
-      <TrackingApp />
-    </AuthGuard>
-  );
+  return <Navigate to="/" replace />;
 };
 
 export default Index;
