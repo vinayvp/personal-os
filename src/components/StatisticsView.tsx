@@ -1,10 +1,9 @@
-
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachWeekOfInterval, eachMonthOfInterval, getWeek, getMonth, getYear } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachWeekOfInterval, eachMonthOfInterval, getWeek, getMonth, getYear, eachDayOfInterval, subDays } from 'date-fns';
 import { Dumbbell, Heart, TrendingUp, Calendar } from 'lucide-react';
 
 interface DayRecord {
@@ -31,6 +30,41 @@ const chartConfig = {
 
 const StatisticsView = ({ records }: StatisticsViewProps) => {
   console.log('StatisticsView rendered with records:', records);
+
+  const dailyData = useMemo(() => {
+    console.log('Computing daily data...');
+    try {
+      const days = new Map<string, { gym: number; nonut: number; day: string }>();
+      
+      records.forEach(record => {
+        const date = new Date(record.date);
+        if (isNaN(date.getTime())) {
+          console.warn('Invalid date found:', record.date);
+          return;
+        }
+        
+        const dayKey = format(date, 'yyyy-MM-dd');
+        const dayLabel = format(date, 'MMM d');
+        
+        if (!days.has(dayKey)) {
+          days.set(dayKey, { gym: 0, nonut: 0, day: dayLabel });
+        }
+        
+        const dayData = days.get(dayKey)!;
+        if (record.gym_day) dayData.gym++;
+        if (record.relief_day) dayData.nonut++;
+      });
+      
+      const result = Array.from(days.values())
+        .sort((a, b) => a.day.localeCompare(b.day))
+        .slice(-30); // Last 30 days
+      console.log('Daily data computed:', result);
+      return result;
+    } catch (error) {
+      console.error('Error computing daily data:', error);
+      return [];
+    }
+  }, [records]);
 
   const weeklyData = useMemo(() => {
     console.log('Computing weekly data...');
@@ -177,7 +211,6 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
-      const percentage = records.length > 0 ? ((data.value / records.length) * 100).toFixed(1) : '0';
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <div className="flex items-center gap-2 mb-1">
@@ -185,7 +218,7 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
             <span className="font-medium text-foreground">{data.name}</span>
           </div>
           <div className="text-sm text-muted-foreground">
-            <div>{data.value} days ({percentage}%)</div>
+            <div>{data.value} days</div>
           </div>
         </div>
       );
@@ -193,8 +226,8 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
     return null;
   };
 
-  const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
-    if (percent < 0.05) return null;
+  const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value }: any) => {
+    if (value === 0) return null;
     
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
@@ -211,7 +244,7 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
         fontSize={12}
         fontWeight="600"
       >
-        {`${(percent * 100).toFixed(0)}%`}
+        {value}
       </text>
     );
   };
@@ -222,12 +255,12 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
         {payload?.map((entry: any, index: number) => (
           <div key={index} className="flex items-center gap-2">
             <div 
-              className="w-3 h-3 rounded-full" 
+              className="w-4 h-4 rounded-full border-2 border-white shadow-sm" 
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-sm text-foreground flex items-center gap-1">
+            <span className="text-sm text-foreground flex items-center gap-1 font-medium">
               <span>{entry.payload?.icon}</span>
-              {entry.value}
+              {entry.value} ({entry.payload?.value} days)
             </span>
           </div>
         ))}
@@ -245,18 +278,20 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
     }
 
     return (
-      <ChartContainer config={chartConfig} className="h-[300px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey={dataKey} />
-            <YAxis />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="gym" fill="var(--color-gym)" name="Gym Days" />
-            <Bar dataKey="nonut" fill="var(--color-nonut)" name="NoNut Days" />
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartContainer>
+      <div className="w-full h-[300px]">
+        <ChartContainer config={chartConfig} className="h-full w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey={dataKey} />
+              <YAxis />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="gym" fill="var(--color-gym)" name="Gym Days" />
+              <Bar dataKey="nonut" fill="var(--color-nonut)" name="NoNut Days" />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      </div>
     );
   };
 
@@ -270,18 +305,20 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
     }
 
     return (
-      <ChartContainer config={chartConfig} className="h-[300px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey={dataKey} />
-            <YAxis />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Line type="monotone" dataKey="gym" stroke="var(--color-gym)" name="Gym Days" strokeWidth={2} />
-            <Line type="monotone" dataKey="nonut" stroke="var(--color-nonut)" name="NoNut Days" strokeWidth={2} />
-          </LineChart>
-        </ResponsiveContainer>
-      </ChartContainer>
+      <div className="w-full h-[300px]">
+        <ChartContainer config={chartConfig} className="h-full w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey={dataKey} />
+              <YAxis />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Line type="monotone" dataKey="gym" stroke="var(--color-gym)" name="Gym Days" strokeWidth={2} />
+              <Line type="monotone" dataKey="nonut" stroke="var(--color-nonut)" name="NoNut Days" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      </div>
     );
   };
 
@@ -362,30 +399,32 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
           <CardContent>
             {overallStats.length > 0 ? (
               <div className="h-[400px] flex flex-col">
-                <ResponsiveContainer width="100%" height="80%">
-                  <PieChart>
-                    <Pie
-                      data={overallStats}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={CustomLabel}
-                      outerRadius={100}
-                      innerRadius={40}
-                      fill="#8884d8"
-                      dataKey="value"
-                      stroke="none"
-                    >
-                      {overallStats.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={entry.color}
-                        />
-                      ))}
-                    </Pie>
-                    <ChartTooltip content={<CustomTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div className="flex-1">
+                  <ResponsiveContainer width="100%" height="80%">
+                    <PieChart>
+                      <Pie
+                        data={overallStats}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={CustomLabel}
+                        outerRadius={100}
+                        innerRadius={40}
+                        fill="#8884d8"
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {overallStats.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={entry.color}
+                          />
+                        ))}
+                      </Pie>
+                      <ChartTooltip content={<CustomTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
                 <CustomLegend payload={overallStats} />
                 
                 <div className="mt-4 p-4 bg-muted/50 rounded-lg">
@@ -421,12 +460,17 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
             <CardTitle>Trends Over Time</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="weekly" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-3">
+            <Tabs defaultValue="daily" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="daily">Daily</TabsTrigger>
                 <TabsTrigger value="weekly">Weekly</TabsTrigger>
                 <TabsTrigger value="monthly">Monthly</TabsTrigger>
                 <TabsTrigger value="yearly">Yearly</TabsTrigger>
               </TabsList>
+              
+              <TabsContent value="daily">
+                {renderLineChart(dailyData, 'day')}
+              </TabsContent>
               
               <TabsContent value="weekly">
                 {renderLineChart(weeklyData.slice(-8), 'week')}
@@ -449,12 +493,17 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
           <CardTitle>Activity Comparison</CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="weekly" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
+          <Tabs defaultValue="daily" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="daily">Daily Comparison</TabsTrigger>
               <TabsTrigger value="weekly">Weekly Comparison</TabsTrigger>
               <TabsTrigger value="monthly">Monthly Comparison</TabsTrigger>
               <TabsTrigger value="yearly">Yearly Comparison</TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="daily">
+              {renderBarChart(dailyData, 'day')}
+            </TabsContent>
             
             <TabsContent value="weekly">
               {renderBarChart(weeklyData.slice(-12), 'week')}
