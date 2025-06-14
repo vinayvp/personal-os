@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Dumbbell, Heart, TrendingUp, LogOut, Home } from 'lucide-react';
+import { Calendar, Dumbbell, Heart, Home, LogOut } from 'lucide-react';
 import { format } from 'date-fns';
 import CalendarView from './CalendarView';
 
@@ -133,11 +132,10 @@ const TrackingApp = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      {/* Header with logout button */}
       <header className="bg-card shadow-sm border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">
             <span className="hidden sm:inline">Fit & NoNut Tracker</span>
             <span className="sm:hidden">Tracker</span>
           </h1>

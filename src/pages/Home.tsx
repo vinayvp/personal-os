@@ -1,9 +1,6 @@
-
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Github, Linkedin, Mail, ExternalLink, Code, Palette, Smartphone } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 const Home = () => {
   return (
@@ -12,13 +9,6 @@ const Home = () => {
       <header className="border-b border-border bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold text-foreground">Portfolio</h1>
-          <nav className="flex items-center gap-4">
-            <Link to="/tracker">
-              <Button variant="outline" size="sm">
-                Tracker App
-              </Button>
-            </Link>
-          </nav>
         </div>
       </header>
 
@@ -32,17 +22,6 @@ const Home = () => {
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Full-stack developer passionate about creating beautiful and functional web applications
             </p>
-          </div>
-          
-          <div className="flex justify-center gap-4 flex-wrap">
-            <Button size="lg" className="flex items-center gap-2">
-              <Mail className="w-4 h-4" />
-              Get In Touch
-            </Button>
-            <Button variant="outline" size="lg" className="flex items-center gap-2">
-              <Github className="w-4 h-4" />
-              View Projects
-            </Button>
           </div>
         </section>
 
@@ -120,14 +99,6 @@ const Home = () => {
                   <Badge variant="outline">Supabase</Badge>
                   <Badge variant="outline">Tailwind</Badge>
                 </div>
-                <div className="flex gap-2">
-                  <Link to="/tracker">
-                    <Button size="sm" className="flex items-center gap-1">
-                      <ExternalLink className="w-3 h-3" />
-                      View App
-                    </Button>
-                  </Link>
-                </div>
               </CardContent>
             </Card>
 
@@ -144,16 +115,6 @@ const Home = () => {
                   <Badge variant="outline">Technology</Badge>
                   <Badge variant="outline">Stack</Badge>
                 </div>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="flex items-center gap-1">
-                    <Github className="w-3 h-3" />
-                    Code
-                  </Button>
-                  <Button size="sm" className="flex items-center gap-1">
-                    <ExternalLink className="w-3 h-3" />
-                    Demo
-                  </Button>
-                </div>
               </CardContent>
             </Card>
 
@@ -169,16 +130,6 @@ const Home = () => {
                   <Badge variant="outline">Technology</Badge>
                   <Badge variant="outline">Stack</Badge>
                 </div>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="flex items-center gap-1">
-                    <Github className="w-3 h-3" />
-                    Code
-                  </Button>
-                  <Button size="sm" className="flex items-center gap-1">
-                    <ExternalLink className="w-3 h-3" />
-                    Demo
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           </div>
@@ -191,18 +142,18 @@ const Home = () => {
             I'm always interested in new opportunities and collaborations. Let's connect!
           </p>
           <div className="flex justify-center gap-4">
-            <Button variant="outline" size="lg" className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Github className="w-4 h-4" />
               GitHub
-            </Button>
-            <Button variant="outline" size="lg" className="flex items-center gap-2">
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Linkedin className="w-4 h-4" />
               LinkedIn
-            </Button>
-            <Button variant="outline" size="lg" className="flex items-center gap-2">
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Mail className="w-4 h-4" />
               Email
-            </Button>
+            </div>
           </div>
         </section>
       </main>
