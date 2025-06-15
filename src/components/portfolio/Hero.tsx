@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Mail, Github, Linkedin, Rocket } from 'lucide-react';
@@ -8,17 +7,16 @@ const Hero = () => {
     <section id="home" className="min-h-screen flex items-center justify-center relative px-6 pt-20 overflow-hidden">
       {/* Animated Starry Background */}
       <div className="absolute inset-0 -z-10">
-        {Array.from({ length: 150 }).map((_, i) => (
+        {Array.from({ length: 200 }).map((_, i) => (
           <div
             key={i}
             className="absolute bg-white rounded-full animate-twinkle"
             style={{
               top: `${Math.random() * 100}%`,
               left: `${Math.random() * 100}%`,
-              width: `${Math.random() * 2 + 1}px`,
-              height: `${Math.random() * 2 + 1}px`,
-              animationDelay: `${Math.random() * 6}s`,
-              animationDuration: `${Math.random() * 4 + 4}s`,
+              width: `${Math.random() * 2 + 2}px`,
+              height: `${Math.random() * 2 + 2}px`,
+              animationDelay: `${Math.random() * 8}s`,
             }}
           />
         ))}
