@@ -53,7 +53,7 @@ const Hero = () => {
         {/* Social Links */}
         <div className="flex gap-6">
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" asChild>
-            <a href="https://github.com/example" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/aktech27" target="_blank" rel="noopener noreferrer">
               <Github className="w-4 h-4 mr-2" />
               Github
             </a>

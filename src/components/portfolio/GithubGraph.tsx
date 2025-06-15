@@ -4,7 +4,7 @@ import GitHubCalendar from 'react-github-calendar';
 import { Card } from '@/components/ui/card';
 
 const GithubGraph = () => {
-  const githubUsername = "example";
+  const githubUsername = "aktech27";
 
   return (
     <section id="github" className="py-20 px-6">
