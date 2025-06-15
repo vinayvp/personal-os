@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -74,13 +73,26 @@ const NotesApp = () => {
 
   const createNewNote = async () => {
     try {
+      // Get the current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) throw userError;
+      if (!user) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "You must be logged in to create notes.",
+        });
+        return;
+      }
+
       const { data, error } = await supabase
         .from('notes')
         .insert({
           title: 'New Note',
           content: '',
           markdown_content: '',
-          user_id: (await supabase.auth.getUser()).data.user?.id
+          user_id: user.id
         })
         .select()
         .single();
