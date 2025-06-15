@@ -64,7 +64,9 @@ const ParticleBackground = () => {
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: -1 }}>
       <Canvas
-        camera={{ position: [0, 2, 20], fov: 75 }}
+        // I've adjusted the camera position to be higher and further back
+        // to get a better view of the grid.
+        camera={{ position: [0, 10, 40], fov: 75 }}
       >
         <ambientLight intensity={0.2} />
         <pointLight position={[0, 50, 0]} intensity={1.5} color="red" />
@@ -72,9 +74,14 @@ const ParticleBackground = () => {
         <Particles count={150} />
         <Grid
           infiniteGrid
-          sectionColor={'#3B82F6'}
-          cellColor={'#94a3b8'}
-          fadeDistance={100}
+          // I've made the grid lines brighter and thicker to ensure they are visible
+          // against the dark background.
+          sectionColor={'#0ea5e9'}
+          cellColor={'#64748b'}
+          sectionThickness={1.2}
+          cellThickness={0.6}
+          // I've also increased the fade distance significantly.
+          fadeDistance={150}
         />
       </Canvas>
     </div>
