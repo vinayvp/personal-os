@@ -153,10 +153,14 @@ const TrackingApp = () => {
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Button
-                    variant={todayRecord?.gym_day ? "default" : "outline"}
+                    variant={todayRecord?.gym_day ? "secondary" : "outline"}
                     size="lg"
                     onClick={() => toggleDay('gym')}
-                    className="h-20 flex flex-col gap-2 glass-button"
+                    className={`h-20 flex flex-col gap-2 transition-all duration-200 ${
+                      todayRecord?.gym_day 
+                        ? 'bg-secondary/80 text-secondary-foreground hover:bg-secondary' 
+                        : 'glass-button hover:bg-white/10 focus:bg-white/10 focus:ring-2 focus:ring-primary focus:ring-offset-2'
+                    }`}
                   >
                     <Dumbbell className="w-6 h-6 sm:w-8 sm:h-8" />
                     <span className="text-sm font-medium">
@@ -165,10 +169,14 @@ const TrackingApp = () => {
                   </Button>
                   
                   <Button
-                    variant={todayRecord?.relief_day ? "default" : "outline"}
+                    variant={todayRecord?.relief_day ? "secondary" : "outline"}
                     size="lg"
                     onClick={() => toggleDay('nonut')}
-                    className="h-20 flex flex-col gap-2 glass-button"
+                    className={`h-20 flex flex-col gap-2 transition-all duration-200 ${
+                      todayRecord?.relief_day 
+                        ? 'bg-secondary/80 text-secondary-foreground hover:bg-secondary' 
+                        : 'glass-button hover:bg-white/10 focus:bg-white/10 focus:ring-2 focus:ring-primary focus:ring-offset-2'
+                    }`}
                   >
                     <Heart className="w-6 h-6 sm:w-8 sm:h-8" />
                     <span className="text-sm font-medium">

@@ -48,7 +48,11 @@ const Apps = () => {
                     variant={activeApp === 'tracker' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setActiveApp('tracker')}
-                    className="flex items-center gap-2 glass-button"
+                    className={`flex items-center gap-2 transition-all duration-200 ${
+                      activeApp === 'tracker' 
+                        ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                        : 'glass-button hover:bg-white/20 focus:bg-white/20 focus:ring-2 focus:ring-primary focus:ring-offset-2'
+                    }`}
                   >
                     <TrendingUp className="w-4 h-4" />
                     Tracker
@@ -57,7 +61,11 @@ const Apps = () => {
                     variant={activeApp === 'notes' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setActiveApp('notes')}
-                    className="flex items-center gap-2 glass-button"
+                    className={`flex items-center gap-2 transition-all duration-200 ${
+                      activeApp === 'notes' 
+                        ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                        : 'glass-button hover:bg-white/20 focus:bg-white/20 focus:ring-2 focus:ring-primary focus:ring-offset-2'
+                    }`}
                   >
                     <FileText className="w-4 h-4" />
                     Notes
@@ -70,7 +78,7 @@ const Apps = () => {
                 variant="outline" 
                 size="sm" 
                 onClick={handleLogout}
-                className="flex items-center gap-2 glass-button"
+                className="flex items-center gap-2 glass-button hover:bg-white/20 focus:bg-white/20 focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="hidden sm:inline">Logout</span>
