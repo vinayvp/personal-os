@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Mail, Github, Linkedin, Rocket, ArrowDown } from 'lucide-react';
 import { TypeAnimation } from 'react-type-animation';
+import AnimatedBackground from './AnimatedBackground';
 
 interface HeroProps {
   scrollToSection: (id: string) => void;
@@ -11,7 +11,7 @@ interface HeroProps {
 const Hero: React.FC<HeroProps> = ({ scrollToSection }) => {
   return (
     <section id="home" className="min-h-screen flex items-center justify-center relative px-6 pt-20 overflow-hidden">
-      {/* Animated Starry Background has been removed */}
+      <AnimatedBackground />
 
       <div className="max-w-4xl mx-auto relative z-10">
         {/* Hey there text */}
