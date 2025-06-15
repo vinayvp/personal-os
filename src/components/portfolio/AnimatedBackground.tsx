@@ -40,7 +40,7 @@ const Nodes = () => {
 const AnimatedBackground: React.FC = () => {
   return (
     <div className="absolute top-0 left-0 w-full h-full -z-10">
-      <Canvas camera={{ position: [0, 0, 10], fov: 60 }}>
+      <Canvas camera={{ position: [0, 0, 10] }}>
         <Stars
           radius={50}
           depth={50}
