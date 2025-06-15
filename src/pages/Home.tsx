@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-import { Mail, Github, Linkedin, ExternalLink, Download, MapPin, Calendar, User } from 'lucide-react';
+import { Mail, Github, Linkedin, ExternalLink, Download, MapPin, Calendar, User, Rocket } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast"
 
 const skills = [
@@ -110,53 +110,54 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="mb-6">
-            <span className="inline-block px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium mb-4">
-              👋 Hey there!
+        <div className="max-w-4xl mx-auto relative z-10">
+          {/* Hey there text */}
+          <div className="mb-8">
+            <span className="text-primary text-lg font-medium">
+              Hey there!, I'm-
             </span>
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
-            I'm Vishnu Prasad
+          {/* Name */}
+          <h1 className="text-6xl md:text-8xl font-bold mb-8 text-white leading-tight">
+            Vishnu Prasad.
           </h1>
           
-          <h2 className="text-2xl md:text-3xl text-muted-foreground mb-6 font-light">
-            Data Engineer
-          </h2>
-          
-          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
-            Passionate about building robust data pipelines and turning raw data into actionable insights. 
-            2 years of experience crafting scalable data solutions.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button 
-              size="lg" 
-              className="glass-button px-8 py-3"
-              onClick={() => scrollToSection('projects')}
-            >
-              View My Work
-            </Button>
-            <Button 
-              variant="outline" 
-              size="lg" 
-              className="glass-button px-8 py-3"
-              onClick={() => scrollToSection('contact')}
-            >
-              Get In Touch
-            </Button>
+          {/* Professional Title and Description */}
+          <div className="mb-8 space-y-4">
+            <h2 className="text-xl md:text-2xl font-semibold text-white">
+              Data Engineer.{' '}
+              <span className="text-muted-foreground">
+                A passionate engineer with expertise in building scalable data infrastructure.
+              </span>
+            </h2>
           </div>
 
-          <div className="flex justify-center space-x-6">
-            <Button variant="ghost" size="icon" className="glass-button">
-              <Github className="w-5 h-5" />
+          {/* Current Status */}
+          <div className="mb-12 space-y-3">
+            <div className="flex items-center gap-3 text-muted-foreground">
+              <Rocket className="w-5 h-5 text-primary" />
+              <span>Currently specializing in Data Engineering (Python / Apache Spark)</span>
+            </div>
+            <div className="flex items-center gap-3 text-muted-foreground">
+              <span className="text-yellow-400">⚡</span>
+              <span>Data Engineer at <span className="text-primary font-medium">TechCorp</span></span>
+            </div>
+          </div>
+
+          {/* Social Links */}
+          <div className="flex gap-6">
+            <Button variant="ghost" size="sm" className="glass-button text-muted-foreground hover:text-primary">
+              <Github className="w-4 h-4 mr-2" />
+              Github
             </Button>
-            <Button variant="ghost" size="icon" className="glass-button">
-              <Linkedin className="w-5 h-5" />
+            <Button variant="ghost" size="sm" className="glass-button text-muted-foreground hover:text-primary">
+              <Linkedin className="w-4 h-4 mr-2" />
+              LinkedIn
             </Button>
-            <Button variant="ghost" size="icon" className="glass-button">
-              <Mail className="w-5 h-5" />
+            <Button variant="ghost" size="sm" className="glass-button text-muted-foreground hover:text-primary">
+              <Mail className="w-4 h-4 mr-2" />
+              Email
             </Button>
           </div>
         </div>
