@@ -38,10 +38,13 @@ const About = () => {
               </div>
               <div className="space-y-4 text-muted-foreground">
                 <p className="leading-relaxed">
-                  I'm a passionate and results-driven Data Engineer with over 2 years of hands-on experience in designing, developing, and maintaining robust data pipelines. I'm proficient in Python, SQL, Apache Spark, Airflow, and various AWS services, specializing in building end-to-end data solutions that transform raw data into actionable insights.
+                  I am a passionate and results-driven Data Engineer with over 2 years of hands-on experience in designing, developing, and maintaining robust data pipelines. I specialize in building end-to-end scalable Batch and Streaming data solutions, with experience in handling the ingestion of up to 2 petabytes of data.
                 </p>
                 <p className="leading-relaxed">
-                  My goal is to leverage my skills to solve complex data challenges and contribute to data-driven decision-making processes.
+                  My technical proficiency includes Java, Python, PostgreSQL, Apache NiFi, BigQuery, and a broad range of Google Cloud Platform (GCP) services. I’ve consistently delivered systems that transform raw data into reliable, actionable insights to drive strategic business decisions.
+                </p>
+                <p className="leading-relaxed">
+                  I thrive on solving complex data challenges and am committed to enabling data-driven decision-making through high-performance engineering and architecture.
                 </p>
               </div>
             </Card>
