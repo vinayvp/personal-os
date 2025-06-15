@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,7 +71,7 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Fixed Navigation */}
-      <nav className="fixed top-0 w-full z-50 glass-nav">
+      <nav className="fixed top-0 w-full z-50 bg-background/95 backdrop-blur-sm border-b">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="text-xl font-bold text-foreground">Vishnu Prasad</div>
@@ -147,15 +146,15 @@ const Home = () => {
 
           {/* Social Links */}
           <div className="flex gap-6">
-            <Button variant="ghost" size="sm" className="glass-button text-muted-foreground hover:text-primary">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
               <Github className="w-4 h-4 mr-2" />
               Github
             </Button>
-            <Button variant="ghost" size="sm" className="glass-button text-muted-foreground hover:text-primary">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
               <Linkedin className="w-4 h-4 mr-2" />
               LinkedIn
             </Button>
-            <Button variant="ghost" size="sm" className="glass-button text-muted-foreground hover:text-primary">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
               <Mail className="w-4 h-4 mr-2" />
               Email
             </Button>
@@ -175,7 +174,7 @@ const Home = () => {
           
           <div className="grid lg:grid-cols-2 gap-12 items-start">
             <div className="space-y-6">
-              <Card className="glass-card p-8">
+              <Card className="p-8">
                 <div className="flex items-center gap-3 mb-6">
                   <User className="w-6 h-6 text-primary" />
                   <h3 className="text-2xl font-semibold">Professional Summary</h3>
@@ -193,7 +192,7 @@ const Home = () => {
                 </div>
               </Card>
 
-              <Card className="glass-card p-8">
+              <Card className="p-8">
                 <div className="flex items-center gap-3 mb-6">
                   <MapPin className="w-6 h-6 text-primary" />
                   <h3 className="text-2xl font-semibold">Location & Experience</h3>
@@ -218,11 +217,11 @@ const Home = () => {
             </div>
             
             <div>
-              <Card className="glass-card p-8">
+              <Card className="p-8">
                 <h3 className="text-2xl font-semibold mb-6">Technical Skills</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {skills.map((skill) => (
-                    <div key={skill} className="glass px-4 py-2 rounded-lg text-center text-sm font-medium hover:scale-105 transition-transform duration-200">
+                    <div key={skill} className="border px-4 py-2 rounded-lg text-center text-sm font-medium hover:scale-105 transition-transform duration-200">
                       {skill}
                     </div>
                   ))}
@@ -245,7 +244,7 @@ const Home = () => {
           
           <div className="grid md:grid-cols-2 gap-8">
             {projects.map((project, index) => (
-              <Card key={index} className="glass-card group hover:scale-105 transition-all duration-300">
+              <Card key={index} className="group hover:scale-105 transition-all duration-300">
                 <div className="p-8">
                   <div className="flex items-start justify-between mb-4">
                     <h3 className="text-xl font-semibold group-hover:text-primary transition-colors duration-300 flex-1">
@@ -253,12 +252,12 @@ const Home = () => {
                     </h3>
                     <div className="flex gap-2 ml-4">
                       {project.github && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8 glass-button">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
                           <Github className="w-4 h-4" />
                         </Button>
                       )}
                       {project.live && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8 glass-button">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
                           <ExternalLink className="w-4 h-4" />
                         </Button>
                       )}
@@ -296,7 +295,7 @@ const Home = () => {
           
           <div className="grid md:grid-cols-2 gap-12">
             <div className="space-y-8">
-              <Card className="glass-card p-8">
+              <Card className="p-8">
                 <h3 className="text-2xl font-semibold mb-6">Let's Connect</h3>
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
@@ -307,10 +306,10 @@ const Home = () => {
                   </div>
                   
                   <div className="flex gap-4 mt-6">
-                    <Button variant="outline" size="icon" className="glass-button">
+                    <Button variant="outline" size="icon">
                       <Github className="w-5 h-5" />
                     </Button>
-                    <Button variant="outline" size="icon" className="glass-button">
+                    <Button variant="outline" size="icon">
                       <Linkedin className="w-5 h-5" />
                     </Button>
                   </div>
@@ -318,14 +317,13 @@ const Home = () => {
               </Card>
             </div>
             
-            <Card className="glass-card p-8">
+            <Card className="p-8">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <Input
                     placeholder="Your Name"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="glass-input"
                     required
                   />
                 </div>
@@ -336,7 +334,6 @@ const Home = () => {
                     placeholder="Your Email"
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className="glass-input"
                     required
                   />
                 </div>
@@ -346,12 +343,12 @@ const Home = () => {
                     placeholder="Your Message"
                     value={formData.message}
                     onChange={(e) => setFormData({...formData, message: e.target.value})}
-                    className="glass-input min-h-[120px]"
+                    className="min-h-[120px]"
                     required
                   />
                 </div>
                 
-                <Button type="submit" className="w-full glass-button" size="lg">
+                <Button type="submit" className="w-full" size="lg">
                   Send Message
                 </Button>
               </form>
@@ -361,7 +358,7 @@ const Home = () => {
       </section>
 
       {/* Footer */}
-      <footer className="glass-nav py-8 px-6">
+      <footer className="bg-background border-t py-8 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-muted-foreground mb-4 md:mb-0">
@@ -371,7 +368,6 @@ const Home = () => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="glass-button"
                 asChild
               >
                 <a href="/app">My Apps</a>

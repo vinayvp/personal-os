@@ -18,7 +18,7 @@ const Apps = () => {
 
   const NotesApp = () => (
     <div className="min-h-screen bg-background flex items-center justify-center">
-      <Card className="w-full max-w-md glass-card">
+      <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
@@ -37,8 +37,8 @@ const Apps = () => {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-background">
-        {/* App Navigation with Frosted Glass */}
-        <nav className="glass-nav sticky top-0 z-50">
+        {/* App Navigation */}
+        <nav className="sticky top-0 z-50 bg-background border-b">
           <div className="max-w-6xl mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -48,11 +48,7 @@ const Apps = () => {
                     variant={activeApp === 'tracker' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setActiveApp('tracker')}
-                    className={`flex items-center gap-2 transition-all duration-200 ${
-                      activeApp === 'tracker' 
-                        ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
-                        : 'glass-button hover:bg-white/20 focus:bg-white/20 focus:ring-2 focus:ring-primary focus:ring-offset-2'
-                    }`}
+                    className="flex items-center gap-2"
                   >
                     <TrendingUp className="w-4 h-4" />
                     Tracker
@@ -61,11 +57,7 @@ const Apps = () => {
                     variant={activeApp === 'notes' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setActiveApp('notes')}
-                    className={`flex items-center gap-2 transition-all duration-200 ${
-                      activeApp === 'notes' 
-                        ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
-                        : 'glass-button hover:bg-white/20 focus:bg-white/20 focus:ring-2 focus:ring-primary focus:ring-offset-2'
-                    }`}
+                    className="flex items-center gap-2"
                   >
                     <FileText className="w-4 h-4" />
                     Notes
@@ -78,7 +70,7 @@ const Apps = () => {
                 variant="outline" 
                 size="sm" 
                 onClick={handleLogout}
-                className="flex items-center gap-2 glass-button hover:bg-white/20 focus:bg-white/20 focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200"
+                className="flex items-center gap-2"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="hidden sm:inline">Logout</span>

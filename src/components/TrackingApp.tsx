@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -130,7 +129,7 @@ const TrackingApp = () => {
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto p-4">
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 glass-card">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <Home className="w-4 h-4" />
               <span className="hidden sm:inline">Dashboard</span>
@@ -143,7 +142,7 @@ const TrackingApp = () => {
 
           <TabsContent value="dashboard" className="space-y-6">
             {/* Today's Tracking */}
-            <Card className="glass-card">
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                   <Calendar className="w-5 h-5 text-primary" />
@@ -153,14 +152,10 @@ const TrackingApp = () => {
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Button
-                    variant={todayRecord?.gym_day ? "secondary" : "outline"}
+                    variant={todayRecord?.gym_day ? "default" : "outline"}
                     size="lg"
                     onClick={() => toggleDay('gym')}
-                    className={`h-20 flex flex-col gap-2 transition-all duration-200 ${
-                      todayRecord?.gym_day 
-                        ? 'bg-secondary/80 text-secondary-foreground hover:bg-secondary' 
-                        : 'glass-button hover:bg-white/10 focus:bg-white/10 focus:ring-2 focus:ring-primary focus:ring-offset-2'
-                    }`}
+                    className="h-20 flex flex-col gap-2"
                   >
                     <Dumbbell className="w-6 h-6 sm:w-8 sm:h-8" />
                     <span className="text-sm font-medium">
@@ -169,14 +164,10 @@ const TrackingApp = () => {
                   </Button>
                   
                   <Button
-                    variant={todayRecord?.relief_day ? "secondary" : "outline"}
+                    variant={todayRecord?.relief_day ? "default" : "outline"}
                     size="lg"
                     onClick={() => toggleDay('nonut')}
-                    className={`h-20 flex flex-col gap-2 transition-all duration-200 ${
-                      todayRecord?.relief_day 
-                        ? 'bg-secondary/80 text-secondary-foreground hover:bg-secondary' 
-                        : 'glass-button hover:bg-white/10 focus:bg-white/10 focus:ring-2 focus:ring-primary focus:ring-offset-2'
-                    }`}
+                    className="h-20 flex flex-col gap-2"
                   >
                     <Heart className="w-6 h-6 sm:w-8 sm:h-8" />
                     <span className="text-sm font-medium">
@@ -189,7 +180,7 @@ const TrackingApp = () => {
 
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Card className="glass-card">
+              <Card>
                 <CardContent className="pt-6">
                   <div className="text-center">
                     <div className="text-2xl sm:text-3xl font-bold text-primary">{stats.gymDays}</div>
@@ -198,7 +189,7 @@ const TrackingApp = () => {
                 </CardContent>
               </Card>
               
-              <Card className="glass-card">
+              <Card>
                 <CardContent className="pt-6">
                   <div className="text-center">
                     <div className="text-2xl sm:text-3xl font-bold text-destructive">{stats.noNutDays}</div>
@@ -207,7 +198,7 @@ const TrackingApp = () => {
                 </CardContent>
               </Card>
               
-              <Card className="glass-card">
+              <Card>
                 <CardContent className="pt-6">
                   <div className="text-center">
                     <div className="text-2xl sm:text-3xl font-bold text-primary">{stats.totalDays}</div>
@@ -219,14 +210,14 @@ const TrackingApp = () => {
 
             {/* Recent Activity */}
             {recentRecords.length > 0 && (
-              <Card className="glass-card">
+              <Card>
                 <CardHeader>
                   <CardTitle>Recent Activity</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {recentRecords.map((record) => (
-                      <div key={record.id} className="flex items-center justify-between p-3 glass rounded-lg">
+                      <div key={record.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <span className="font-medium text-foreground text-sm sm:text-base">
                           {format(new Date(record.date), 'MMM d, yyyy')}
                         </span>
