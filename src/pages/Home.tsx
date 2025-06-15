@@ -3,6 +3,7 @@ import React from 'react';
 import Header from '@/components/portfolio/Header';
 import Hero from '@/components/portfolio/Hero';
 import About from '@/components/portfolio/About';
+import GithubGraph from '@/components/portfolio/GithubGraph';
 import Projects from '@/components/portfolio/Projects';
 import Contact from '@/components/portfolio/Contact';
 import Footer from '@/components/portfolio/Footer';
@@ -20,6 +21,7 @@ const Home = () => {
       <Header scrollToSection={scrollToSection} />
       <Hero />
       <About />
+      <GithubGraph />
       <Projects />
       <Contact />
       <Footer />

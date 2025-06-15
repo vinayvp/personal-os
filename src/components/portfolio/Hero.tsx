@@ -1,26 +1,12 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Mail, Github, Linkedin, Rocket } from 'lucide-react';
+import { TypeAnimation } from 'react-type-animation';
 
 const Hero = () => {
   return (
     <section id="home" className="min-h-screen flex items-center justify-center relative px-6 pt-20 overflow-hidden">
-      {/* Animated Starry Background */}
-      <div className="absolute inset-0 -z-10">
-        {Array.from({ length: 200 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute bg-white rounded-full animate-twinkle"
-            style={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              width: `${Math.random() * 2 + 2}px`,
-              height: `${Math.random() * 2 + 2}px`,
-              animationDelay: `${Math.random() * 8}s`,
-            }}
-          />
-        ))}
-      </div>
+      {/* Animated Starry Background has been removed */}
 
       <div className="max-w-4xl mx-auto relative z-10">
         {/* Hey there text */}
@@ -31,18 +17,25 @@ const Hero = () => {
         </div>
         
         {/* Name */}
-        <h1 className="text-6xl md:text-8xl font-bold mb-8 text-white leading-tight">
-          Vinayak Pastey.
+        <h1 className="text-6xl md:text-8xl font-bold mb-8 text-white leading-tight h-24 md:h-32">
+          <TypeAnimation
+            sequence={[
+              'Vinayak Pastey.',
+              2000,
+              'Data Engineer.',
+              2000,
+            ]}
+            wrapper="span"
+            speed={50}
+            repeat={Infinity}
+          />
         </h1>
         
         {/* Professional Title and Description */}
         <div className="mb-8 space-y-4">
-          <h2 className="text-xl md:text-2xl font-semibold text-white">
-            Data Engineer.{' '}
-            <span className="text-muted-foreground">
-              A passionate and results-driven Data Engineer specializing in Python, Spark, Airflow, and AWS.
-            </span>
-          </h2>
+          <p className="text-xl md:text-2xl text-muted-foreground">
+            A passionate and results-driven Data Engineer specializing in Python, Spark, Airflow, and AWS.
+          </p>
         </div>
 
         {/* Current Status */}

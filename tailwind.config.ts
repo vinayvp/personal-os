@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -86,15 +85,10 @@ export default {
 						height: '0'
 					}
 				},
-        'twinkle': {
-          '0%, 100%': { opacity: '0.2' },
-          '50%': { opacity: '1' },
-        },
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-        'twinkle': 'twinkle 4s ease-in-out infinite',
 			}
 		}
 	},
