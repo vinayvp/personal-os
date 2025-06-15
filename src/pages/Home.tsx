@@ -7,6 +7,7 @@ import GithubGraph from '@/components/portfolio/GithubGraph';
 import Projects from '@/components/portfolio/Projects';
 import Contact from '@/components/portfolio/Contact';
 import Footer from '@/components/portfolio/Footer';
+import WorkExperience from '@/components/portfolio/WorkExperience';
 
 const Home = () => {
   const scrollToSection = (id: string) => {
@@ -23,6 +24,7 @@ const Home = () => {
       <About />
       <GithubGraph />
       <Projects />
+      <WorkExperience />
       <Contact />
       <Footer />
     </div>

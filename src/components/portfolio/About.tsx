@@ -61,8 +61,10 @@ const About = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Download className="w-4 h-4" />
-                  <Button variant="link" className="p-0 h-auto text-primary">
-                    Download Resume
+                  <Button variant="link" className="p-0 h-auto" asChild>
+                    <a href="/Vinayak_Pastey_Resume.pdf" download className="text-primary">
+                      Download Resume
+                    </a>
                   </Button>
                 </div>
               </div>
