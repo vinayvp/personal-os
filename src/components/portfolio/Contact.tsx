@@ -8,6 +8,7 @@ import { Mail, Github, Linkedin } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -15,17 +16,34 @@ const Contact = () => {
     email: '',
     message: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast()
   const { ref, isVisible } = useIntersectionObserver({ threshold: 0.1, triggerOnce: true });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form Data:', formData);
-    toast({
-      title: "Success!",
-      description: "Your message has been sent.",
-    })
-    setFormData({ name: '', email: '', message: '' });
+    setIsLoading(true);
+
+    const { error } = await supabase.functions.invoke('send-contact-email', {
+      body: formData,
+    });
+    
+    setIsLoading(false);
+
+    if (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem sending your message. Please try again.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success!",
+        description: "Your message has been sent.",
+      });
+      setFormData({ name: '', email: '', message: '' });
+    }
   };
   
   return (
@@ -79,6 +97,7 @@ const Contact = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                   required
+                  disabled={isLoading}
                 />
               </div>
               
@@ -89,6 +108,7 @@ const Contact = () => {
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   required
+                  disabled={isLoading}
                 />
               </div>
               
@@ -99,11 +119,12 @@ const Contact = () => {
                   onChange={(e) => setFormData({...formData, message: e.target.value})}
                   className="min-h-[120px]"
                   required
+                  disabled={isLoading}
                 />
               </div>
               
-              <Button type="submit" className="w-full" size="lg">
-                Send Message
+              <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                {isLoading ? 'Sending...' : 'Send Message'}
               </Button>
             </form>
           </Card>
