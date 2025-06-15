@@ -50,8 +50,8 @@ const Contact = () => {
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <Mail className="w-5 h-5 text-primary" />
-                  <a href="mailto:vinayak.pastey@gmail.com" className="text-muted-foreground hover:text-primary transition-colors">
-                    vinayak.pastey@gmail.com
+                  <a href="mailto:vinayakpastey1@gmail.com" className="text-muted-foreground hover:text-primary transition-colors">
+                    vinayakpastey1@gmail.com
                   </a>
                 </div>
                 
