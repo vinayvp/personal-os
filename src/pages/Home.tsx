@@ -27,8 +27,8 @@ const Home = () => {
           <Hero scrollToSection={scrollToSection} />
           <About />
           <GithubGraph />
-          <Projects />
           <WorkExperience />
+          <Projects />
           <Contact />
         </main>
         <Footer />

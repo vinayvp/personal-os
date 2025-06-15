@@ -21,11 +21,11 @@ const Header: React.FC<HeaderProps> = ({ scrollToSection }) => {
               <Button variant="ghost" size="sm" onClick={() => scrollToSection('about')} className="text-sm">
                 About
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => scrollToSection('projects')} className="text-sm">
-                Projects
-              </Button>
               <Button variant="ghost" size="sm" onClick={() => scrollToSection('experience')} className="text-sm">
                 Experience
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => scrollToSection('projects')} className="text-sm">
+                Projects
               </Button>
               <Button variant="ghost" size="sm" onClick={() => scrollToSection('contact')} className="text-sm">
                 Contact
@@ -48,4 +48,3 @@ const Header: React.FC<HeaderProps> = ({ scrollToSection }) => {
 };
 
 export default Header;
-
