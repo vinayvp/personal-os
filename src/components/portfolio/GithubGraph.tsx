@@ -2,12 +2,19 @@
 import React from 'react';
 import GitHubCalendar from 'react-github-calendar';
 import { Card } from '@/components/ui/card';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
+import { cn } from '@/lib/utils';
 
 const GithubGraph = () => {
-  const githubUsername = "aktech27";
+  const githubUsername = "vinayvp";
+  const { ref, isVisible } = useIntersectionObserver({ threshold: 0.1, triggerOnce: true });
 
   return (
-    <section id="github" className="py-20 px-6">
+    <section 
+      id="github" 
+      ref={ref}
+      className={cn("py-20 px-6 opacity-0", isVisible && "animate-fade-in")}
+    >
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-4">Days I Code</h2>

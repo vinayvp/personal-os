@@ -3,41 +3,49 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Github, ExternalLink } from 'lucide-react';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
+import { cn } from '@/lib/utils';
 
 const projects = [
   {
     title: "Real-Time Data Pipeline",
     description: "Built a scalable real-time data pipeline processing 1M+ events per day using Apache Kafka, Spark Streaming, and AWS services. Implemented data quality checks and monitoring dashboards.",
     technologies: ["Apache Kafka", "Spark Streaming", "AWS Lambda", "DynamoDB", "CloudWatch"],
-    github: "https://github.com/example/realtime-pipeline",
+    github: "https://github.com/vinayvp/realtime-pipeline",
     live: "https://pipeline-demo.example.com"
   },
   {
     title: "ML-Powered Analytics Platform",
     description: "Developed an end-to-end analytics platform with ML models for predictive analytics. Integrated with BigQuery and built interactive dashboards using React and D3.js.",
     technologies: ["BigQuery", "Python", "TensorFlow", "React", "D3.js", "GCP"],
-    github: "https://github.com/example/ml-analytics",
+    github: "https://github.com/vinayvp/ml-analytics",
     live: "https://analytics-demo.example.com"
   },
   {
     title: "Data Lake Architecture",
     description: "Designed and implemented a data lake on AWS S3 with automated ETL processes using Airflow. Optimized query performance by 70% using partitioning strategies.",
     technologies: ["AWS S3", "Apache Airflow", "Glue", "Athena", "Python", "Terraform"],
-    github: "https://github.com/example/data-lake",
+    github: "https://github.com/vinayvp/data-lake",
     live: null
   },
   {
     title: "Financial Data Warehouse",
     description: "Built a financial data warehouse handling 500GB+ daily data ingestion. Implemented CDC using Debezium and created automated reporting pipelines.",
     technologies: ["PostgreSQL", "Debezium", "Apache Spark", "Tableau", "Docker"],
-    github: "https://github.com/example/financial-dw",
+    github: "https://github.com/vinayvp/financial-dw",
     live: null
   }
 ];
 
 const Projects = () => {
+  const { ref, isVisible } = useIntersectionObserver({ threshold: 0.1, triggerOnce: true });
+
   return (
-    <section id="projects" className="py-20 px-6 bg-muted/5">
+    <section 
+      id="projects" 
+      ref={ref}
+      className={cn("py-20 px-6 bg-muted/5 opacity-0", isVisible && "animate-fade-in")}
+    >
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-4">Featured Projects</h2>

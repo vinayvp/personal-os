@@ -3,15 +3,23 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { User, MapPin, Calendar, Download } from 'lucide-react';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
+import { cn } from '@/lib/utils';
 
 const skills = [
-  "Python", "SQL", "Apache Spark", "Apache Airflow", "AWS", "Docker",
-  "Data Warehousing", "ETL Pipelines", "Data Modeling", "Git"
+  "Java", "Python", "SQL", "GCP", "Apache Spark", "Apache Airflow",
+  "AWS", "Docker", "Data Warehousing", "ETL Pipelines", "Data Modeling", "Git"
 ];
 
 const About = () => {
+  const { ref, isVisible } = useIntersectionObserver({ threshold: 0.1, triggerOnce: true });
+
   return (
-    <section id="about" className="py-20 px-6">
+    <section 
+      id="about" 
+      ref={ref}
+      className={cn("py-20 px-6 opacity-0", isVisible && "animate-fade-in")}
+    >
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-4">About Me</h2>

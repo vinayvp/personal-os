@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Mail, Github, Linkedin, Rocket } from 'lucide-react';
@@ -34,7 +35,7 @@ const Hero = () => {
         {/* Professional Title and Description */}
         <div className="mb-8 space-y-4">
           <p className="text-xl md:text-2xl text-muted-foreground">
-            A passionate and results-driven Data Engineer specializing in Python, Spark, Airflow, and AWS.
+            A passionate and results-driven Data Engineer specializing in Java, Python, SQL, and GCP.
           </p>
         </div>
 
@@ -42,18 +43,18 @@ const Hero = () => {
         <div className="mb-12 space-y-3">
           <div className="flex items-center gap-3 text-muted-foreground">
             <Rocket className="w-5 h-5 text-primary" />
-            <span>Currently specializing in Data Engineering (Python / Apache Spark / Airflow / AWS)</span>
+            <span>Currently specializing in Data Engineering (Java / Python / SQL / GCP)</span>
           </div>
           <div className="flex items-center gap-3 text-muted-foreground">
             <span className="text-yellow-400">⚡</span>
-            <span>Data Engineer at <span className="text-primary font-medium">TechCorp</span></span>
+            <span>Data Engineer at <span className="text-primary font-medium">Cermati</span></span>
           </div>
         </div>
 
         {/* Social Links */}
         <div className="flex gap-6">
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" asChild>
-            <a href="https://github.com/aktech27" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/vinayvp" target="_blank" rel="noopener noreferrer">
               <Github className="w-4 h-4 mr-2" />
               Github
             </a>
@@ -65,7 +66,7 @@ const Hero = () => {
             </a>
           </Button>
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" asChild>
-            <a href="mailto:vinayakpastey@example.com">
+            <a href="mailto:vinayak.pastey@gmail.com">
               <Mail className="w-4 h-4 mr-2" />
               Email
             </a>

@@ -6,6 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Mail, Github, Linkedin } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
+import { cn } from '@/lib/utils';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -14,6 +16,7 @@ const Contact = () => {
     message: ''
   });
   const { toast } = useToast()
+  const { ref, isVisible } = useIntersectionObserver({ threshold: 0.1, triggerOnce: true });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +29,11 @@ const Contact = () => {
   };
   
   return (
-    <section id="contact" className="py-20 px-6">
+    <section 
+      id="contact" 
+      ref={ref}
+      className={cn("py-20 px-6 opacity-0", isVisible && "animate-fade-in")}
+    >
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-4">Get In Touch</h2>
@@ -43,14 +50,14 @@ const Contact = () => {
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <Mail className="w-5 h-5 text-primary" />
-                  <a href="mailto:vinayakpastey@example.com" className="text-muted-foreground hover:text-primary transition-colors">
-                    vinayakpastey@example.com
+                  <a href="mailto:vinayak.pastey@gmail.com" className="text-muted-foreground hover:text-primary transition-colors">
+                    vinayak.pastey@gmail.com
                   </a>
                 </div>
                 
                 <div className="flex gap-4 mt-6">
                   <Button variant="outline" size="icon" asChild>
-                    <a href="https://github.com/example" target="_blank" rel="noopener noreferrer">
+                    <a href="https://github.com/vinayvp" target="_blank" rel="noopener noreferrer">
                       <Github className="w-5 h-5" />
                     </a>
                   </Button>
