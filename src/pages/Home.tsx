@@ -20,7 +20,7 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header scrollToSection={scrollToSection} />
-      <Hero />
+      <Hero scrollToSection={scrollToSection} />
       <About />
       <GithubGraph />
       <Projects />

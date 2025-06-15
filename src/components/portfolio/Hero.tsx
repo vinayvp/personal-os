@@ -1,10 +1,14 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Mail, Github, Linkedin, Rocket } from 'lucide-react';
+import { Mail, Github, Linkedin, Rocket, ArrowDown } from 'lucide-react';
 import { TypeAnimation } from 'react-type-animation';
 
-const Hero = () => {
+interface HeroProps {
+  scrollToSection: (id: string) => void;
+}
+
+const Hero: React.FC<HeroProps> = ({ scrollToSection }) => {
   return (
     <section id="home" className="min-h-screen flex items-center justify-center relative px-6 pt-20 overflow-hidden">
       {/* Animated Starry Background has been removed */}
@@ -72,6 +76,14 @@ const Hero = () => {
             </a>
           </Button>
         </div>
+      </div>
+      
+      {/* Scroll Down Arrow */}
+      <div 
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 cursor-pointer" 
+        onClick={() => scrollToSection('about')}
+      >
+        <ArrowDown className="w-8 h-8 text-primary animate-bounce" />
       </div>
     </section>
   );
