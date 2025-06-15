@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Gradient background similar to the website -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1528" />
+      <stop offset="100%" stop-color="#251a35" />
+    </linearGradient>
+    <linearGradient id="glowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8d5cf6" />
+      <stop offset="100%" stop-color="#4a9feb" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Dark background -->
+  <rect width="64" height="64" rx="12" fill="url(#bgGradient)"/>
+  
+  <!-- Subtle outer glow effect -->
+  <rect x="4" y="4" width="56" height="56" rx="10" stroke="url(#glowGradient)" stroke-width="1" fill="none" opacity="0.4"/>
+  
+  <!-- User icon with gradient stroke -->
+  <circle cx="32" cy="24" r="10" fill="none" stroke="url(#glowGradient)" stroke-width="3"/>
+  
+  <!-- User body with gradient stroke -->
+  <path d="M17 50 C17 38 25 34 32 34 C39 34 47 38 47 50" fill="none" stroke="url(#glowGradient)" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Additional subtle inner glow -->
+  <circle cx="32" cy="24" r="8" fill="none" stroke="url(#glowGradient)" stroke-width="1" opacity="0.4"/>
+</svg>
