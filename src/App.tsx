@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Apps from "./pages/Apps";
 import NotFound from "./pages/NotFound";
-import { AuthProvider } from "@/components/auth/AuthProvider";
+import AuthGuard from "@/components/AuthGuard";
 
 const queryClient = new QueryClient();
 
@@ -20,9 +20,9 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/app" element={
-            <AuthProvider>
+            <AuthGuard>
               <Apps />
-            </AuthProvider>
+            </AuthGuard>
           } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

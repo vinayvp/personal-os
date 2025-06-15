@@ -131,7 +131,6 @@ export type Database = {
           markdown_content: string | null
           title: string
           updated_at: string
-          user_id: string
         }
         Insert: {
           content?: string | null
@@ -141,7 +140,6 @@ export type Database = {
           markdown_content?: string | null
           title?: string
           updated_at?: string
-          user_id: string
         }
         Update: {
           content?: string | null
@@ -151,7 +149,6 @@ export type Database = {
           markdown_content?: string | null
           title?: string
           updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }
