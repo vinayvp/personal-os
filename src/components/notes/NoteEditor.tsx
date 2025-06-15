@@ -288,7 +288,20 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeHighlight]}
-                className="prose prose-sm max-w-none dark:prose-invert"
+                components={{
+                  code: ({className, children, ...props}) => {
+                    const match = /language-(\w+)/.exec(className || '');
+                    return match ? (
+                      <code className={className} {...props}>
+                        {children}
+                      </code>
+                    ) : (
+                      <code className="bg-muted px-1 py-0.5 rounded text-sm" {...props}>
+                        {children}
+                      </code>
+                    );
+                  }
+                }}
               >
                 {content || '*No content yet. Switch to edit mode to start writing.*'}
               </ReactMarkdown>
