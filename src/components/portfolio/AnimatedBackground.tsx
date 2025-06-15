@@ -1,39 +1,24 @@
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Stars, Box } from '@react-three/drei';
+import { Stars } from '@react-three/drei';
 import * as THREE from 'three';
 
 const Nodes = () => {
-    const groupRef = useRef<THREE.Group>(null);
-    const nodes = useMemo(() => {
-        const temp = [];
-        for (let i = 0; i < 15; i++) {
-            const pos = new THREE.Vector3(
-                (Math.random() - 0.5) * 20,
-                (Math.random() - 0.5) * 20,
-                (Math.random() - 0.5) * 20
-            );
-            temp.push({ pos });
-        }
-        return temp;
-    }, []);
+    const meshRef = useRef<THREE.Mesh>(null!);
 
-    useFrame((state, delta) => {
-        if(groupRef.current) {
-            groupRef.current.rotation.y += delta * 0.05;
-            groupRef.current.rotation.x += delta * 0.02;
+    useFrame((_state, delta) => {
+        if (meshRef.current) {
+            meshRef.current.rotation.y += delta * 0.05;
+            meshRef.current.rotation.x += delta * 0.02;
         }
     });
 
     return (
-        <group ref={groupRef}>
-            {nodes.map((node, i) => (
-                <Box key={i} position={node.pos} args={[0.4, 0.4, 0.4]}>
-                    <meshBasicMaterial color="#217bff" transparent opacity={0.6} wireframe />
-                </Box>
-            ))}
-        </group>
+        <mesh ref={meshRef}>
+            <boxGeometry args={[0.8, 0.8, 0.8]} />
+            <meshStandardMaterial color="#217bff" wireframe />
+        </mesh>
     );
 };
 
@@ -41,6 +26,8 @@ const AnimatedBackground: React.FC = () => {
   return (
     <div className="absolute top-0 left-0 w-full h-full -z-10">
       <Canvas camera={{ position: [0, 0, 10] }}>
+        <ambientLight intensity={0.5} />
+        <pointLight position={[10, 10, 10]} />
         <Stars
           radius={50}
           depth={50}
