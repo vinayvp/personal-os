@@ -40,9 +40,10 @@ serve(async (req: Request) => {
       console.error("Database error:", dbError);
       throw new Error(`Database error: ${dbError.message}`);
     }
+    console.log("Message saved to database.");
 
     // 2. Send email notification
-    await resend.emails.send({
+    const { data: emailData, error: emailError } = await resend.emails.send({
       from: "Portfolio Contact <onboarding@resend.dev>",
       to: ["vinayakpastey1@gmail.com"],
       subject: `New message from ${name}`,
@@ -55,6 +56,13 @@ serve(async (req: Request) => {
         <p>${message}</p>
       `,
     });
+
+    if (emailError) {
+      console.error("Resend error:", emailError);
+      throw new Error(`Email sending error: ${emailError.message}`);
+    }
+
+    console.log("Email sent successfully:", emailData);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
