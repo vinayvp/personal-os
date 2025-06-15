@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Grid } from '@react-three/drei';
 
 function Particles({ count }) {
   const mesh = useRef<THREE.InstancedMesh>(null!);
@@ -53,8 +54,8 @@ function Particles({ count }) {
 
   return (
     <instancedMesh ref={mesh} args={[null, null, count]}>
-      <dodecahedronGeometry args={[0.2, 0]} />
-      <meshStandardMaterial color="#ffffff" roughness={0.5} emissive="#333333" />
+      <dodecahedronGeometry args={[0.05, 0]} />
+      <meshStandardMaterial color="#ffffff" roughness={0.5} />
     </instancedMesh>
   );
 }
@@ -66,9 +67,15 @@ const ParticleBackground = () => {
         camera={{ position: [0, 0, 30], fov: 75 }}
       >
         <ambientLight intensity={0.2} />
-        <pointLight position={[100, 100, 100]} intensity={0.5} color="lightblue" />
-        <pointLight position={[-100, -100, -100]} intensity={1} color="pink" />
+        <pointLight position={[0, 50, 0]} intensity={1.5} color="red" />
+        <pointLight position={[0, -50, 0]} intensity={1.5} color="blue" />
         <Particles count={150} />
+        <Grid
+          infiniteGrid
+          sectionColor={'#3B82F6'}
+          cellColor={'#94a3b8'}
+          fadeDistance={100}
+        />
       </Canvas>
     </div>
   );
