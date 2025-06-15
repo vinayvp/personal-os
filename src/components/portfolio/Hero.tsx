@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Mail, Github, Linkedin, Rocket, ArrowDown } from 'lucide-react';
@@ -13,7 +12,7 @@ const Hero: React.FC<HeroProps> = ({ scrollToSection }) => {
     <section 
       id="home" 
       className="min-h-screen flex items-center justify-center relative px-6 pt-20 bg-cover bg-center"
-      style={{ backgroundImage: "url('https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?q=80&w=2070&auto=format&fit=crop')" }}
+      style={{ backgroundImage: "url('/1000102010 (1920×1080).gif')" }}
     >
       <div className="absolute inset-0 bg-background/80 z-0" />
       <div className="max-w-4xl mx-auto relative z-10">
