@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -60,14 +59,6 @@ const About = () => {
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
                   <span>2+ Years Experience</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Download className="w-4 h-4" />
-                  <Button variant="link" className="p-0 h-auto" asChild>
-                    <a href="/Vinayak_Pastey_Resume.pdf" download className="text-primary">
-                      Download Resume
-                    </a>
-                  </Button>
                 </div>
               </div>
             </Card>
