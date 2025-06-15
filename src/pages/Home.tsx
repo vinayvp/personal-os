@@ -8,7 +8,6 @@ import Projects from '@/components/portfolio/Projects';
 import Contact from '@/components/portfolio/Contact';
 import Footer from '@/components/portfolio/Footer';
 import WorkExperience from '@/components/portfolio/WorkExperience';
-import ParticleBackground from '@/components/portfolio/ParticleBackground';
 
 const Home = () => {
   const scrollToSection = (id: string) => {
@@ -19,20 +18,17 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen relative">
-      <ParticleBackground />
-      <div className="relative z-10">
-        <Header scrollToSection={scrollToSection} />
-        <main>
-          <Hero scrollToSection={scrollToSection} />
-          <About />
-          <GithubGraph />
-          <WorkExperience />
-          <Projects />
-          <Contact />
-        </main>
-        <Footer />
-      </div>
+    <div className="min-h-screen">
+      <Header scrollToSection={scrollToSection} />
+      <main>
+        <Hero scrollToSection={scrollToSection} />
+        <About />
+        <GithubGraph />
+        <WorkExperience />
+        <Projects />
+        <Contact />
+      </main>
+      <Footer />
     </div>
   );
 };
