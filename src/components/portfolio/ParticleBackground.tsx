@@ -62,9 +62,9 @@ function Particles({ count }) {
 
 const ParticleBackground = () => {
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0 }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: -1 }}>
       <Canvas
-        camera={{ position: [0, 0, 30], fov: 75 }}
+        camera={{ position: [0, 2, 20], fov: 75 }}
       >
         <ambientLight intensity={0.2} />
         <pointLight position={[0, 50, 0]} intensity={1.5} color="red" />
