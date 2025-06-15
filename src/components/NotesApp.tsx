@@ -4,14 +4,17 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Plus, FileText, Tag } from 'lucide-react';
+import { Search, Plus, FileText, Tag, LogOut } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useAuth } from './auth/AuthProvider';
+import AuthForm from './auth/AuthForm';
 import NoteEditor from './notes/NoteEditor';
 import NotesList from './notes/NotesList';
 import TagManager from './notes/TagManager';
 import { Note, Tag as NoteTag } from './notes/types';
 
 const NotesApp = () => {
+  const { user, isLoading: authLoading, signOut } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [tags, setTags] = useState<NoteTag[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -21,9 +24,16 @@ const NotesApp = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchNotes();
-    fetchTags();
-  }, []);
+    if (user) {
+      fetchNotes();
+      fetchTags();
+    } else {
+      setNotes([]);
+      setTags([]);
+      setSelectedNote(null);
+      setIsLoading(false);
+    }
+  }, [user]);
 
   const fetchNotes = async () => {
     try {
@@ -72,20 +82,16 @@ const NotesApp = () => {
   };
 
   const createNewNote = async () => {
-    try {
-      // Get the current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError) throw userError;
-      if (!user) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "You must be logged in to create notes.",
-        });
-        return;
-      }
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "You must be logged in to create notes.",
+      });
+      return;
+    }
 
+    try {
       const { data, error } = await supabase
         .from('notes')
         .insert({
@@ -128,7 +134,12 @@ const NotesApp = () => {
     return matchesSearch && matchesTag;
   });
 
-  if (isLoading) {
+  // Show auth form if not authenticated
+  if (!user && !authLoading) {
+    return <AuthForm />;
+  }
+
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -142,6 +153,19 @@ const NotesApp = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-4">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Notes App</h1>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              Welcome, {user?.email}
+            </span>
+            <Button variant="outline" size="sm" onClick={signOut}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        </div>
+
         <Tabs defaultValue="notes" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="notes" className="flex items-center gap-2">
