@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,9 +8,8 @@ import { Mail, Github, Linkedin, ExternalLink, Download, MapPin, Calendar, User,
 import { useToast } from "@/hooks/use-toast"
 
 const skills = [
-  "Python", "SQL", "Apache Spark", "Apache Airflow", "BigQuery", "AWS", "Docker", "Kubernetes",
-  "Data Warehousing", "ETL Pipelines", "Machine Learning", "PostgreSQL", "Redis", "Kafka",
-  "Git", "CI/CD", "Linux", "Bash Scripting", "Data Modeling", "Data Governance"
+  "Python", "SQL", "Apache Spark", "Apache Airflow", "AWS", "Docker",
+  "Data Warehousing", "ETL Pipelines", "Data Modeling", "Git"
 ];
 
 const projects = [
@@ -74,7 +74,7 @@ const Home = () => {
       <nav className="fixed top-0 w-full z-50 bg-background/95 backdrop-blur-sm border-b">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="text-xl font-bold text-foreground">Vishnu Prasad</div>
+            <div className="text-xl font-bold text-foreground">Vinayak Pastey</div>
             <div className="hidden md:flex space-x-6">
               <Button variant="ghost" size="sm" onClick={() => scrollToSection('home')} className="text-sm">
                 Home
@@ -119,7 +119,7 @@ const Home = () => {
           
           {/* Name */}
           <h1 className="text-6xl md:text-8xl font-bold mb-8 text-white leading-tight">
-            Vishnu Prasad.
+            Vinayak Pastey.
           </h1>
           
           {/* Professional Title and Description */}
@@ -127,7 +127,7 @@ const Home = () => {
             <h2 className="text-xl md:text-2xl font-semibold text-white">
               Data Engineer.{' '}
               <span className="text-muted-foreground">
-                A passionate engineer with expertise in building scalable data infrastructure.
+                A passionate and results-driven Data Engineer specializing in Python, Spark, Airflow, and AWS.
               </span>
             </h2>
           </div>
@@ -136,7 +136,7 @@ const Home = () => {
           <div className="mb-12 space-y-3">
             <div className="flex items-center gap-3 text-muted-foreground">
               <Rocket className="w-5 h-5 text-primary" />
-              <span>Currently specializing in Data Engineering (Python / Apache Spark)</span>
+              <span>Currently specializing in Data Engineering (Python / Apache Spark / Airflow / AWS)</span>
             </div>
             <div className="flex items-center gap-3 text-muted-foreground">
               <span className="text-yellow-400">⚡</span>
@@ -146,17 +146,23 @@ const Home = () => {
 
           {/* Social Links */}
           <div className="flex gap-6">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-              <Github className="w-4 h-4 mr-2" />
-              Github
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" asChild>
+              <a href="https://github.com/example" target="_blank" rel="noopener noreferrer">
+                <Github className="w-4 h-4 mr-2" />
+                Github
+              </a>
             </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-              <Linkedin className="w-4 h-4 mr-2" />
-              LinkedIn
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" asChild>
+              <a href="https://www.linkedin.com/in/vinayak-pastey-programmer/" target="_blank" rel="noopener noreferrer">
+                <Linkedin className="w-4 h-4 mr-2" />
+                LinkedIn
+              </a>
             </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-              <Mail className="w-4 h-4 mr-2" />
-              Email
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" asChild>
+              <a href="mailto:vinayakpastey@example.com">
+                <Mail className="w-4 h-4 mr-2" />
+                Email
+              </a>
             </Button>
           </div>
         </div>
@@ -181,13 +187,10 @@ const Home = () => {
                 </div>
                 <div className="space-y-4 text-muted-foreground">
                   <p className="leading-relaxed">
-                    I'm a dedicated Data Engineer with 2 years of hands-on experience in designing, 
-                    building, and maintaining data infrastructure. I specialize in creating efficient 
-                    ETL pipelines, optimizing data workflows, and ensuring data quality across large-scale systems.
+                    I'm a passionate and results-driven Data Engineer with over 2 years of hands-on experience in designing, developing, and maintaining robust data pipelines. I'm proficient in Python, SQL, Apache Spark, Airflow, and various AWS services, specializing in building end-to-end data solutions that transform raw data into actionable insights.
                   </p>
                   <p className="leading-relaxed">
-                    My passion lies in solving complex data challenges and building systems that can 
-                    handle massive amounts of data while maintaining performance and reliability.
+                    My goal is to leverage my skills to solve complex data challenges and contribute to data-driven decision-making processes.
                   </p>
                 </div>
               </Card>
@@ -300,17 +303,21 @@ const Home = () => {
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <Mail className="w-5 h-5 text-primary" />
-                    <a href="mailto:vishnuprasad@example.com" className="text-muted-foreground hover:text-primary transition-colors">
-                      vishnuprasad@example.com
+                    <a href="mailto:vinayakpastey@example.com" className="text-muted-foreground hover:text-primary transition-colors">
+                      vinayakpastey@example.com
                     </a>
                   </div>
                   
                   <div className="flex gap-4 mt-6">
-                    <Button variant="outline" size="icon">
-                      <Github className="w-5 h-5" />
+                    <Button variant="outline" size="icon" asChild>
+                      <a href="https://github.com/example" target="_blank" rel="noopener noreferrer">
+                        <Github className="w-5 h-5" />
+                      </a>
                     </Button>
-                    <Button variant="outline" size="icon">
-                      <Linkedin className="w-5 h-5" />
+                    <Button variant="outline" size="icon" asChild>
+                      <a href="https://www.linkedin.com/in/vinayak-pastey-programmer/" target="_blank" rel="noopener noreferrer">
+                        <Linkedin className="w-5 h-5" />
+                      </a>
                     </Button>
                   </div>
                 </div>
@@ -362,7 +369,7 @@ const Home = () => {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-muted-foreground mb-4 md:mb-0">
-              &copy; {new Date().getFullYear()} Vishnu Prasad. All rights reserved.
+              &copy; {new Date().getFullYear()} Vinayak Pastey. All rights reserved.
             </div>
             <div className="flex items-center gap-4">
               <Button 
