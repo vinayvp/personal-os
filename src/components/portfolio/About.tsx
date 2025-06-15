@@ -7,8 +7,10 @@ import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import { cn } from '@/lib/utils';
 
 const skills = [
-  "Java", "Python", "SQL", "GCP", "Apache Spark", "Apache Airflow",
-  "AWS", "Docker", "Data Warehousing", "ETL Pipelines", "Data Modeling", "Git"
+  "Java", "Python", "JavaScript", "SQL", "PostgreSQL", "GCP", "BigQuery",
+  "Apache NiFi", "Docker", "Kubernetes", "Data Warehousing", "ETL/ELT Pipelines",
+  "Git", "REST APIs", "Prometheus", "Loki", "Redash", "Mentoring",
+  "Problem Solving", "Debezium", "Batch & Streaming Pipelines"
 ];
 
 const About = () => {
@@ -74,7 +76,7 @@ const About = () => {
           <div>
             <Card className="p-8">
               <h3 className="text-2xl font-semibold mb-6">Technical Skills</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {skills.map((skill) => (
                   <div key={skill} className="border px-4 py-2 rounded-lg text-center text-sm font-medium hover:scale-105 transition-transform duration-200">
                     {skill}
