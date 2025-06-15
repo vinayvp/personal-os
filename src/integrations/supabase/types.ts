@@ -57,6 +57,125 @@ export type Database = {
         }
         Relationships: []
       }
+      note_images: {
+        Row: {
+          created_at: string
+          id: string
+          image_name: string | null
+          image_size: number | null
+          image_url: string
+          note_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_name?: string | null
+          image_size?: number | null
+          image_url: string
+          note_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_name?: string | null
+          image_size?: number | null
+          image_url?: string
+          note_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_images_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      note_tags: {
+        Row: {
+          note_id: string
+          tag_id: string
+        }
+        Insert: {
+          note_id: string
+          tag_id: string
+        }
+        Update: {
+          note_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_tags_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "note_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          content: string | null
+          created_at: string
+          folder: string | null
+          id: string
+          markdown_content: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          folder?: string | null
+          id?: string
+          markdown_content?: string | null
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          folder?: string | null
+          id?: string
+          markdown_content?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

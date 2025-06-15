@@ -2,8 +2,8 @@
 import { useState } from 'react';
 import AuthGuard from '@/components/AuthGuard';
 import TrackingApp from '@/components/TrackingApp';
+import NotesApp from '@/components/NotesApp';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, FileText, LogOut } from 'lucide-react';
 
 type AppType = 'tracker' | 'notes';
@@ -15,24 +15,6 @@ const Apps = () => {
     sessionStorage.removeItem('app_authenticated');
     window.location.reload();
   };
-
-  const NotesApp = () => (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Notes App
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-center">
-            Notes app coming soon...
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
 
   return (
     <AuthGuard>
