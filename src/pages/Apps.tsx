@@ -4,19 +4,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { FileText, Calendar, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { AuthProvider } from '@/components/auth/AuthProvider';
+import { useAuth } from '@/components/auth/AuthProvider';
+import AuthForm from '@/components/auth/AuthForm';
 import NotesApp from '@/components/NotesApp';
 import TrackingApp from '@/components/TrackingApp';
 
 const Apps = () => {
   const [selectedApp, setSelectedApp] = React.useState<string | null>(null);
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthForm />;
+  }
 
   if (selectedApp === 'notes') {
-    return (
-      <AuthProvider>
-        <NotesApp />
-      </AuthProvider>
-    );
+    return <NotesApp />;
   }
 
   if (selectedApp === 'tracking') {

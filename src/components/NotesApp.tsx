@@ -7,14 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Plus, FileText, Tag, LogOut } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useAuth } from './auth/AuthProvider';
-import AuthForm from './auth/AuthForm';
 import NoteEditor from './notes/NoteEditor';
 import NotesList from './notes/NotesList';
 import TagManager from './notes/TagManager';
 import { Note, Tag as NoteTag } from './notes/types';
 
 const NotesApp = () => {
-  const { user, isLoading: authLoading, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [tags, setTags] = useState<NoteTag[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -134,12 +133,7 @@ const NotesApp = () => {
     return matchesSearch && matchesTag;
   });
 
-  // Show auth form if not authenticated
-  if (!user && !authLoading) {
-    return <AuthForm />;
-  }
-
-  if (authLoading || isLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">

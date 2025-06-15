@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Apps from "./pages/Apps";
 import NotFound from "./pages/NotFound";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 
 const queryClient = new QueryClient();
 
@@ -18,7 +19,11 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/app" element={<Apps />} />
+          <Route path="/app" element={
+            <AuthProvider>
+              <Apps />
+            </AuthProvider>
+          } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
