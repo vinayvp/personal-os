@@ -13,6 +13,7 @@ const Apps = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    sessionStorage.removeItem('app_authenticated');
     navigate('/');
   };
 

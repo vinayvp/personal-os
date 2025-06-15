@@ -16,7 +16,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const APP_PASSWORD = '4252617vp';
+  const APP_PASSWORD = 'mypassword';
 
   useEffect(() => {
     // Check if user is already authenticated (stored in sessionStorage)
