@@ -6,16 +6,46 @@ import { cn } from '@/lib/utils';
 
 const experiences = [
   {
-    role: "Data Engineer",
-    company: "Cermati",
-    period: "2023 - Present",
-    description: "Responsible for designing, building, and maintaining scalable data pipelines using Java, Python, SQL, and GCP. As I mentioned, I can't fetch real-time data from LinkedIn, so I've used this as a placeholder based on your input."
+    role: "Software Engineer I - Data",
+    company: "Cermati.com",
+    period: "Jul 2023 - Present",
+    description: [
+      "Refactored and improved diverse ingestion pipelines to transfer data from more than 10 different sources such as PostgreSQL, MySQL, MongoDB, Facebook, TikTok, other 3rd party APIs etc. into Google BigQuery and GCS.",
+      "Designed and developed a ingestion pipeline to branch from another ingestion pipeline using Google's BigTable, Pub/Sub and BigQuery.",
+      "Maintaining and expanding features in custom components of Apache Nifi.",
+      "Designed and built a python client for Hashicorp's Vault and data flow service between Google DataCatalog and Dataplex.",
+      "Played a crucial role in reconfiguring, re-ingesting and maintaining ingestion services during critical midnight database migrations to ensure data continuity and minimize disruptions.",
+      "Mentoring and guiding interns."
+    ]
   },
   {
-    role: "Junior Data Analyst",
-    company: "Data Corp (Placeholder)",
-    period: "2022 - 2023",
-    description: "This is a placeholder entry to demonstrate the timeline format. Please provide your actual work history to replace this."
+    role: "Software Engineer Intern - Data",
+    company: "Cermati.com",
+    period: "Jan 2023 – Jun 2023",
+    description: [
+      "Implemented a Prometheus push gateway to export ingestion metrics (e.g., throughput, latency, error rates) to a Grafana dashboard for visualization and analysis.",
+      "Optimized ingestion configurations to enhance performance and usability. Developed a command-line interface (CLI) client and a REST API endpoint to allow for dynamic configuration updates.",
+      "Served as an on-call engineer for the ingestion and related services. Responded to incidents, performed root cause analysis, implemented corrective actions, and ensured service availability and performance."
+    ]
+  },
+  {
+    role: "Project Intern",
+    company: "Samsung R&D Institute India · Internship",
+    period: "Jul 2021 – Jun 2022",
+    description: [
+      "Programmed and implemented a dataset handling and annotation pipeline for Pose Estimation AI Applications.",
+      "Modelled a neural net for in-house dataset which resulted in an accuracy of 87%."
+    ]
+  },
+  {
+    role: "Team Manager",
+    company: "aerokle Aerodesign Team",
+    period: "Oct 2021 – Dec 2022",
+    description: [
+      "Supervised the team in Research and Development of UAVs in Forestry Applications.",
+      "Mentored and Oversaw the team for SAE INDIA Aero-design Challenge 2021-22 and SAE Aerothon 2022.",
+      "Built and integrated an Object Detection and Avoidance Algorithm (AI / ML) on a drone using YOLOv4 tiny and IOT sensors."
+    ]
   }
 ];
 
@@ -32,7 +62,7 @@ const WorkExperience = () => {
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-4">Work Experience</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            My professional journey. As I can't access LinkedIn, I've added placeholder content based on your info.
+            My professional journey.
           </p>
         </div>
 
@@ -46,7 +76,11 @@ const WorkExperience = () => {
                   <CardDescription>{exp.company} • {exp.period}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">{exp.description}</p>
+                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
+                    {exp.description.map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
                 </CardContent>
               </Card>
             </div>
@@ -58,4 +92,3 @@ const WorkExperience = () => {
 };
 
 export default WorkExperience;
-
