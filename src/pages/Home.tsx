@@ -94,19 +94,24 @@ const Home = () => {
       </nav>
 
       {/* Hero Section */}
-      <section id="home" className="min-h-screen flex items-center justify-center relative px-6 pt-20">
-        {/* Animated Background */}
-        <div className="absolute inset-0 overflow-hidden opacity-30">
-          <div className="absolute w-full h-full">
-            <div className="grid grid-cols-20 gap-1 w-full h-full opacity-20">
-              {Array.from({ length: 400 }).map((_, i) => (
-                <div key={i} className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{
-                  animationDelay: `${Math.random() * 3}s`,
-                  animationDuration: `${2 + Math.random() * 2}s`
-                }} />
-              ))}
-            </div>
-          </div>
+      <section id="home" className="min-h-screen flex items-center justify-center relative px-6 pt-20 overflow-hidden">
+        {/* Animated Starry Background */}
+        <div className="absolute inset-0 -z-10">
+          {Array.from({ length: 150 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute bg-white rounded-full animate-twinkle"
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                width: `${Math.random() * 2 + 1}px`,
+                height: `${Math.random() * 2 + 1}px`,
+                opacity: `${Math.random() * 0.7}`,
+                animationDelay: `${Math.random() * 6}s`,
+                animationDuration: `${Math.random() * 4 + 4}s`,
+              }}
+            />
+          ))}
         </div>
 
         <div className="max-w-4xl mx-auto relative z-10">
