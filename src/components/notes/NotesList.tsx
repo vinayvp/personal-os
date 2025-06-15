@@ -95,7 +95,7 @@ const NotesList: React.FC<NotesListProps> = ({
       </div>
 
       {/* Notes List */}
-      <div className="space-y-2 max-h-[600px] overflow-y-auto">
+      <div className="space-y-2 max-h-[600px] overflow-y-auto p-1">
         {notes.length === 0 ? (
           <Card>
             <CardContent className="p-6 text-center">
