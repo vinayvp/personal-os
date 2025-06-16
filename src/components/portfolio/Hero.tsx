@@ -3,7 +3,6 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Mail, Github, Linkedin, Rocket, ArrowDown } from 'lucide-react';
 import { TypeAnimation } from 'react-type-animation';
-import heroBg from '/1000102010 (1920×1080).gif';
 
 interface HeroProps {
   scrollToSection: (id: string) => void;
@@ -14,7 +13,7 @@ const Hero: React.FC<HeroProps> = ({ scrollToSection }) => {
     <section 
       id="home" 
       className="min-h-screen flex items-center justify-center relative px-6 pt-20 bg-cover bg-center"
-      style={{ backgroundImage: `url(${heroBg})` }}
+      style={{ backgroundImage: `url('/1000102010 (1920×1080).gif')` }}
     >
       <div className="absolute inset-0 bg-background/80 z-0" />
       <div className="max-w-4xl mx-auto relative z-10">
