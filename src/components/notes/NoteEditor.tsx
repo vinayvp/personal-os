@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { X, Save, Eye, Edit, Image, Upload } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -41,8 +42,26 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
     
     setSaving(true);
     try {
-      // First, update the note content
-      const { data: updatedNote, error: noteError } = await supabase
+      console.log('Starting save process for note:', note.id);
+      
+      // First, verify the note exists and update it
+      const { data: noteExists, error: checkError } = await supabase
+        .from('notes')
+        .select('id')
+        .eq('id', note.id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking note existence:', checkError);
+        throw checkError;
+      }
+
+      if (!noteExists) {
+        throw new Error('Note not found');
+      }
+
+      // Update the note content
+      const { error: noteError } = await supabase
         .from('notes')
         .update({
           title,
@@ -50,14 +69,14 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
           markdown_content: content,
           updated_at: new Date().toISOString()
         })
-        .eq('id', note.id)
-        .select()
-        .single();
+        .eq('id', note.id);
 
       if (noteError) {
         console.error('Note update error:', noteError);
         throw noteError;
       }
+
+      console.log('Note updated successfully');
 
       // Clear existing tags first
       const { error: deleteError } = await supabase
@@ -70,30 +89,27 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
         throw deleteError;
       }
 
+      console.log('Existing tags cleared');
+
       // Add new tags if any selected
       if (selectedTags.length > 0) {
-        // Verify the note still exists before adding tags
-        const { data: noteExists } = await supabase
-          .from('notes')
-          .select('id')
-          .eq('id', note.id)
-          .single();
+        const tagInserts = selectedTags.map(tag => ({
+          note_id: note.id,
+          tag_id: tag.id
+        }));
 
-        if (noteExists) {
-          const tagInserts = selectedTags.map(tag => ({
-            note_id: note.id,
-            tag_id: tag.id
-          }));
+        console.log('Inserting tags:', tagInserts);
 
-          const { error: tagError } = await supabase
-            .from('note_tags')
-            .insert(tagInserts);
+        const { error: tagError } = await supabase
+          .from('note_tags')
+          .insert(tagInserts);
 
-          if (tagError) {
-            console.error('Tag insert error:', tagError);
-            throw tagError;
-          }
+        if (tagError) {
+          console.error('Tag insert error:', tagError);
+          throw tagError;
         }
+
+        console.log('Tags inserted successfully');
       }
 
       toast({
@@ -196,6 +212,20 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
 
   const removeTag = (tagId: string) => {
     setSelectedTags(prev => prev.filter(t => t.id !== tagId));
+  };
+
+  // Handle checkbox changes in markdown
+  const handleCheckboxChange = (content: string, lineIndex: number, checked: boolean) => {
+    const lines = content.split('\n');
+    const line = lines[lineIndex];
+    
+    if (line) {
+      const newLine = checked 
+        ? line.replace(/- \[ \]/, '- [x]')
+        : line.replace(/- \[x\]/, '- [ ]');
+      lines[lineIndex] = newLine;
+      setContent(lines.join('\n'));
+    }
   };
 
   return (
@@ -301,7 +331,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
               onChange={(e) => setContent(e.target.value)}
               onDrop={handleImageDrop}
               onPaste={handleImagePaste}
-              placeholder="Start writing your note... You can use Markdown syntax and drag & drop images!"
+              placeholder="Start writing your note... You can use Markdown syntax and drag & drop images!&#10;&#10;Try checkboxes:&#10;- [ ] Unchecked item&#10;- [x] Checked item"
               className="min-h-[500px] resize-none font-mono"
             />
           </TabsContent>
@@ -312,44 +342,47 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeHighlight]}
                 components={{
-                  h1: ({children, ...props}) => <h1 className="text-2xl font-bold mb-4" {...props}>{children}</h1>,
-                  h2: ({children, ...props}) => <h2 className="text-xl font-semibold mb-3" {...props}>{children}</h2>,
-                  h3: ({children, ...props}) => <h3 className="text-lg font-medium mb-2" {...props}>{children}</h3>,
-                  p: ({children, ...props}) => <p className="mb-3 leading-relaxed" {...props}>{children}</p>,
-                  ul: ({children, ...props}) => <ul className="list-disc pl-6 mb-3 space-y-1" {...props}>{children}</ul>,
-                  ol: ({children, ...props}) => <ol className="list-decimal pl-6 mb-3 space-y-1" {...props}>{children}</ol>,
+                  h1: ({children, ...props}) => <h1 className="text-2xl font-bold mb-4 mt-6 first:mt-0" {...props}>{children}</h1>,
+                  h2: ({children, ...props}) => <h2 className="text-xl font-semibold mb-3 mt-5" {...props}>{children}</h2>,
+                  h3: ({children, ...props}) => <h3 className="text-lg font-medium mb-2 mt-4" {...props}>{children}</h3>,
+                  h4: ({children, ...props}) => <h4 className="text-base font-medium mb-2 mt-3" {...props}>{children}</h4>,
+                  h5: ({children, ...props}) => <h5 className="text-sm font-medium mb-2 mt-3" {...props}>{children}</h5>,
+                  h6: ({children, ...props}) => <h6 className="text-sm font-medium mb-2 mt-3" {...props}>{children}</h6>,
+                  p: ({children, ...props}) => <p className="mb-4 leading-relaxed" {...props}>{children}</p>,
+                  ul: ({children, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-2" {...props}>{children}</ul>,
+                  ol: ({children, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-2" {...props}>{children}</ol>,
                   li: ({children, ...props}) => <li className="mb-1" {...props}>{children}</li>,
                   blockquote: ({children, ...props}) => (
-                    <blockquote className="border-l-4 border-muted-foreground pl-4 italic my-4" {...props}>
+                    <blockquote className="border-l-4 border-primary/20 pl-4 italic my-6 bg-muted/50 py-2 rounded-r" {...props}>
                       {children}
                     </blockquote>
                   ),
                   code: ({className, children, ...props}) => {
                     const match = /language-(\w+)/.exec(className || '');
                     return match ? (
-                      <code className={`${className} block bg-muted p-4 rounded-md overflow-auto`} {...props}>
+                      <code className={`${className} block bg-muted p-4 rounded-md overflow-auto text-sm`} {...props}>
                         {children}
                       </code>
                     ) : (
-                      <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono" {...props}>
+                      <code className="bg-muted px-2 py-1 rounded text-sm font-mono" {...props}>
                         {children}
                       </code>
                     );
                   },
                   pre: ({children, ...props}) => (
-                    <pre className="bg-muted p-4 rounded-md overflow-auto mb-4" {...props}>
+                    <pre className="bg-muted p-4 rounded-md overflow-auto mb-4 text-sm" {...props}>
                       {children}
                     </pre>
                   ),
                   table: ({children, ...props}) => (
-                    <div className="overflow-auto mb-4">
-                      <table className="border-collapse border border-border w-full" {...props}>
+                    <div className="overflow-auto mb-6">
+                      <table className="border-collapse border border-border w-full text-sm" {...props}>
                         {children}
                       </table>
                     </div>
                   ),
                   th: ({children, ...props}) => (
-                    <th className="border border-border px-4 py-2 bg-muted font-semibold" {...props}>
+                    <th className="border border-border px-4 py-2 bg-muted font-semibold text-left" {...props}>
                       {children}
                     </th>
                   ),
@@ -358,6 +391,28 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
                       {children}
                     </td>
                   ),
+                  hr: ({...props}) => (
+                    <hr className="my-8 border-border" {...props} />
+                  ),
+                  strong: ({children, ...props}) => (
+                    <strong className="font-semibold" {...props}>{children}</strong>
+                  ),
+                  em: ({children, ...props}) => (
+                    <em className="italic" {...props}>{children}</em>
+                  ),
+                  input: ({type, checked, ...props}) => {
+                    if (type === 'checkbox') {
+                      return (
+                        <Checkbox
+                          checked={checked || false}
+                          className="mr-2 mt-0.5"
+                          disabled
+                          {...props}
+                        />
+                      );
+                    }
+                    return <input type={type} checked={checked} {...props} />;
+                  }
                 }}
               >
                 {content || '*No content yet. Switch to edit mode to start writing.*'}
