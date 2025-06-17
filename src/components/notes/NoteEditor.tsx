@@ -52,25 +52,37 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
         })
         .eq('id', note.id);
 
-      if (noteError) throw noteError;
+      if (noteError) {
+        console.error('Note update error:', noteError);
+        throw noteError;
+      }
 
-      // Update tags
-      await supabase
+      // Clear existing tags first
+      const { error: deleteError } = await supabase
         .from('note_tags')
         .delete()
         .eq('note_id', note.id);
 
+      if (deleteError) {
+        console.error('Delete tags error:', deleteError);
+        throw deleteError;
+      }
+
+      // Add new tags if any selected
       if (selectedTags.length > 0) {
+        const tagInserts = selectedTags.map(tag => ({
+          note_id: note.id,
+          tag_id: tag.id
+        }));
+
         const { error: tagError } = await supabase
           .from('note_tags')
-          .insert(
-            selectedTags.map(tag => ({
-              note_id: note.id,
-              tag_id: tag.id
-            }))
-          );
+          .insert(tagInserts);
 
-        if (tagError) throw tagError;
+        if (tagError) {
+          console.error('Tag insert error:', tagError);
+          throw tagError;
+        }
       }
 
       toast({
@@ -84,7 +96,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to save note.",
+        description: "Failed to save note. Please try again.",
       });
     } finally {
       setSaving(false);
@@ -212,11 +224,11 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
 
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Select onValueChange={addTag}>
+            <Select onValueChange={addTag} value="">
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Add tags..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-popover border border-border shadow-md">
                 {tags
                   .filter(tag => !selectedTags.find(t => t.id === tag.id))
                   .map(tag => (

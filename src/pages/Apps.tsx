@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileText, TrendingUp, LogOut } from 'lucide-react';
+import { FileText, TrendingUp, LogOut, Menu, X } from 'lucide-react';
 import NotesApp from '@/components/NotesApp';
 import TrackingApp from '@/components/TrackingApp';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,12 +9,22 @@ import { useNavigate } from 'react-router-dom';
 
 const Apps = () => {
   const [selectedApp, setSelectedApp] = React.useState<string>('tracking');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     sessionStorage.removeItem('app_authenticated');
     navigate('/');
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleAppSelect = (app: string) => {
+    setSelectedApp(app);
+    setIsMobileMenuOpen(false);
   };
 
   const renderSelectedApp = () => {
@@ -33,27 +43,70 @@ const Apps = () => {
       <header className="flex items-center justify-between p-4 border-b shrink-0 border-border">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-bold mr-4 text-foreground">My Apps</h1>
-          <Button
-            variant={selectedApp === 'tracking' ? 'default' : 'outline'}
-            onClick={() => setSelectedApp('tracking')}
-            size="sm"
-          >
-            <TrendingUp className="mr-2 h-4 w-4" />
-            Tracker
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-2">
+            <Button
+              variant={selectedApp === 'tracking' ? 'default' : 'outline'}
+              onClick={() => setSelectedApp('tracking')}
+              size="sm"
+            >
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Tracker
+            </Button>
+            <Button
+              variant={selectedApp === 'notes' ? 'default' : 'outline'}
+              onClick={() => setSelectedApp('notes')}
+              size="sm"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Notes
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Desktop Logout */}
+          <Button variant="outline" size="sm" onClick={handleLogout} className="hidden md:flex">
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
           </Button>
-          <Button
-            variant={selectedApp === 'notes' ? 'default' : 'outline'}
-            onClick={() => setSelectedApp('notes')}
-            size="sm"
-          >
-            <FileText className="mr-2 h-4 w-4" />
-            Notes
+          
+          {/* Mobile Menu Button */}
+          <Button variant="ghost" size="sm" onClick={toggleMobileMenu} className="md:hidden">
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </Button>
         </div>
-        <Button variant="outline" size="sm" onClick={handleLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
-          Logout
-        </Button>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="absolute top-full left-0 right-0 bg-background border-b md:hidden z-50">
+            <div className="p-4 space-y-2">
+              <Button
+                variant={selectedApp === 'tracking' ? 'default' : 'outline'}
+                onClick={() => handleAppSelect('tracking')}
+                size="sm"
+                className="w-full justify-start"
+              >
+                <TrendingUp className="mr-2 h-4 w-4" />
+                Tracker
+              </Button>
+              <Button
+                variant={selectedApp === 'notes' ? 'default' : 'outline'}
+                onClick={() => handleAppSelect('notes')}
+                size="sm"
+                className="w-full justify-start"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Notes
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleLogout} className="w-full justify-start">
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </Button>
+            </div>
+          </div>
+        )}
       </header>
       <main className="flex-1 overflow-y-auto">
         {renderSelectedApp()}
