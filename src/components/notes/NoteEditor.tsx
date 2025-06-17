@@ -41,8 +41,8 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
     
     setSaving(true);
     try {
-      // Update note
-      const { error: noteError } = await supabase
+      // First, update the note content
+      const { data: updatedNote, error: noteError } = await supabase
         .from('notes')
         .update({
           title,
@@ -50,7 +50,9 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
           markdown_content: content,
           updated_at: new Date().toISOString()
         })
-        .eq('id', note.id);
+        .eq('id', note.id)
+        .select()
+        .single();
 
       if (noteError) {
         console.error('Note update error:', noteError);
@@ -70,18 +72,27 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
 
       // Add new tags if any selected
       if (selectedTags.length > 0) {
-        const tagInserts = selectedTags.map(tag => ({
-          note_id: note.id,
-          tag_id: tag.id
-        }));
+        // Verify the note still exists before adding tags
+        const { data: noteExists } = await supabase
+          .from('notes')
+          .select('id')
+          .eq('id', note.id)
+          .single();
 
-        const { error: tagError } = await supabase
-          .from('note_tags')
-          .insert(tagInserts);
+        if (noteExists) {
+          const tagInserts = selectedTags.map(tag => ({
+            note_id: note.id,
+            tag_id: tag.id
+          }));
 
-        if (tagError) {
-          console.error('Tag insert error:', tagError);
-          throw tagError;
+          const { error: tagError } = await supabase
+            .from('note_tags')
+            .insert(tagInserts);
+
+          if (tagError) {
+            console.error('Tag insert error:', tagError);
+            throw tagError;
+          }
         }
       }
 
@@ -296,23 +307,57 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
           </TabsContent>
 
           <TabsContent value="preview" className="h-full mt-0">
-            <div className="min-h-[500px] p-4 border rounded-md bg-background overflow-auto">
+            <div className="min-h-[500px] p-4 border rounded-md bg-background overflow-auto prose prose-sm max-w-none dark:prose-invert">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeHighlight]}
                 components={{
+                  h1: ({children, ...props}) => <h1 className="text-2xl font-bold mb-4" {...props}>{children}</h1>,
+                  h2: ({children, ...props}) => <h2 className="text-xl font-semibold mb-3" {...props}>{children}</h2>,
+                  h3: ({children, ...props}) => <h3 className="text-lg font-medium mb-2" {...props}>{children}</h3>,
+                  p: ({children, ...props}) => <p className="mb-3 leading-relaxed" {...props}>{children}</p>,
+                  ul: ({children, ...props}) => <ul className="list-disc pl-6 mb-3 space-y-1" {...props}>{children}</ul>,
+                  ol: ({children, ...props}) => <ol className="list-decimal pl-6 mb-3 space-y-1" {...props}>{children}</ol>,
+                  li: ({children, ...props}) => <li className="mb-1" {...props}>{children}</li>,
+                  blockquote: ({children, ...props}) => (
+                    <blockquote className="border-l-4 border-muted-foreground pl-4 italic my-4" {...props}>
+                      {children}
+                    </blockquote>
+                  ),
                   code: ({className, children, ...props}) => {
                     const match = /language-(\w+)/.exec(className || '');
                     return match ? (
-                      <code className={className} {...props}>
+                      <code className={`${className} block bg-muted p-4 rounded-md overflow-auto`} {...props}>
                         {children}
                       </code>
                     ) : (
-                      <code className="bg-muted px-1 py-0.5 rounded text-sm" {...props}>
+                      <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono" {...props}>
                         {children}
                       </code>
                     );
-                  }
+                  },
+                  pre: ({children, ...props}) => (
+                    <pre className="bg-muted p-4 rounded-md overflow-auto mb-4" {...props}>
+                      {children}
+                    </pre>
+                  ),
+                  table: ({children, ...props}) => (
+                    <div className="overflow-auto mb-4">
+                      <table className="border-collapse border border-border w-full" {...props}>
+                        {children}
+                      </table>
+                    </div>
+                  ),
+                  th: ({children, ...props}) => (
+                    <th className="border border-border px-4 py-2 bg-muted font-semibold" {...props}>
+                      {children}
+                    </th>
+                  ),
+                  td: ({children, ...props}) => (
+                    <td className="border border-border px-4 py-2" {...props}>
+                      {children}
+                    </td>
+                  ),
                 }}
               >
                 {content || '*No content yet. Switch to edit mode to start writing.*'}
