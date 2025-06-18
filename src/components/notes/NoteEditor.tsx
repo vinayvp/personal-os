@@ -214,20 +214,6 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
     setSelectedTags(prev => prev.filter(t => t.id !== tagId));
   };
 
-  // Handle checkbox changes in markdown
-  const handleCheckboxChange = (content: string, lineIndex: number, checked: boolean) => {
-    const lines = content.split('\n');
-    const line = lines[lineIndex];
-    
-    if (line) {
-      const newLine = checked 
-        ? line.replace(/- \[ \]/, '- [x]')
-        : line.replace(/- \[x\]/, '- [ ]');
-      lines[lineIndex] = newLine;
-      setContent(lines.join('\n'));
-    }
-  };
-
   return (
     <Card className="h-full">
       <CardHeader className="space-y-4">
@@ -407,7 +393,6 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
                           checked={checked || false}
                           className="mr-2 mt-0.5"
                           disabled
-                          {...props}
                         />
                       );
                     }

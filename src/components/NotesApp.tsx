@@ -5,11 +5,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Plus, FileText, Tag } from 'lucide-react';
+import { Search, FileText, Tag } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import NoteEditor from './notes/NoteEditor';
 import NotesList from './notes/NotesList';
 import TagManager from './notes/TagManager';
+import CreateNoteModal from './notes/CreateNoteModal';
 import { Note, Tag as NoteTag } from './notes/types';
 
 const NotesApp = () => {
@@ -72,38 +74,6 @@ const NotesApp = () => {
     }
   };
 
-  const createNewNote = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('notes')
-        .insert({
-          title: 'New Note',
-          content: '',
-          markdown_content: '',
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const newNote = { ...data, tags: [] };
-      setNotes(prev => [newNote, ...prev]);
-      setSelectedNote(newNote);
-
-      toast({
-        title: "Success",
-        description: "New note created!",
-      });
-    } catch (error) {
-      console.error('Error creating note:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to create note.",
-      });
-    }
-  };
-
   const filteredNotes = notes.filter(note => {
     const matchesSearch = searchQuery === '' || 
       note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -147,38 +117,172 @@ const NotesApp = () => {
 
           <TabsContent value="notes" className="space-y-6">
             <div className="flex flex-col lg:flex-row gap-6">
-              {/* Sidebar */}
-              <div className="lg:w-1/3 space-y-4">
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search notes..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
+              {/* Notes Grid - Full width */}
+              <div className="flex-1">
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                  {/* Search and Create */}
+                  <div className="flex gap-2 flex-1">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search notes..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <CreateNoteModal 
+                      tags={tags}
+                      onNoteCreated={() => {
+                        fetchNotes();
+                        fetchTags();
+                      }}
                     />
                   </div>
-                  <Button onClick={createNewNote} className="flex items-center gap-2">
-                    <Plus className="w-4 h-4" />
-                    <span className="hidden sm:inline">New Note</span>
-                  </Button>
+
+                  {/* Mobile Filter Sheet */}
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" className="lg:hidden">
+                        <Tag className="w-4 h-4 mr-2" />
+                        Filters
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="w-80">
+                      <div className="space-y-4 mt-6">
+                        <div className="text-sm font-medium text-foreground">Filter by tag:</div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant={selectedTag === null ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setSelectedTag(null)}
+                          >
+                            All
+                          </Button>
+                          {tags.map(tag => (
+                            <Button
+                              key={tag.id}
+                              variant={selectedTag === tag.id ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setSelectedTag(tag.id)}
+                              className="flex items-center gap-1"
+                            >
+                              <div 
+                                className="w-2 h-2 rounded-full" 
+                                style={{ backgroundColor: tag.color }}
+                              />
+                              {tag.name}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
                 </div>
 
-                <NotesList
-                  notes={filteredNotes}
-                  selectedNote={selectedNote}
-                  onSelectNote={setSelectedNote}
-                  onDeleteNote={fetchNotes}
-                  tags={tags}
-                  selectedTag={selectedTag}
-                  onSelectTag={setSelectedTag}
-                />
-              </div>
+                {/* Desktop Filter Bar */}
+                <div className="hidden lg:block mb-6">
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium text-foreground">Filter by tag:</div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant={selectedTag === null ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedTag(null)}
+                      >
+                        All
+                      </Button>
+                      {tags.map(tag => (
+                        <Button
+                          key={tag.id}
+                          variant={selectedTag === tag.id ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSelectedTag(tag.id)}
+                          className="flex items-center gap-1"
+                        >
+                          <div 
+                            className="w-2 h-2 rounded-full" 
+                            style={{ backgroundColor: tag.color }}
+                          />
+                          {tag.name}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
 
-              {/* Editor */}
-              <div className="lg:w-2/3">
-                {selectedNote ? (
+                {/* Notes Grid */}
+                {filteredNotes.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-12 text-center">
+                      <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-foreground mb-2">
+                        No notes found
+                      </h3>
+                      <p className="text-muted-foreground mb-4">
+                        Create your first note to get started.
+                      </p>
+                      <CreateNoteModal 
+                        tags={tags}
+                        onNoteCreated={() => {
+                          fetchNotes();
+                          fetchTags();
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {filteredNotes.map(note => (
+                      <Card
+                        key={note.id}
+                        className="cursor-pointer transition-colors hover:bg-accent group"
+                        onClick={() => setSelectedNote(note)}
+                      >
+                        <CardHeader className="pb-2">
+                          <div className="flex items-start justify-between">
+                            <CardTitle className="text-lg truncate flex-1">
+                              {note.title}
+                            </CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          {(note.markdown_content || note.content) && (
+                            <p className="text-sm text-muted-foreground mb-3 line-clamp-3">
+                              {(note.markdown_content || note.content)?.length > 150 
+                                ? (note.markdown_content || note.content)?.substring(0, 150) + '...' 
+                                : (note.markdown_content || note.content)}
+                            </p>
+                          )}
+
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            {note.tags.map(tag => (
+                              <Badge
+                                key={tag.id}
+                                variant="secondary"
+                                className="text-xs"
+                                style={{ backgroundColor: tag.color + '20', color: tag.color }}
+                              >
+                                {tag.name}
+                              </Badge>
+                            ))}
+                          </div>
+
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(note.updated_at).toLocaleDateString()}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Note Editor Sheet */}
+            {selectedNote && (
+              <Sheet open={!!selectedNote} onOpenChange={() => setSelectedNote(null)}>
+                <SheetContent side="right" className="w-full sm:max-w-4xl">
                   <NoteEditor
                     note={selectedNote}
                     tags={tags}
@@ -187,27 +291,9 @@ const NotesApp = () => {
                       fetchTags();
                     }}
                   />
-                ) : (
-                  <Card className="h-full min-h-[500px] flex items-center justify-center">
-                    <CardContent>
-                      <div className="text-center">
-                        <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-foreground mb-2">
-                          No note selected
-                        </h3>
-                        <p className="text-muted-foreground mb-4">
-                          Select a note from the sidebar or create a new one to get started.
-                        </p>
-                        <Button onClick={createNewNote} className="flex items-center gap-2">
-                          <Plus className="w-4 h-4" />
-                          Create New Note
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </div>
+                </SheetContent>
+              </Sheet>
+            )}
           </TabsContent>
 
           <TabsContent value="tags">
