@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Mail, Github, Linkedin, Rocket, ArrowDown } from 'lucide-react';
@@ -14,7 +15,7 @@ const Hero: React.FC<HeroProps> = ({ scrollToSection }) => {
       className="min-h-screen flex items-center justify-center relative px-6 pt-20 bg-cover bg-center"
       style={{ backgroundImage: `url('/background_portflio.gif')` }}
     >
-      <div className="absolute inset-0 bg-background/80 z-0" />
+      <div className="absolute inset-0 bg-black/60 z-0" />
       <div className="max-w-4xl mx-auto relative z-10">
         {/* Hey there text */}
         <div className="mb-8">
@@ -40,18 +41,18 @@ const Hero: React.FC<HeroProps> = ({ scrollToSection }) => {
         
         {/* Professional Title and Description */}
         <div className="mb-8 space-y-4">
-          <p className="text-xl md:text-2xl text-muted-foreground">
+          <p className="text-xl md:text-2xl text-gray-200">
             A passionate and results-driven Data Engineer specializing in Java, Python, SQL, and GCP.
           </p>
         </div>
 
         {/* Current Status */}
         <div className="mb-12 space-y-3">
-          <div className="flex items-center gap-3 text-muted-foreground">
+          <div className="flex items-center gap-3 text-gray-300">
             <Rocket className="w-5 h-5 text-primary" />
             <span>Currently specializing in Data Engineering (Java / Python / SQL / GCP)</span>
           </div>
-          <div className="flex items-center gap-3 text-muted-foreground">
+          <div className="flex items-center gap-3 text-gray-300">
             <span className="text-yellow-400">⚡</span>
             <span>Data Engineer at <span className="text-primary font-medium">Cermati</span></span>
           </div>
@@ -59,19 +60,19 @@ const Hero: React.FC<HeroProps> = ({ scrollToSection }) => {
 
         {/* Social Links */}
         <div className="flex gap-6">
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" asChild>
+          <Button variant="ghost" size="sm" className="text-gray-300 hover:text-primary hover:bg-white/10 border border-white/20" asChild>
             <a href="https://github.com/vinayvp" target="_blank" rel="noopener noreferrer">
               <Github className="w-4 h-4 mr-2" />
               Github
             </a>
           </Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" asChild>
+          <Button variant="ghost" size="sm" className="text-gray-300 hover:text-primary hover:bg-white/10 border border-white/20" asChild>
             <a href="https://www.linkedin.com/in/vinayak-pastey-programmer/" target="_blank" rel="noopener noreferrer">
               <Linkedin className="w-4 h-4 mr-2" />
               LinkedIn
             </a>
           </Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" asChild>
+          <Button variant="ghost" size="sm" className="text-gray-300 hover:text-primary hover:bg-white/10 border border-white/20" asChild>
             <a href="mailto:vinayak.pastey@gmail.com">
               <Mail className="w-4 h-4 mr-2" />
               Email
