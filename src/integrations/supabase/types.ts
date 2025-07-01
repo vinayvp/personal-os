@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      adsmacro_earnings: {
+        Row: {
+          created_at: string
+          date: string | null
+          earnings: number | null
+          id: number
+          updated_at: string | null
+          user: string | null
+        }
+        Insert: {
+          created_at?: string
+          date?: string | null
+          earnings?: number | null
+          id?: number
+          updated_at?: string | null
+          user?: string | null
+        }
+        Update: {
+          created_at?: string
+          date?: string | null
+          earnings?: number | null
+          id?: number
+          updated_at?: string | null
+          user?: string | null
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           created_at: string

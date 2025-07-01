@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -9,7 +10,7 @@ import { Search, FileText, Tag } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import NoteEditor from './notes/NoteEditor';
-import NotesList from './notes/NotesList';
+import NoteViewModal from './notes/NoteViewModal';
 import TagManager from './notes/TagManager';
 import CreateNoteModal from './notes/CreateNoteModal';
 import { Note, Tag as NoteTag } from './notes/types';
@@ -18,6 +19,8 @@ const NotesApp = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [tags, setTags] = useState<NoteTag[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [viewingNote, setViewingNote] = useState<Note | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,6 +87,35 @@ const NotesApp = () => {
 
     return matchesSearch && matchesTag;
   });
+
+  const handleNoteClick = (note: Note) => {
+    setViewingNote(note);
+  };
+
+  const handleEditNote = (note: Note) => {
+    setViewingNote(null);
+    setEditingNote(note);
+  };
+
+  const handleCloseViewModal = () => {
+    setViewingNote(null);
+  };
+
+  const handleCloseEditSheet = () => {
+    setEditingNote(null);
+  };
+
+  const handleNoteSaved = () => {
+    fetchNotes();
+    fetchTags();
+    setEditingNote(null);
+  };
+
+  const handleNoteDeleted = () => {
+    fetchNotes();
+    setViewingNote(null);
+    setEditingNote(null);
+  };
 
   if (isLoading) {
     return (
@@ -237,7 +269,7 @@ const NotesApp = () => {
                       <Card
                         key={note.id}
                         className="cursor-pointer transition-colors hover:bg-accent group"
-                        onClick={() => setSelectedNote(note)}
+                        onClick={() => handleNoteClick(note)}
                       >
                         <CardHeader className="pb-2">
                           <div className="flex items-start justify-between">
@@ -279,17 +311,22 @@ const NotesApp = () => {
               </div>
             </div>
 
+            {/* Note View Modal */}
+            <NoteViewModal
+              note={viewingNote}
+              onClose={handleCloseViewModal}
+              onEdit={handleEditNote}
+              onDelete={handleNoteDeleted}
+            />
+
             {/* Note Editor Sheet */}
-            {selectedNote && (
-              <Sheet open={!!selectedNote} onOpenChange={() => setSelectedNote(null)}>
+            {editingNote && (
+              <Sheet open={!!editingNote} onOpenChange={handleCloseEditSheet}>
                 <SheetContent side="right" className="w-full sm:max-w-4xl">
                   <NoteEditor
-                    note={selectedNote}
+                    note={editingNote}
                     tags={tags}
-                    onSave={() => {
-                      fetchNotes();
-                      fetchTags();
-                    }}
+                    onSave={handleNoteSaved}
                   />
                 </SheetContent>
               </Sheet>

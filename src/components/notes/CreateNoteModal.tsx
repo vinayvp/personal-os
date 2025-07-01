@@ -8,8 +8,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, X, Save } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, X, Save, Eye, Edit } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tag } from './types';
+import 'highlight.js/styles/github-dark.css';
 
 interface CreateNoteModalProps {
   tags: Tag[];
@@ -22,12 +28,14 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
   const [content, setContent] = useState('');
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [activeTab, setActiveTab] = useState('edit');
   const { toast } = useToast();
 
   const resetForm = () => {
     setTitle('');
     setContent('');
     setSelectedTags([]);
+    setActiveTab('edit');
   };
 
   const handleCreateNote = async () => {
@@ -100,12 +108,12 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
           New Note
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Create New Note</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 mt-4">
+        <div className="space-y-4 mt-4 flex-1 overflow-hidden">
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -153,12 +161,75 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
             </div>
           </div>
 
-          <Textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Start writing your note... You can use Markdown syntax!"
-            className="min-h-[300px] resize-none font-mono"
-          />
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-96">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="edit" className="flex items-center gap-2">
+                <Edit className="w-4 h-4" />
+                Edit
+              </TabsTrigger>
+              <TabsTrigger value="preview" className="flex items-center gap-2">
+                <Eye className="w-4 h-4" />
+                Preview
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="edit" className="h-full mt-2">
+              <Textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Start writing your note... You can use Markdown syntax!&#10;&#10;Try checkboxes:&#10;- [ ] Unchecked item&#10;- [x] Checked item"
+                className="h-full resize-none font-mono"
+              />
+            </TabsContent>
+            
+            <TabsContent value="preview" className="h-full mt-2">
+              <div className="h-full p-4 border rounded-md bg-background overflow-auto prose prose-sm max-w-none dark:prose-invert">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeHighlight]}
+                  components={{
+                    h1: ({children, ...props}) => <h1 className="text-2xl font-bold mb-4 mt-6 first:mt-0" {...props}>{children}</h1>,
+                    h2: ({children, ...props}) => <h2 className="text-xl font-semibold mb-3 mt-5" {...props}>{children}</h2>,
+                    h3: ({children, ...props}) => <h3 className="text-lg font-medium mb-2 mt-4" {...props}>{children}</h3>,
+                    p: ({children, ...props}) => <p className="mb-4 leading-relaxed" {...props}>{children}</p>,
+                    ul: ({children, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-2" {...props}>{children}</ul>,
+                    ol: ({children, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-2" {...props}>{children}</ol>,
+                    blockquote: ({children, ...props}) => (
+                      <blockquote className="border-l-4 border-primary/20 pl-4 italic my-6 bg-muted/50 py-2 rounded-r" {...props}>
+                        {children}
+                      </blockquote>
+                    ),
+                    code: ({className, children, ...props}) => {
+                      const match = /language-(\w+)/.exec(className || '');
+                      return match ? (
+                        <code className={`${className} block bg-muted p-4 rounded-md overflow-auto text-sm`} {...props}>
+                          {children}
+                        </code>
+                      ) : (
+                        <code className="bg-muted px-2 py-1 rounded text-sm font-mono" {...props}>
+                          {children}
+                        </code>
+                      );
+                    },
+                    input: ({type, checked, ...props}) => {
+                      if (type === 'checkbox') {
+                        return (
+                          <Checkbox
+                            checked={checked || false}
+                            className="mr-2 mt-0.5"
+                            disabled
+                          />
+                        );
+                      }
+                      return <input type={type} checked={checked} {...props} />;
+                    }
+                  }}
+                >
+                  {content || '*No content yet. Switch to edit mode to start writing.*'}
+                </ReactMarkdown>
+              </div>
+            </TabsContent>
+          </Tabs>
 
           <div className="flex gap-2 justify-end">
             <Button

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -27,7 +26,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.markdown_content || note.content || '');
   const [selectedTags, setSelectedTags] = useState<Tag[]>(note.tags || []);
-  const [isEditing, setIsEditing] = useState(true);
+  const [isEditing, setIsEditing] = useState(false); // Changed to default to preview mode
   const [isSaving, setSaving] = useState(false);
   const { toast } = useToast();
 
@@ -35,6 +34,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
     setTitle(note.title);
     setContent(note.markdown_content || note.content || '');
     setSelectedTags(note.tags || []);
+    setIsEditing(false); // Reset to preview mode when note changes
   }, [note]);
 
   const handleSave = useCallback(async () => {
@@ -242,71 +242,95 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
           </div>
         </div>
 
-        <Input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Note title..."
-          className="text-lg font-medium"
-        />
-
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Select onValueChange={addTag} value="">
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Add tags..." />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border border-border shadow-md">
-                {tags
-                  .filter(tag => !selectedTags.find(t => t.id === tag.id))
-                  .map(tag => (
-                    <SelectItem key={tag.id} value={tag.id}>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: tag.color }}
-                        />
-                        {tag.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleFileUpload}
-              className="hidden"
-              id="image-upload"
+        {isEditing && (
+          <>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Note title..."
+              className="text-lg font-medium"
             />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => document.getElementById('image-upload')?.click()}
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Upload Images
-            </Button>
-          </div>
 
-          <div className="flex flex-wrap gap-2">
-            {selectedTags.map(tag => (
-              <Badge
-                key={tag.id}
-                variant="secondary"
-                className="flex items-center gap-1"
-                style={{ backgroundColor: tag.color + '20', color: tag.color }}
-              >
-                {tag.name}
-                <X
-                  className="w-3 h-3 cursor-pointer"
-                  onClick={() => removeTag(tag.id)}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Select onValueChange={addTag} value="">
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Add tags..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border border-border shadow-md">
+                    {tags
+                      .filter(tag => !selectedTags.find(t => t.id === tag.id))
+                      .map(tag => (
+                        <SelectItem key={tag.id} value={tag.id}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: tag.color }}
+                            />
+                            {tag.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="image-upload"
                 />
-              </Badge>
-            ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => document.getElementById('image-upload')?.click()}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Images
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {selectedTags.map(tag => (
+                  <Badge
+                    key={tag.id}
+                    variant="secondary"
+                    className="flex items-center gap-1"
+                    style={{ backgroundColor: tag.color + '20', color: tag.color }}
+                  >
+                    {tag.name}
+                    <X
+                      className="w-3 h-3 cursor-pointer"
+                      onClick={() => removeTag(tag.id)}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {!isEditing && (
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold">{title}</h2>
+            {selectedTags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {selectedTags.map(tag => (
+                  <Badge
+                    key={tag.id}
+                    variant="secondary"
+                    className="text-xs"
+                    style={{ backgroundColor: tag.color + '20', color: tag.color }}
+                  >
+                    {tag.name}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </CardHeader>
 
       <CardContent className="flex-1">
