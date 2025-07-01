@@ -17,7 +17,22 @@ interface DayRecord {
   relief_day: boolean;
 }
 
-const CalendarView = () => {
+interface CustomTracker {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+}
+
+interface CalendarViewProps {
+  customTrackers?: CustomTracker[];
+  getCustomTrackerValue?: (trackerId: string, date?: string) => boolean;
+}
+
+const CalendarView: React.FC<CalendarViewProps> = ({ 
+  customTrackers = [], 
+  getCustomTrackerValue = () => false 
+}) => {
   const [records, setRecords] = useState<DayRecord[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [editingDate, setEditingDate] = useState<string | null>(null);
@@ -118,6 +133,29 @@ const CalendarView = () => {
     }
   };
 
+  const toggleCustomTracker = async (date: Date, trackerId: string) => {
+    const dateString = format(date, 'yyyy-MM-dd');
+    const currentValue = getCustomTrackerValue(trackerId, dateString);
+    const newValue = !currentValue;
+    
+    // Save to localStorage
+    const allRecords = JSON.parse(localStorage.getItem('customTrackerRecords') || '{}');
+    if (!allRecords[dateString]) {
+      allRecords[dateString] = {};
+    }
+    allRecords[dateString][trackerId] = newValue;
+    localStorage.setItem('customTrackerRecords', JSON.stringify(allRecords));
+
+    const trackerName = customTrackers.find(t => t.id === trackerId)?.name || 'Tracker';
+    toast({
+      title: "Updated!",
+      description: `${trackerName} ${newValue ? 'marked' : 'unmarked'} for ${format(date, 'MMM d, yyyy')}.`,
+    });
+
+    // Force re-render by updating a state that triggers useEffect
+    setEditingDate(null);
+  };
+
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setSelectedDate(date);
@@ -151,7 +189,14 @@ const CalendarView = () => {
     const isEditing = editingDate === dateString;
     const hasGym = record?.gym_day || false;
     const hasNoNut = record?.relief_day || false;
+    
+    // Get custom tracker states
+    const activeCustomTrackers = customTrackers.filter(tracker => 
+      getCustomTrackerValue(tracker.id, dateString)
+    );
+
     const hasBoth = hasGym && hasNoNut;
+    const hasAnyActivity = hasGym || hasNoNut || activeCustomTrackers.length > 0;
 
     return (
       <Card 
@@ -207,6 +252,29 @@ const CalendarView = () => {
                   NoNut
                 </Button>
               </div>
+              
+              {/* Custom Trackers */}
+              {customTrackers.length > 0 && (
+                <div className="grid grid-cols-2 gap-1">
+                  {customTrackers.map(tracker => {
+                    const isActive = getCustomTrackerValue(tracker.id, dateString);
+                    return (
+                      <Button
+                        key={tracker.id}
+                        variant={isActive ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => toggleCustomTracker(date, tracker.id)}
+                        className="text-xs flex items-center gap-1 h-8"
+                        style={isActive ? { backgroundColor: tracker.color, borderColor: tracker.color } : { borderColor: tracker.color + '40' }}
+                      >
+                        <span className="text-xs">{tracker.icon}</span>
+                        <span className="truncate">{tracker.name}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+              )}
+              
               <Button
                 variant="ghost"
                 size="sm"
@@ -246,7 +314,20 @@ const CalendarView = () => {
                       NoNut Day
                     </span>
                   )}
-                  {!hasGym && !hasNoNut && (
+                  
+                  {/* Custom Trackers Display */}
+                  {activeCustomTrackers.map(tracker => (
+                    <span 
+                      key={tracker.id}
+                      className="px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 justify-center"
+                      style={{ backgroundColor: tracker.color + '20', color: tracker.color }}
+                    >
+                      <span>{tracker.icon}</span>
+                      <span>{tracker.name}</span>
+                    </span>
+                  ))}
+                  
+                  {!hasAnyActivity && (
                     <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs text-center">
                       Rest Day
                     </span>
@@ -318,6 +399,10 @@ const CalendarView = () => {
                       noNutDay: (date) => {
                         const record = getRecordForDate(date);
                         return record?.relief_day || false;
+                      },
+                      customTrackerDay: (date) => {
+                        const dateString = format(date, 'yyyy-MM-dd');
+                        return customTrackers.some(tracker => getCustomTrackerValue(tracker.id, dateString));
                       }
                     }}
                     modifiersStyles={{
@@ -329,6 +414,11 @@ const CalendarView = () => {
                       noNutDay: {
                         backgroundColor: 'hsl(var(--destructive) / 0.2)',
                         color: 'hsl(var(--destructive))',
+                        fontWeight: 'bold'
+                      },
+                      customTrackerDay: {
+                        backgroundColor: 'hsl(var(--accent))',
+                        color: 'hsl(var(--accent-foreground))',
                         fontWeight: 'bold'
                       }
                     }}
@@ -344,12 +434,16 @@ const CalendarView = () => {
                     <span>NoNut Days</span>
                   </div>
                   <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-accent rounded"></div>
+                    <span>Custom Tracker Days</span>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-gradient-to-r from-primary/20 to-destructive/20 rounded border border-primary/30"></div>
                     <span>Both Gym & NoNut</span>
                   </div>
                   <div className="mt-4 p-3 bg-muted/50 rounded-lg">
                     <p className="text-xs text-muted-foreground">
-                      💡 Click any day card to highlight it, then use the edit icon to mark gym or NoNut days
+                      💡 Click any day card to highlight it, then use the edit icon to mark gym, NoNut, or custom tracker days
                     </p>
                   </div>
                 </div>

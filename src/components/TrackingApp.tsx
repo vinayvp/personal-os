@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Dumbbell, Heart, Home } from 'lucide-react';
+import { Calendar, Dumbbell, Heart, Home, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import CalendarView from './CalendarView';
 import AddTrackerModal from './AddTrackerModal';
@@ -15,6 +15,7 @@ interface DayRecord {
   date: string;
   gym_day: boolean;
   relief_day: boolean;
+  custom_trackers?: Record<string, boolean>;
 }
 
 interface CustomTracker {
@@ -105,6 +106,32 @@ const TrackingApp = () => {
     saveCustomTrackers(updatedTrackers);
   };
 
+  const handleDeleteTracker = (trackerId: string) => {
+    const updatedTrackers = customTrackers.filter(t => t.id !== trackerId);
+    saveCustomTrackers(updatedTrackers);
+    
+    // Also remove from all records
+    const updatedRecords = recentRecords.map(record => {
+      if (record.custom_trackers && record.custom_trackers[trackerId]) {
+        const { [trackerId]: removed, ...rest } = record.custom_trackers;
+        return { ...record, custom_trackers: rest };
+      }
+      return record;
+    });
+    setRecentRecords(updatedRecords);
+    
+    // Update today's record if it has this tracker
+    if (todayRecord?.custom_trackers?.[trackerId]) {
+      const { [trackerId]: removed, ...rest } = todayRecord.custom_trackers;
+      setTodayRecord({ ...todayRecord, custom_trackers: rest });
+    }
+
+    toast({
+      title: "Tracker Deleted",
+      description: "Custom tracker has been removed.",
+    });
+  };
+
   const toggleDay = async (type: 'gym' | 'nonut') => {
     try {
       const newValue = type === 'gym' 
@@ -150,6 +177,83 @@ const TrackingApp = () => {
     }
   };
 
+  const toggleCustomTracker = async (trackerId: string) => {
+    try {
+      const currentValue = todayRecord?.custom_trackers?.[trackerId] || false;
+      const newValue = !currentValue;
+      
+      const updatedCustomTrackers = {
+        ...todayRecord?.custom_trackers,
+        [trackerId]: newValue
+      };
+
+      if (todayRecord) {
+        // Update existing record with custom trackers
+        const { error } = await supabase
+          .from('daily_tracking')
+          .update({
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', todayRecord.id);
+
+        if (error) throw error;
+
+        // Update local state
+        setTodayRecord({
+          ...todayRecord,
+          custom_trackers: updatedCustomTrackers
+        });
+      } else {
+        // Create new record with custom tracker
+        const { data, error } = await supabase
+          .from('daily_tracking')
+          .insert({
+            date: today,
+            gym_day: false,
+            relief_day: false
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setTodayRecord({
+          ...data,
+          custom_trackers: updatedCustomTrackers
+        });
+      }
+
+      // Save to localStorage for persistence
+      const allRecords = JSON.parse(localStorage.getItem('customTrackerRecords') || '{}');
+      if (!allRecords[today]) {
+        allRecords[today] = {};
+      }
+      allRecords[today][trackerId] = newValue;
+      localStorage.setItem('customTrackerRecords', JSON.stringify(allRecords));
+
+      const trackerName = customTrackers.find(t => t.id === trackerId)?.name || 'Tracker';
+      toast({
+        title: "Updated!",
+        description: `${trackerName} ${newValue ? 'marked' : 'unmarked'} for today.`,
+      });
+
+      fetchData();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update custom tracker.",
+      });
+    }
+  };
+
+  // Load custom tracker data from localStorage
+  const getCustomTrackerValue = (trackerId: string, date?: string) => {
+    const targetDate = date || today;
+    const allRecords = JSON.parse(localStorage.getItem('customTrackerRecords') || '{}');
+    return allRecords[targetDate]?.[trackerId] || false;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -191,9 +295,17 @@ const TrackingApp = () => {
                     {customTrackers.map((tracker) => (
                       <div
                         key={tracker.id}
-                        className="p-3 border rounded-lg text-center"
+                        className="p-3 border rounded-lg text-center relative group"
                         style={{ borderColor: tracker.color + '40' }}
                       >
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute -top-2 -right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={() => handleDeleteTracker(tracker.id)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
                         <div className="text-lg mb-1">{tracker.icon}</div>
                         <div className="text-sm font-medium" style={{ color: tracker.color }}>
                           {tracker.name}
@@ -214,30 +326,57 @@ const TrackingApp = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Button
-                    variant={todayRecord?.gym_day ? "default" : "outline"}
-                    size="lg"
-                    onClick={() => toggleDay('gym')}
-                    className="h-20 flex flex-col gap-2"
-                  >
-                    <Dumbbell className="w-6 h-6 sm:w-8 sm:h-8" />
-                    <span className="text-sm font-medium">
-                      {todayRecord?.gym_day ? 'Gym Day ✓' : 'Mark Gym Day'}
-                    </span>
-                  </Button>
-                  
-                  <Button
-                    variant={todayRecord?.relief_day ? "default" : "outline"}
-                    size="lg"
-                    onClick={() => toggleDay('nonut')}
-                    className="h-20 flex flex-col gap-2"
-                  >
-                    <Heart className="w-6 h-6 sm:w-8 sm:h-8" />
-                    <span className="text-sm font-medium">
-                      {todayRecord?.relief_day ? 'NoNut Day ✓' : 'Mark NoNut Day'}
-                    </span>
-                  </Button>
+                <div className="space-y-4">
+                  {/* Default Trackers */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Button
+                      variant={todayRecord?.gym_day ? "default" : "outline"}
+                      size="lg"
+                      onClick={() => toggleDay('gym')}
+                      className="h-20 flex flex-col gap-2"
+                    >
+                      <Dumbbell className="w-6 h-6 sm:w-8 sm:h-8" />
+                      <span className="text-sm font-medium">
+                        {todayRecord?.gym_day ? 'Gym Day ✓' : 'Mark Gym Day'}
+                      </span>
+                    </Button>
+                    
+                    <Button
+                      variant={todayRecord?.relief_day ? "default" : "outline"}
+                      size="lg"
+                      onClick={() => toggleDay('nonut')}
+                      className="h-20 flex flex-col gap-2"
+                    >
+                      <Heart className="w-6 h-6 sm:w-8 sm:h-8" />
+                      <span className="text-sm font-medium">
+                        {todayRecord?.relief_day ? 'NoNut Day ✓' : 'Mark NoNut Day'}
+                      </span>
+                    </Button>
+                  </div>
+
+                  {/* Custom Trackers */}
+                  {customTrackers.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {customTrackers.map((tracker) => {
+                        const isActive = getCustomTrackerValue(tracker.id);
+                        return (
+                          <Button
+                            key={tracker.id}
+                            variant={isActive ? "default" : "outline"}
+                            size="lg"
+                            onClick={() => toggleCustomTracker(tracker.id)}
+                            className="h-20 flex flex-col gap-2"
+                            style={isActive ? { backgroundColor: tracker.color, borderColor: tracker.color } : { borderColor: tracker.color + '40' }}
+                          >
+                            <span className="text-2xl">{tracker.icon}</span>
+                            <span className="text-xs font-medium">
+                              {isActive ? `${tracker.name} ✓` : `Mark ${tracker.name}`}
+                            </span>
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -285,7 +424,7 @@ const TrackingApp = () => {
                         <span className="font-medium text-foreground text-sm sm:text-base">
                           {format(new Date(record.date), 'MMM d, yyyy')}
                         </span>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           {record.gym_day && (
                             <span className="px-2 py-1 bg-primary/20 text-primary rounded-full text-xs font-medium flex items-center gap-1">
                               <Dumbbell className="w-3 h-3" />
@@ -298,7 +437,22 @@ const TrackingApp = () => {
                               <span className="hidden sm:inline">NoNut</span>
                             </span>
                           )}
-                          {!record.gym_day && !record.relief_day && (
+                          {customTrackers.map(tracker => {
+                            if (getCustomTrackerValue(tracker.id, record.date)) {
+                              return (
+                                <span 
+                                  key={tracker.id}
+                                  className="px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
+                                  style={{ backgroundColor: tracker.color + '20', color: tracker.color }}
+                                >
+                                  <span>{tracker.icon}</span>
+                                  <span className="hidden sm:inline">{tracker.name}</span>
+                                </span>
+                              );
+                            }
+                            return null;
+                          })}
+                          {!record.gym_day && !record.relief_day && !customTrackers.some(t => getCustomTrackerValue(t.id, record.date)) && (
                             <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs">
                               Rest Day
                             </span>
@@ -313,7 +467,7 @@ const TrackingApp = () => {
           </TabsContent>
 
           <TabsContent value="calendar">
-            <CalendarView />
+            <CalendarView customTrackers={customTrackers} getCustomTrackerValue={getCustomTrackerValue} />
           </TabsContent>
         </Tabs>
       </div>

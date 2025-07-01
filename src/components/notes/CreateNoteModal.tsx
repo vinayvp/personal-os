@@ -231,7 +231,7 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
             </TabsContent>
           </Tabs>
 
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-2 justify-end pt-4 border-t">
             <Button
               variant="outline"
               onClick={() => setIsOpen(false)}
