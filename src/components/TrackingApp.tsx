@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Calendar, Dumbbell, Heart, Home } from 'lucide-react';
 import { format } from 'date-fns';
 import CalendarView from './CalendarView';
+import AddTrackerModal from './AddTrackerModal';
 
 interface DayRecord {
   id: string;
@@ -15,10 +17,18 @@ interface DayRecord {
   relief_day: boolean;
 }
 
+interface CustomTracker {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+}
+
 const TrackingApp = () => {
   const [todayRecord, setTodayRecord] = useState<DayRecord | null>(null);
   const [recentRecords, setRecentRecords] = useState<DayRecord[]>([]);
   const [stats, setStats] = useState({ gymDays: 0, noNutDays: 0, totalDays: 0 });
+  const [customTrackers, setCustomTrackers] = useState<CustomTracker[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -26,6 +36,7 @@ const TrackingApp = () => {
 
   useEffect(() => {
     fetchData();
+    loadCustomTrackers();
   }, []);
 
   const fetchData = async () => {
@@ -67,6 +78,31 @@ const TrackingApp = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loadCustomTrackers = () => {
+    const saved = localStorage.getItem('customTrackers');
+    if (saved) {
+      try {
+        setCustomTrackers(JSON.parse(saved));
+      } catch (error) {
+        console.error('Error loading custom trackers:', error);
+      }
+    }
+  };
+
+  const saveCustomTrackers = (trackers: CustomTracker[]) => {
+    localStorage.setItem('customTrackers', JSON.stringify(trackers));
+    setCustomTrackers(trackers);
+  };
+
+  const handleAddTracker = (tracker: { name: string; icon: string; color: string }) => {
+    const newTracker: CustomTracker = {
+      id: Date.now().toString(),
+      ...tracker
+    };
+    const updatedTrackers = [...customTrackers, newTracker];
+    saveCustomTrackers(updatedTrackers);
   };
 
   const toggleDay = async (type: 'gym' | 'nonut') => {
@@ -141,6 +177,34 @@ const TrackingApp = () => {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
+            {/* Add Tracker Section */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">Manage Trackers</CardTitle>
+                  <AddTrackerModal onTrackerAdded={handleAddTracker} />
+                </div>
+              </CardHeader>
+              {customTrackers.length > 0 && (
+                <CardContent>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {customTrackers.map((tracker) => (
+                      <div
+                        key={tracker.id}
+                        className="p-3 border rounded-lg text-center"
+                        style={{ borderColor: tracker.color + '40' }}
+                      >
+                        <div className="text-lg mb-1">{tracker.icon}</div>
+                        <div className="text-sm font-medium" style={{ color: tracker.color }}>
+                          {tracker.name}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+
             {/* Today's Tracking */}
             <Card>
               <CardHeader>

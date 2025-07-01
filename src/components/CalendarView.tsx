@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,10 +24,26 @@ const CalendarView = () => {
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('month');
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const rightSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchRecords();
   }, []);
+
+  // Scroll to selected date when it changes
+  useEffect(() => {
+    if (rightSectionRef.current) {
+      const dateString = format(selectedDate, 'yyyy-MM-dd');
+      const targetElement = rightSectionRef.current.querySelector(`[data-date="${dateString}"]`);
+      if (targetElement) {
+        targetElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center',
+          inline: 'nearest'
+        });
+      }
+    }
+  }, [selectedDate, viewMode]);
 
   const fetchRecords = async () => {
     try {
@@ -101,6 +118,12 @@ const CalendarView = () => {
     }
   };
 
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setSelectedDate(date);
+    }
+  };
+
   const getDaysToShow = () => {
     switch (viewMode) {
       case 'day':
@@ -133,6 +156,7 @@ const CalendarView = () => {
     return (
       <Card 
         key={date.toString()} 
+        data-date={dateString}
         className={`
           transition-all duration-200 cursor-pointer
           ${isToday ? 'ring-2 ring-primary' : ''} 
@@ -275,39 +299,41 @@ const CalendarView = () => {
 
         <TabsContent value="calendar" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+            <Card className="w-full">
               <CardHeader>
                 <CardTitle>Select Date</CardTitle>
               </CardHeader>
-              <CardContent>
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => date && setSelectedDate(date)}
-                  className="w-full"
-                  modifiers={{
-                    gymDay: (date) => {
-                      const record = getRecordForDate(date);
-                      return record?.gym_day || false;
-                    },
-                    noNutDay: (date) => {
-                      const record = getRecordForDate(date);
-                      return record?.relief_day || false;
-                    }
-                  }}
-                  modifiersStyles={{
-                    gymDay: {
-                      backgroundColor: 'hsl(var(--primary) / 0.2)',
-                      color: 'hsl(var(--primary))',
-                      fontWeight: 'bold'
-                    },
-                    noNutDay: {
-                      backgroundColor: 'hsl(var(--destructive) / 0.2)',
-                      color: 'hsl(var(--destructive))',
-                      fontWeight: 'bold'
-                    }
-                  }}
-                />
+              <CardContent className="w-full">
+                <div className="w-full flex justify-center">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    className="w-full max-w-none"
+                    modifiers={{
+                      gymDay: (date) => {
+                        const record = getRecordForDate(date);
+                        return record?.gym_day || false;
+                      },
+                      noNutDay: (date) => {
+                        const record = getRecordForDate(date);
+                        return record?.relief_day || false;
+                      }
+                    }}
+                    modifiersStyles={{
+                      gymDay: {
+                        backgroundColor: 'hsl(var(--primary) / 0.2)',
+                        color: 'hsl(var(--primary))',
+                        fontWeight: 'bold'
+                      },
+                      noNutDay: {
+                        backgroundColor: 'hsl(var(--destructive) / 0.2)',
+                        color: 'hsl(var(--destructive))',
+                        fontWeight: 'bold'
+                      }
+                    }}
+                  />
+                </div>
                 <div className="mt-4 space-y-2 text-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-primary/20 rounded"></div>
@@ -339,7 +365,10 @@ const CalendarView = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3 max-h-96 overflow-y-auto">
+                <div 
+                  ref={rightSectionRef}
+                  className="space-y-3 max-h-96 overflow-y-auto"
+                >
                   {getDaysToShow().map(renderDayCard)}
                 </div>
               </CardContent>
