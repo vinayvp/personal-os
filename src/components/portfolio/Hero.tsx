@@ -12,7 +12,7 @@ const Hero: React.FC<HeroProps> = ({ scrollToSection }) => {
   return (
     <section 
       id="home" 
-      className="min-h-screen flex items-center justify-center relative px-6 pt-20 portfolio-bg-mobile portfolio-bg-desktop"
+      className="min-h-screen flex items-center justify-center relative px-6 pt-20 portfolio-bg-mobile md:portfolio-bg-desktop"
     >
       <div className="absolute inset-0 bg-black/60 z-0" />
       <div className="max-w-4xl mx-auto relative z-10">
@@ -23,20 +23,23 @@ const Hero: React.FC<HeroProps> = ({ scrollToSection }) => {
           </span>
         </div>
         
-        {/* Name - Responsive text sizing */}
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-8xl font-bold mb-4 text-white leading-tight h-12 sm:h-16 md:h-20 lg:h-24 xl:h-32">
-          <TypeAnimation
-            sequence={[
-              'Vinayak Pastey.',
-              2000,
-              'Data Engineer.',
-              2000,
-            ]}
-            wrapper="span"
-            speed={50}
-            repeat={Infinity}
-          />
-        </h1>
+        {/* Name - Responsive text sizing with proper height allocation */}
+        <div className="mb-4">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-7xl font-bold text-white leading-tight min-h-[3rem] sm:min-h-[4rem] md:min-h-[5rem] lg:min-h-[6rem] xl:min-h-[8rem] flex items-center">
+            <TypeAnimation
+              sequence={[
+                'Vinayak Pastey.',
+                2000,
+                'Data Engineer.',
+                2000,
+              ]}
+              wrapper="span"
+              speed={50}
+              repeat={Infinity}
+              className="block w-full"
+            />
+          </h1>
+        </div>
         
         {/* Professional Title and Description */}
         <div className="mb-8 space-y-4">

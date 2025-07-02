@@ -200,12 +200,13 @@
     @apply bg-white/5 backdrop-blur-sm border border-white/20 focus:border-white/40 transition-all duration-200;
   }
 
-  /* Portfolio responsive backgrounds */
+  /* Portfolio responsive backgrounds - Full page coverage */
   .portfolio-bg-mobile {
     background-image: url('/portfolio_backgrounds/background_mobile_1.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    background-attachment: fixed;
   }
   
   .portfolio-bg-desktop {
@@ -213,11 +214,13 @@
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    background-attachment: fixed;
   }
-  
-  @media (min-width: 768px) {
-    .portfolio-bg-desktop {
-      background-image: url('/portfolio_backgrounds/background_desktop_1.gif');
-    }
+}
+
+/* Media query for desktop background */
+@media (min-width: 768px) {
+  .portfolio-bg-desktop {
+    background-image: url('/portfolio_backgrounds/background_desktop_1.gif') !important;
   }
 }
