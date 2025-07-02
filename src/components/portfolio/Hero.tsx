@@ -13,7 +13,7 @@ const Hero: React.FC<HeroProps> = ({ scrollToSection }) => {
     <section 
       id="home" 
       className="min-h-screen flex items-center justify-center relative px-6 pt-20 bg-cover bg-center"
-      style={{ backgroundImage: `url('/background_portflio.gif')` }}
+      style={{ backgroundImage: `url('/portfolio_backgrounds/background_desktop_1.gif')` }}
     >
       <div className="absolute inset-0 bg-black/60 z-0" />
       <div className="max-w-4xl mx-auto relative z-10">
