@@ -203,13 +203,21 @@
   /* Portfolio responsive backgrounds */
   .portfolio-bg-mobile {
     background-image: url('/portfolio_backgrounds/background_mobile_1.jpg');
-    @apply bg-cover bg-center bg-no-repeat;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
   }
   
   .portfolio-bg-desktop {
-    @media (min-width: 768px) {
+    background-image: url('/portfolio_backgrounds/background_mobile_1.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  
+  @media (min-width: 768px) {
+    .portfolio-bg-desktop {
       background-image: url('/portfolio_backgrounds/background_desktop_1.gif');
-      @apply bg-cover bg-center bg-no-repeat;
     }
   }
 }
