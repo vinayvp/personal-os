@@ -12,8 +12,7 @@ const Hero: React.FC<HeroProps> = ({ scrollToSection }) => {
   return (
     <section 
       id="home" 
-      className="min-h-screen flex items-center justify-center relative px-6 pt-20 bg-cover bg-center"
-      style={{ backgroundImage: `url('/portfolio_backgrounds/background_desktop_1.gif')` }}
+      className="min-h-screen flex items-center justify-center relative px-6 pt-20 portfolio-bg-mobile portfolio-bg-desktop"
     >
       <div className="absolute inset-0 bg-black/60 z-0" />
       <div className="max-w-4xl mx-auto relative z-10">
@@ -24,8 +23,8 @@ const Hero: React.FC<HeroProps> = ({ scrollToSection }) => {
           </span>
         </div>
         
-        {/* Name */}
-        <h1 className="text-6xl md:text-8xl font-bold mb-4 text-white leading-tight h-24 md:h-32">
+        {/* Name - Responsive text sizing */}
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-8xl font-bold mb-4 text-white leading-tight h-12 sm:h-16 md:h-20 lg:h-24 xl:h-32">
           <TypeAnimation
             sequence={[
               'Vinayak Pastey.',
@@ -41,7 +40,7 @@ const Hero: React.FC<HeroProps> = ({ scrollToSection }) => {
         
         {/* Professional Title and Description */}
         <div className="mb-8 space-y-4">
-          <p className="text-xl md:text-2xl text-gray-200">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-200">
             A passionate and results-driven Data Engineer specializing in Java, Python, SQL, and GCP.
           </p>
         </div>
@@ -50,11 +49,11 @@ const Hero: React.FC<HeroProps> = ({ scrollToSection }) => {
         <div className="mb-12 space-y-3">
           <div className="flex items-center gap-3 text-gray-300">
             <Rocket className="w-5 h-5 text-primary" />
-            <span>Currently specializing in Data Engineering (Java / Python / SQL / GCP)</span>
+            <span className="text-sm sm:text-base">Currently specializing in Data Engineering (Java / Python / SQL / GCP)</span>
           </div>
           <div className="flex items-center gap-3 text-gray-300">
             <span className="text-yellow-400">⚡</span>
-            <span>Data Engineer at <span className="text-primary font-medium">Cermati</span></span>
+            <span className="text-sm sm:text-base">Data Engineer at <span className="text-primary font-medium">Cermati</span></span>
           </div>
         </div>
 

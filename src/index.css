@@ -199,4 +199,17 @@
   .glass-input {
     @apply bg-white/5 backdrop-blur-sm border border-white/20 focus:border-white/40 transition-all duration-200;
   }
+
+  /* Portfolio responsive backgrounds */
+  .portfolio-bg-mobile {
+    background-image: url('/portfolio_backgrounds/background_mobile_1.jpg');
+    @apply bg-cover bg-center bg-no-repeat;
+  }
+  
+  .portfolio-bg-desktop {
+    @media (min-width: 768px) {
+      background-image: url('/portfolio_backgrounds/background_desktop_1.gif');
+      @apply bg-cover bg-center bg-no-repeat;
+    }
+  }
 }
