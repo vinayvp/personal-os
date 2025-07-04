@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -146,7 +145,14 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
                       {isCompleted ? (
                         <CheckCircle2 className="w-6 h-6 text-green-500" />
                       ) : (
-                        <Circle className="w-6 h-6 text-muted-foreground hover:text-primary" />
+                        <div className="flex items-center justify-center w-6 h-6">
+                          <span 
+                            className="material-icons text-lg hover:text-primary" 
+                            style={{ color: habit.color || '#3B82F6' }}
+                          >
+                            {habit.icon || 'radio_button_checked'}
+                          </span>
+                        </div>
                       )}
                     </Button>
                     <div>
@@ -191,14 +197,19 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
                   </div>
                   <div className="w-full bg-muted rounded-full h-2">
                     <div
-                      className="bg-primary h-2 rounded-full transition-all"
-                      style={{ width: `${progress.percentage}%` }}
+                      className="h-2 rounded-full transition-all"
+                      style={{ 
+                        width: `${progress.percentage}%`,
+                        backgroundColor: habit.color || '#3B82F6'
+                      }}
                     />
                   </div>
                 </div>
                 
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{streak.current}</div>
+                  <div className="text-2xl font-bold" style={{ color: habit.color || '#3B82F6' }}>
+                    {streak.current}
+                  </div>
                   <div className="text-xs text-muted-foreground">Current Streak</div>
                   <div className="text-xs text-muted-foreground">Best: {streak.longest}</div>
                 </div>

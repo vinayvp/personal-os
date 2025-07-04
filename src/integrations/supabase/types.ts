@@ -85,10 +85,12 @@ export type Database = {
       }
       habits: {
         Row: {
+          color: string | null
           created_at: string
           custom_days: number[] | null
           frequency_type: string
           goal: string | null
+          icon: string | null
           id: string
           name: string
           target_count: number
@@ -96,10 +98,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          color?: string | null
           created_at?: string
           custom_days?: number[] | null
           frequency_type: string
           goal?: string | null
+          icon?: string | null
           id?: string
           name: string
           target_count?: number
@@ -107,10 +111,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          color?: string | null
           created_at?: string
           custom_days?: number[] | null
           frequency_type?: string
           goal?: string | null
+          icon?: string | null
           id?: string
           name?: string
           target_count?: number

@@ -23,7 +23,9 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
     frequency_type: 'daily' as 'daily' | 'weekly' | 'custom',
     target_count: 1,
     target_period: 'weekly' as 'weekly' | 'monthly' | 'yearly',
-    custom_days: [] as number[]
+    custom_days: [] as number[],
+    icon: 'radio_button_checked',
+    color: '#3B82F6'
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -36,6 +38,31 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
     { label: 'Thursday', value: 4 },
     { label: 'Friday', value: 5 },
     { label: 'Saturday', value: 6 }
+  ];
+
+  const commonIcons = [
+    { name: 'radio_button_checked', label: 'Default' },
+    { name: 'fitness_center', label: 'Fitness' },
+    { name: 'local_drink', label: 'Drink' },
+    { name: 'menu_book', label: 'Reading' },
+    { name: 'directions_run', label: 'Running' },
+    { name: 'self_improvement', label: 'Meditation' },
+    { name: 'bedtime', label: 'Sleep' },
+    { name: 'restaurant', label: 'Eating' },
+    { name: 'work', label: 'Work' },
+    { name: 'school', label: 'Study' },
+    { name: 'music_note', label: 'Music' },
+    { name: 'brush', label: 'Creative' },
+    { name: 'spa', label: 'Wellness' },
+    { name: 'phone', label: 'Communication' },
+    { name: 'home', label: 'Home' },
+    { name: 'favorite', label: 'Health' }
+  ];
+
+  const colorOptions = [
+    '#3B82F6', '#EF4444', '#10B981', '#F59E0B', 
+    '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16',
+    '#F97316', '#6366F1', '#14B8A6', '#F43F5E'
   ];
 
   const validateForm = () => {
@@ -68,7 +95,9 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
       frequency_type: formData.frequency_type,
       target_count: formData.target_count,
       target_period: formData.target_period,
-      custom_days: formData.frequency_type === 'custom' ? formData.custom_days : undefined
+      custom_days: formData.frequency_type === 'custom' ? formData.custom_days : undefined,
+      icon: formData.icon,
+      color: formData.color
     };
 
     onCreateHabit(habitData);
@@ -82,7 +111,9 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
       frequency_type: 'daily',
       target_count: 1,
       target_period: 'weekly',
-      custom_days: []
+      custom_days: [],
+      icon: 'radio_button_checked',
+      color: '#3B82F6'
     });
     setErrors({});
     onClose();
@@ -99,7 +130,7 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Habit</DialogTitle>
         </DialogHeader>
@@ -128,6 +159,58 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
               placeholder="Describe why this habit is important to you..."
               rows={3}
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Icon</Label>
+              <Select
+                value={formData.icon}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, icon: value }))}
+              >
+                <SelectTrigger>
+                  <div className="flex items-center gap-2">
+                    <span className="material-icons text-sm" style={{ color: formData.color }}>
+                      {formData.icon}
+                    </span>
+                    <SelectValue />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {commonIcons.map((icon) => (
+                    <SelectItem key={icon.name} value={icon.name}>
+                      <div className="flex items-center gap-2">
+                        <span className="material-icons text-sm">{icon.name}</span>
+                        <span>{icon.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Color</Label>
+              <div className="grid grid-cols-6 gap-2">
+                {colorOptions.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className={`w-8 h-8 rounded-full border-2 ${
+                      formData.color === color ? 'border-gray-400' : 'border-gray-200'
+                    }`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => setFormData(prev => ({ ...prev, color }))}
+                  />
+                ))}
+              </div>
+              <Input
+                type="color"
+                value={formData.color}
+                onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                className="w-full h-10"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
