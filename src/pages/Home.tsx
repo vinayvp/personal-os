@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Header from '@/components/portfolio/Header';
 import Hero from '@/components/portfolio/Hero';
@@ -18,17 +17,20 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative portfolio-bg-mobile md:portfolio-bg-desktop">
+      <div className="absolute inset-0 z-0 bg-blur pointer-events-none" />
       <Header scrollToSection={scrollToSection} />
-      <main>
+      <main className="relative z-10">
         <Hero scrollToSection={scrollToSection} />
-        <About />
-        <GithubGraph />
-        <WorkExperience />
-        <Projects />
-        <Contact />
+        <div className="bg-section-glass">
+          <About />
+          <GithubGraph />
+          <WorkExperience />
+          <Projects />
+          <Contact />
+        </div>
+        <Footer />
       </main>
-      <Footer />
     </div>
   );
 };
