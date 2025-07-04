@@ -9,33 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      adsmacro_earnings: {
-        Row: {
-          created_at: string
-          date: string | null
-          earnings: number | null
-          id: number
-          updated_at: string | null
-          user: string | null
-        }
-        Insert: {
-          created_at?: string
-          date?: string | null
-          earnings?: number | null
-          id?: number
-          updated_at?: string | null
-          user?: string | null
-        }
-        Update: {
-          created_at?: string
-          date?: string | null
-          earnings?: number | null
-          id?: number
-          updated_at?: string | null
-          user?: string | null
-        }
-        Relationships: []
-      }
       app_settings: {
         Row: {
           created_at: string
@@ -81,29 +54,67 @@ export type Database = {
         }
         Relationships: []
       }
-      daily_tracking: {
+      habit_completions: {
+        Row: {
+          completed_at: string
+          completion_date: string
+          habit_id: string
+          id: string
+        }
+        Insert: {
+          completed_at?: string
+          completion_date?: string
+          habit_id: string
+          id?: string
+        }
+        Update: {
+          completed_at?: string
+          completion_date?: string
+          habit_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_completions_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
         Row: {
           created_at: string
-          date: string
-          gym_day: boolean
+          custom_days: number[] | null
+          frequency_type: string
+          goal: string | null
           id: string
-          relief_day: boolean
+          name: string
+          target_count: number
+          target_period: string
           updated_at: string
         }
         Insert: {
           created_at?: string
-          date: string
-          gym_day?: boolean
+          custom_days?: number[] | null
+          frequency_type: string
+          goal?: string | null
           id?: string
-          relief_day?: boolean
+          name: string
+          target_count?: number
+          target_period?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
-          date?: string
-          gym_day?: boolean
+          custom_days?: number[] | null
+          frequency_type?: string
+          goal?: string | null
           id?: string
-          relief_day?: boolean
+          name?: string
+          target_count?: number
+          target_period?: string
           updated_at?: string
         }
         Relationships: []
