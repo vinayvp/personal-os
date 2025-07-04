@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -50,7 +49,8 @@ const HabitTracker = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setHabits(data || []);
+      // Type assertion to ensure compatibility with our Habit interface
+      setHabits((data || []) as Habit[]);
     } catch (error) {
       console.error('Error fetching habits:', error);
       toast({
@@ -71,7 +71,7 @@ const HabitTracker = () => {
         .order('completion_date', { ascending: false });
 
       if (error) throw error;
-      setCompletions(data || []);
+      setCompletions((data || []) as HabitCompletion[]);
     } catch (error) {
       console.error('Error fetching completions:', error);
     }
@@ -87,7 +87,7 @@ const HabitTracker = () => {
 
       if (error) throw error;
       
-      setHabits(prev => [data, ...prev]);
+      setHabits(prev => [data as Habit, ...prev]);
       setIsCreateModalOpen(false);
       
       toast({
@@ -157,7 +157,7 @@ const HabitTracker = () => {
           .single();
 
         if (error) throw error;
-        setCompletions(prev => [...prev, data]);
+        setCompletions(prev => [...prev, data as HabitCompletion]);
       }
     } catch (error) {
       console.error('Error toggling completion:', error);
