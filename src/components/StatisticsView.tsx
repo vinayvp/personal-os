@@ -57,7 +57,7 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
       
       const result = Array.from(days.values())
         .sort((a, b) => a.day.localeCompare(b.day))
-        .slice(-30); // Last 30 days
+        .slice(-30);
       console.log('Daily data computed:', result);
       return result;
     } catch (error) {
@@ -208,66 +208,6 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
     }
   }, [records]);
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-lg">{data.icon}</span>
-            <span className="font-medium text-foreground">{data.name}</span>
-          </div>
-          <div className="text-sm text-muted-foreground">
-            <div>{data.value} days</div>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value }: any) => {
-    if (value === 0) return null;
-    
-    const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-    return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="white" 
-        textAnchor={x > cx ? 'start' : 'end'} 
-        dominantBaseline="central"
-        fontSize={12}
-        fontWeight="600"
-      >
-        {value}
-      </text>
-    );
-  };
-
-  const CustomLegend = ({ payload }: any) => {
-    return (
-      <div className="flex flex-wrap justify-center gap-4 mt-4">
-        {payload?.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center gap-2">
-            <div 
-              className="w-4 h-4 rounded-full border-2 border-white shadow-sm" 
-              style={{ backgroundColor: entry.color }}
-            />
-            <span className="text-sm text-foreground flex items-center gap-1 font-medium">
-              <span>{entry.payload?.icon}</span>
-              {entry.value} ({entry.payload?.value} days)
-            </span>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
   const renderBarChart = (data: any[], dataKey: string) => {
     if (!data || data.length === 0) {
       return (
@@ -278,20 +218,16 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
     }
 
     return (
-      <div className="w-full h-[300px]">
-        <ChartContainer config={chartConfig} className="h-full w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={dataKey} />
-              <YAxis />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Bar dataKey="gym" fill="var(--color-gym)" name="Gym Days" />
-              <Bar dataKey="nonut" fill="var(--color-nonut)" name="NoNut Days" />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-      </div>
+      <ChartContainer config={chartConfig}>
+        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey={dataKey} />
+          <YAxis />
+          <ChartTooltip content={<ChartTooltipContent />} />
+          <Bar dataKey="gym" fill="var(--color-gym)" name="Gym Days" />
+          <Bar dataKey="nonut" fill="var(--color-nonut)" name="NoNut Days" />
+        </BarChart>
+      </ChartContainer>
     );
   };
 
@@ -305,24 +241,19 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
     }
 
     return (
-      <div className="w-full h-[300px]">
-        <ChartContainer config={chartConfig} className="h-full w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={dataKey} />
-              <YAxis />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Line type="monotone" dataKey="gym" stroke="var(--color-gym)" name="Gym Days" strokeWidth={2} />
-              <Line type="monotone" dataKey="nonut" stroke="var(--color-nonut)" name="NoNut Days" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartContainer>
-      </div>
+      <ChartContainer config={chartConfig}>
+        <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey={dataKey} />
+          <YAxis />
+          <ChartTooltip content={<ChartTooltipContent />} />
+          <Line type="monotone" dataKey="gym" stroke="var(--color-gym)" name="Gym Days" strokeWidth={2} />
+          <Line type="monotone" dataKey="nonut" stroke="var(--color-nonut)" name="NoNut Days" strokeWidth={2} />
+        </LineChart>
+      </ChartContainer>
     );
   };
 
-  // Safety check for records
   if (!records || !Array.isArray(records)) {
     console.warn('Invalid records data:', records);
     return (
@@ -407,7 +338,6 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={CustomLabel}
                         outerRadius={100}
                         innerRadius={40}
                         fill="#8884d8"
@@ -421,11 +351,10 @@ const StatisticsView = ({ records }: StatisticsViewProps) => {
                           />
                         ))}
                       </Pie>
-                      <ChartTooltip content={<CustomTooltip />} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <CustomLegend payload={overallStats} />
                 
                 <div className="mt-4 p-4 bg-muted/50 rounded-lg">
                   <div className="grid grid-cols-2 gap-4 text-sm">

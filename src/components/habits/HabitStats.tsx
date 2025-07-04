@@ -1,8 +1,9 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { format, startOfWeek, eachDayOfInterval, subWeeks, startOfMonth, eachWeekOfInterval, subMonths } from 'date-fns';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ResponsiveContainer } from 'recharts';
+import { format, startOfWeek, eachDayOfInterval, subWeeks, eachWeekOfInterval } from 'date-fns';
 import { TrendingUp, Target, Award, Calendar } from 'lucide-react';
 import type { Habit, HabitCompletion } from '../HabitTracker';
 
@@ -11,13 +12,27 @@ interface HabitStatsProps {
   completions: HabitCompletion[];
 }
 
+const chartConfig = {
+  completions: {
+    label: "Completions",
+    color: "hsl(var(--primary))",
+  },
+  gym: {
+    label: "Gym Days",
+    color: "hsl(var(--primary))",
+  },
+  nonut: {
+    label: "NoNut Days",
+    color: "hsl(var(--destructive))",
+  },
+};
+
 const HabitStats = ({ habits, completions }: HabitStatsProps) => {
   // Calculate overall stats
   const totalHabits = habits.length;
   const totalCompletions = completions.length;
   const completionsToday = completions.filter(c => c.completion_date === format(new Date(), 'yyyy-MM-dd')).length;
   
-  // Calculate completion rate for last 30 days
   const last30Days = eachDayOfInterval({
     start: subWeeks(new Date(), 4),
     end: new Date()
@@ -31,7 +46,6 @@ const HabitStats = ({ habits, completions }: HabitStatsProps) => {
   
   const completionRate = possibleCompletions > 0 ? Math.round((actualCompletions / possibleCompletions) * 100) : 0;
 
-  // Weekly completion data for chart
   const weeklyData = eachWeekOfInterval({
     start: subWeeks(new Date(), 7),
     end: new Date()
@@ -50,7 +64,6 @@ const HabitStats = ({ habits, completions }: HabitStatsProps) => {
     };
   });
 
-  // Daily completion data for the last 14 days
   const dailyData = eachDayOfInterval({
     start: subWeeks(new Date(), 2),
     end: new Date()
@@ -65,7 +78,6 @@ const HabitStats = ({ habits, completions }: HabitStatsProps) => {
     };
   });
 
-  // Habit completion distribution
   const habitCompletionData = habits.map(habit => {
     const habitCompletions = completions.filter(c => c.habit_id === habit.id).length;
     return {
@@ -74,10 +86,8 @@ const HabitStats = ({ habits, completions }: HabitStatsProps) => {
     };
   }).sort((a, b) => b.completions - a.completions);
 
-  // Best performing habits (top 5)
   const topHabits = habitCompletionData.slice(0, 5);
 
-  // Calculate streaks for each habit
   const habitStreaks = habits.map(habit => {
     const habitCompletions = completions
       .filter(c => c.habit_id === habit.id)
@@ -120,8 +130,6 @@ const HabitStats = ({ habits, completions }: HabitStatsProps) => {
   });
 
   const bestStreak = Math.max(...habitStreaks.map(h => h.longest), 0);
-
-  const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'];
 
   return (
     <div className="space-y-6">
@@ -185,17 +193,15 @@ const HabitStats = ({ habits, completions }: HabitStatsProps) => {
             <CardTitle>Daily Completions (Last 2 Weeks)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={dailyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="completions" stroke="#8884d8" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <ChartContainer config={chartConfig}>
+              <LineChart data={dailyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="day" />
+                <YAxis />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line type="monotone" dataKey="completions" stroke="var(--color-completions)" strokeWidth={2} />
+              </LineChart>
+            </ChartContainer>
           </CardContent>
         </Card>
 
@@ -204,17 +210,15 @@ const HabitStats = ({ habits, completions }: HabitStatsProps) => {
             <CardTitle>Weekly Completions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="completions" fill="#82ca9d" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <ChartContainer config={chartConfig}>
+              <BarChart data={weeklyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="week" />
+                <YAxis />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="completions" fill="var(--color-completions)" />
+              </BarChart>
+            </ChartContainer>
           </CardContent>
         </Card>
       </div>
@@ -226,17 +230,15 @@ const HabitStats = ({ habits, completions }: HabitStatsProps) => {
             <CardTitle>Top Performing Habits</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topHabits} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis dataKey="name" type="category" width={100} />
-                  <Tooltip />
-                  <Bar dataKey="completions" fill="#ffc658" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <ChartContainer config={chartConfig}>
+              <BarChart data={topHabits} layout="horizontal">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis dataKey="name" type="category" width={100} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="completions" fill="var(--color-completions)" />
+              </BarChart>
+            </ChartContainer>
           </CardContent>
         </Card>
 
