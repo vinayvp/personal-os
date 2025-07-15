@@ -34,7 +34,7 @@ const TodoApp = () => {
   const fetchTodos = async () => {
     try {
       const { data, error } = await supabase
-        .from('todos')
+        .from('todos' as any)
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -55,7 +55,7 @@ const TodoApp = () => {
   const handleCreateTodo = async (todoData: Omit<Todo, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data, error } = await supabase
-        .from('todos')
+        .from('todos' as any)
         .insert(todoData)
         .select()
         .single();
@@ -85,7 +85,7 @@ const TodoApp = () => {
       if (!todo) return;
 
       const { error } = await supabase
-        .from('todos')
+        .from('todos' as any)
         .update({ completed: !todo.completed })
         .eq('id', todoId);
 
@@ -107,7 +107,7 @@ const TodoApp = () => {
   const handleDeleteTodo = async (todoId: string) => {
     try {
       const { error } = await supabase
-        .from('todos')
+        .from('todos' as any)
         .delete()
         .eq('id', todoId);
 
