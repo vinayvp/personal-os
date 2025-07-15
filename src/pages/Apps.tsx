@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileText, TrendingUp, LogOut, Menu, X } from 'lucide-react';
+import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare } from 'lucide-react';
 import NotesApp from '@/components/NotesApp';
 import TrackingApp from '@/components/TrackingApp';
+import TodoApp from '@/components/TodoApp';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
@@ -33,6 +34,8 @@ const Apps = () => {
         return <NotesApp />;
       case 'tracking':
         return <TrackingApp />;
+      case 'todos':
+        return <TodoApp />;
       default:
         return null;
     }
@@ -53,6 +56,14 @@ const Apps = () => {
             >
               <TrendingUp className="mr-2 h-4 w-4" />
               Tracker
+            </Button>
+            <Button
+              variant={selectedApp === 'todos' ? 'default' : 'outline'}
+              onClick={() => setSelectedApp('todos')}
+              size="sm"
+            >
+              <CheckSquare className="mr-2 h-4 w-4" />
+              Todos
             </Button>
             <Button
               variant={selectedApp === 'notes' ? 'default' : 'outline'}
@@ -104,6 +115,15 @@ const Apps = () => {
             >
               <TrendingUp className="mr-2 h-4 w-4" />
               Tracker
+            </Button>
+            <Button
+              variant={selectedApp === 'todos' ? 'default' : 'outline'}
+              onClick={() => handleAppSelect('todos')}
+              size="sm"
+              className="w-full justify-start"
+            >
+              <CheckSquare className="mr-2 h-4 w-4" />
+              Todos
             </Button>
             <Button
               variant={selectedApp === 'notes' ? 'default' : 'outline'}
