@@ -39,7 +39,7 @@ const TodoApp = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTodos((data || []) as Todo[]);
+      setTodos((data || []) as any);
     } catch (error) {
       console.error('Error fetching todos:', error);
       toast({
@@ -62,7 +62,7 @@ const TodoApp = () => {
 
       if (error) throw error;
       
-      setTodos(prev => [data as Todo, ...prev]);
+      setTodos(prev => [data as any, ...prev]);
       setIsCreateModalOpen(false);
       
       toast({

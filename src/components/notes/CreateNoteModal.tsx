@@ -109,8 +109,16 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
+        <DialogHeader className="flex flex-row items-center justify-between space-y-0">
           <DialogTitle>Create New Note</DialogTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsOpen(false)}
+            className="ml-2"
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </DialogHeader>
         
         <div className="space-y-4 mt-4 flex-1 overflow-hidden">
@@ -183,7 +191,7 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
             </TabsContent>
             
             <TabsContent value="preview" className="h-full mt-2">
-              <div className="h-full p-4 border rounded-md bg-background overflow-auto prose prose-sm max-w-none dark:prose-invert">
+              <div className="h-full p-4 border rounded-md bg-background overflow-auto prose prose-sm max-w-none dark:prose-invert break-words">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={[rehypeHighlight]}
@@ -202,11 +210,11 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
                     code: ({className, children, ...props}) => {
                       const match = /language-(\w+)/.exec(className || '');
                       return match ? (
-                        <code className={`${className} block bg-muted p-4 rounded-md overflow-auto text-sm`} {...props}>
+                        <code className={`${className} block bg-muted p-4 rounded-md overflow-x-auto text-sm`} {...props}>
                           {children}
                         </code>
                       ) : (
-                        <code className="bg-muted px-2 py-1 rounded text-sm font-mono" {...props}>
+                        <code className="bg-muted px-2 py-1 rounded text-sm font-mono break-all" {...props}>
                           {children}
                         </code>
                       );
@@ -232,12 +240,6 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
           </Tabs>
 
           <div className="flex gap-2 justify-end pt-4 border-t">
-            <Button
-              variant="outline"
-              onClick={() => setIsOpen(false)}
-            >
-              Cancel
-            </Button>
             <Button
               onClick={handleCreateNote}
               disabled={isCreating}

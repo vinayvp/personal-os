@@ -103,6 +103,14 @@ const NoteViewModal: React.FC<NoteViewModalProps> = ({ note, onClose, onEdit, on
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="ml-2"
+            >
+              <X className="w-4 h-4" />
+            </Button>
           </div>
         </DialogHeader>
 
@@ -122,7 +130,7 @@ const NoteViewModal: React.FC<NoteViewModalProps> = ({ note, onClose, onEdit, on
             </div>
           )}
 
-          <div className="max-h-[60vh] overflow-auto p-4 border rounded-md bg-background prose prose-sm max-w-none dark:prose-invert">
+          <div className="max-h-[60vh] overflow-auto p-4 border rounded-md bg-background prose prose-sm max-w-none dark:prose-invert break-words">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeHighlight]}
@@ -145,17 +153,17 @@ const NoteViewModal: React.FC<NoteViewModalProps> = ({ note, onClose, onEdit, on
                 code: ({className, children, ...props}) => {
                   const match = /language-(\w+)/.exec(className || '');
                   return match ? (
-                    <code className={`${className} block bg-muted p-4 rounded-md overflow-auto text-sm`} {...props}>
+                    <code className={`${className} block bg-muted p-4 rounded-md overflow-x-auto text-sm`} {...props}>
                       {children}
                     </code>
                   ) : (
-                    <code className="bg-muted px-2 py-1 rounded text-sm font-mono" {...props}>
+                    <code className="bg-muted px-2 py-1 rounded text-sm font-mono break-all" {...props}>
                       {children}
                     </code>
                   );
                 },
                 pre: ({children, ...props}) => (
-                  <pre className="bg-muted p-4 rounded-md overflow-auto mb-4 text-sm" {...props}>
+                  <pre className="bg-muted p-4 rounded-md overflow-x-auto mb-4 text-sm whitespace-pre-wrap break-all" {...props}>
                     {children}
                   </pre>
                 ),
