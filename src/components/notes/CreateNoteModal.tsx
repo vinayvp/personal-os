@@ -239,7 +239,7 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
             </TabsContent>
           </Tabs>
 
-          <div className="flex gap-2 justify-end pt-4 border-t">
+          <div className="flex gap-2 justify-end pt-12">
             <Button
               onClick={handleCreateNote}
               disabled={isCreating}
