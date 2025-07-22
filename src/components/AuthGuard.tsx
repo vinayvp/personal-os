@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +14,6 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [appPassword, setAppPassword] = useState<string | null>(null);
   const [isLoadingPassword, setIsLoadingPassword] = useState(true);
   const { toast } = useToast();
 
@@ -23,58 +21,23 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
     // Check if user is already authenticated (stored in sessionStorage)
     const isAuth = sessionStorage.getItem('app_authenticated') === 'true';
     setIsAuthenticated(isAuth);
-
-    // Fetch the password from app_settings table
-    const fetchAppPassword = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('app_settings')
-          .select('setting_value')
-          .eq('setting_key', 'app_password')
-          .single();
-
-        if (error) {
-          console.error('Error fetching app password:', error);
-          toast({
-            variant: "destructive",
-            title: "Configuration Error",
-            description: "Could not load application settings. Please contact administrator.",
-          });
-          return;
-        }
-
-        setAppPassword(data?.setting_value || null);
-      } catch (error) {
-        console.error('Error fetching app password:', error);
-        toast({
-          variant: "destructive",
-          title: "Configuration Error",
-          description: "Could not load application settings. Please contact administrator.",
-        });
-      } finally {
-        setIsLoadingPassword(false);
-      }
-    };
-
-    fetchAppPassword();
-  }, [toast]);
+    setIsLoadingPassword(false);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!appPassword) {
-      toast({
-        variant: "destructive",
-        title: "Configuration Error",
-        description: "Application password not configured. Please contact administrator.",
-      });
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      if (password === appPassword) {
+      const { data, error } = await supabase.functions.invoke('check-app-password', {
+        body: { password },
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data?.success) {
         setIsAuthenticated(true);
         sessionStorage.setItem('app_authenticated', 'true');
         toast({
@@ -137,12 +100,11 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full"
                 required
-                disabled={!appPassword}
               />
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading || !appPassword}
+                disabled={isLoading}
               >
                 {isLoading ? 'Verifying...' : 'Access Applications'}
               </Button>
