@@ -10,6 +10,7 @@ import HabitDashboard from './habits/HabitDashboard';
 import HabitCalendar from './habits/HabitCalendar';
 import HabitStats from './habits/HabitStats';
 import CreateHabitModal from './habits/CreateHabitModal';
+import EditHabitModal from './habits/EditHabitModal';
 
 export interface Habit {
   id: string;
@@ -37,6 +38,8 @@ const HabitTracker = () => {
   const [completions, setCompletions] = useState<HabitCompletion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -107,6 +110,35 @@ const HabitTracker = () => {
     }
   };
 
+  const handleEditHabit = async (habitId: string, habitData: Omit<Habit, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('habits')
+        .update(habitData)
+        .eq('id', habitId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setHabits(prev => prev.map(h => h.id === habitId ? data as Habit : h));
+      setIsEditModalOpen(false);
+      setEditingHabit(null);
+      
+      toast({
+        title: "Success",
+        description: "Habit updated successfully!",
+      });
+    } catch (error) {
+      console.error('Error updating habit:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update habit.",
+      });
+    }
+  };
+
   const handleDeleteHabit = async (habitId: string) => {
     try {
       const { error } = await supabase
@@ -131,6 +163,11 @@ const HabitTracker = () => {
         description: "Failed to delete habit.",
       });
     }
+  };
+
+  const handleOpenEditModal = (habit: Habit) => {
+    setEditingHabit(habit);
+    setIsEditModalOpen(true);
   };
 
   const handleToggleCompletion = async (habitId: string, date: string) => {
@@ -219,6 +256,7 @@ const HabitTracker = () => {
               completions={completions}
               onToggleCompletion={handleToggleCompletion}
               onDeleteHabit={handleDeleteHabit}
+              onEditHabit={handleOpenEditModal}
             />
           </TabsContent>
 
@@ -242,6 +280,13 @@ const HabitTracker = () => {
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           onCreateHabit={handleCreateHabit}
+        />
+
+        <EditHabitModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onEditHabit={handleEditHabit}
+          habit={editingHabit}
         />
       </div>
     </div>

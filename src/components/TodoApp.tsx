@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { CheckSquare, Plus, List } from 'lucide-react';
+import { CheckSquare, Plus, List, Eye, EyeOff } from 'lucide-react';
 import TodoList from './todos/TodoList';
 import TodoStats from './todos/TodoStats';
 import CreateTodoModal from './todos/CreateTodoModal';
@@ -25,6 +25,7 @@ const TodoApp = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [hideCompleted, setHideCompleted] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -148,10 +149,20 @@ const TodoApp = () => {
             <h1 className="text-3xl font-bold text-foreground">Todo App</h1>
             <p className="text-muted-foreground">Organize your tasks and get things done</p>
           </div>
-          <Button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            New Todo
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setHideCompleted(!hideCompleted)}
+              className="flex items-center gap-2"
+            >
+              {hideCompleted ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              {hideCompleted ? 'Show' : 'Hide'} Completed
+            </Button>
+            <Button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              New Todo
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="list" className="space-y-6">
@@ -171,6 +182,7 @@ const TodoApp = () => {
               todos={todos}
               onToggleComplete={handleToggleComplete}
               onDeleteTodo={handleDeleteTodo}
+              hideCompleted={hideCompleted}
             />
           </TabsContent>
 

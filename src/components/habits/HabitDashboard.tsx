@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Circle, Trash2, Target, Calendar } from 'lucide-react';
+import { CheckCircle2, Circle, Trash2, Target, Calendar, Edit2 } from 'lucide-react';
 import { format, isToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import type { Habit, HabitCompletion } from '../HabitTracker';
 
@@ -11,9 +11,10 @@ interface HabitDashboardProps {
   completions: HabitCompletion[];
   onToggleCompletion: (habitId: string, date: string) => void;
   onDeleteHabit: (habitId: string) => void;
+  onEditHabit: (habit: Habit) => void;
 }
 
-const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit }: HabitDashboardProps) => {
+const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit, onEditHabit }: HabitDashboardProps) => {
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const isHabitCompletedToday = (habitId: string) => {
@@ -177,14 +178,24 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
                   </div>
                 </div>
                 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onDeleteHabit(habit.id)}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEditHabit(habit)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDeleteHabit(habit.id)}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             

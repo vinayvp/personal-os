@@ -13,9 +13,10 @@ interface TodoListProps {
   todos: Todo[];
   onToggleComplete: (todoId: string) => void;
   onDeleteTodo: (todoId: string) => void;
+  hideCompleted?: boolean;
 }
 
-const TodoList = ({ todos, onToggleComplete, onDeleteTodo }: TodoListProps) => {
+const TodoList = ({ todos, onToggleComplete, onDeleteTodo, hideCompleted = false }: TodoListProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -31,7 +32,9 @@ const TodoList = ({ todos, onToggleComplete, onDeleteTodo }: TodoListProps) => {
       (filterStatus === 'completed' && todo.completed) ||
       (filterStatus === 'pending' && !todo.completed);
 
-    return matchesSearch && matchesPriority && matchesStatus;
+    const notHidden = !hideCompleted || !todo.completed;
+
+    return matchesSearch && matchesPriority && matchesStatus && notHidden;
   });
 
   const getPriorityColor = (priority: string) => {
