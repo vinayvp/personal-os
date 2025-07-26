@@ -65,18 +65,21 @@ export type Database = {
           completion_date: string
           habit_id: string
           id: string
+          user_id: string | null
         }
         Insert: {
           completed_at?: string
           completion_date?: string
           habit_id: string
           id?: string
+          user_id?: string | null
         }
         Update: {
           completed_at?: string
           completion_date?: string
           habit_id?: string
           id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -101,6 +104,7 @@ export type Database = {
           target_count: number
           target_period: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           color?: string | null
@@ -114,6 +118,7 @@ export type Database = {
           target_count?: number
           target_period?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           color?: string | null
@@ -127,6 +132,7 @@ export type Database = {
           target_count?: number
           target_period?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -138,6 +144,7 @@ export type Database = {
           image_size: number | null
           image_url: string
           note_id: string | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -146,6 +153,7 @@ export type Database = {
           image_size?: number | null
           image_url: string
           note_id?: string | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -154,6 +162,7 @@ export type Database = {
           image_size?: number | null
           image_url?: string
           note_id?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -169,14 +178,17 @@ export type Database = {
         Row: {
           note_id: string
           tag_id: string
+          user_id: string | null
         }
         Insert: {
           note_id: string
           tag_id: string
+          user_id?: string | null
         }
         Update: {
           note_id?: string
           tag_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -204,6 +216,7 @@ export type Database = {
           markdown_content: string | null
           title: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           content?: string | null
@@ -213,6 +226,7 @@ export type Database = {
           markdown_content?: string | null
           title?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           content?: string | null
@@ -222,6 +236,7 @@ export type Database = {
           markdown_content?: string | null
           title?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -231,18 +246,21 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          user_id: string | null
         }
         Insert: {
           color?: string | null
           created_at?: string
           id?: string
           name: string
+          user_id?: string | null
         }
         Update: {
           color?: string | null
           created_at?: string
           id?: string
           name?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -256,6 +274,7 @@ export type Database = {
           priority: string
           title: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           completed?: boolean
@@ -266,6 +285,7 @@ export type Database = {
           priority?: string
           title: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           completed?: boolean
@@ -276,6 +296,7 @@ export type Database = {
           priority?: string
           title?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
