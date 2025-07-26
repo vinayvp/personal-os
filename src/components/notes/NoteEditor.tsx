@@ -34,7 +34,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
     setTitle(note.title);
     setContent(note.markdown_content || note.content || '');
     setSelectedTags(note.tags || []);
-    setIsEditing(false); // Reset to preview mode when note changes
+    setIsEditing(true); // Reset to preview mode when note changes
   }, [note]);
 
   const handleSave = useCallback(async () => {
