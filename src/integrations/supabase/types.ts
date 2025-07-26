@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_passwords: {
+        Row: {
+          created_at: string
+          id: string
+          password_hash: string
+          salt: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          password_hash: string
+          salt: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          password_hash?: string
+          salt?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      app_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          session_token: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          session_token: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          session_token?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           created_at: string
@@ -133,6 +178,27 @@ export type Database = {
           target_period?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      login_attempts: {
+        Row: {
+          attempt_time: string
+          id: string
+          ip_address: unknown
+          success: boolean
+        }
+        Insert: {
+          attempt_time?: string
+          id?: string
+          ip_address: unknown
+          success?: boolean
+        }
+        Update: {
+          attempt_time?: string
+          id?: string
+          ip_address?: unknown
+          success?: boolean
         }
         Relationships: []
       }
