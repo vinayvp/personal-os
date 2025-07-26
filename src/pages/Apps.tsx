@@ -1,12 +1,14 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare } from 'lucide-react';
+import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare, User } from 'lucide-react';
 import NotesApp from '@/components/NotesApp';
 import TrackingApp from '@/components/TrackingApp';
 import TodoApp from '@/components/TodoApp';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 const Apps = () => {
   const [selectedApp, setSelectedApp] = React.useState<string>('tracking');

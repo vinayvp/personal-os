@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Menu, X } from 'lucide-react';
+import { Download, Menu, X, AppWindow } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface HeaderProps {
   scrollToSection: (id: string) => void;
@@ -45,11 +46,17 @@ const Header: React.FC<HeaderProps> = ({ scrollToSection }) => {
               </Button>
             </div>
             
-            <div className="pl-2">
+            <div className="flex items-center gap-2 pl-2">
+              <Button asChild size="sm" variant="outline">
+                <Link to="/auth">
+                  <AppWindow className="w-4 h-4 mr-2" />
+                  My Apps
+                </Link>
+              </Button>
               <Button asChild size="sm">
                 <a href="/Vinayak_Pastey_Resume.pdf" download>
                   <Download className="w-4 h-4 mr-2" />
-                  Download Resume
+                  Resume
                 </a>
               </Button>
             </div>
@@ -106,10 +113,16 @@ const Header: React.FC<HeaderProps> = ({ scrollToSection }) => {
             >
               Contact
             </Button>
+            <Button asChild size="sm" variant="outline" className="w-full">
+              <Link to="/auth">
+                <AppWindow className="w-4 h-4 mr-2" />
+                My Apps
+              </Link>
+            </Button>
             <Button asChild size="sm" className="w-full">
               <a href="/Vinayak_Pastey_Resume.pdf" download>
                 <Download className="w-4 h-4 mr-2" />
-                Download Resume
+                Resume
               </a>
             </Button>
           </div>

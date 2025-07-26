@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Lock } from 'lucide-react';
+import { Lock, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface AuthGuardProps {
@@ -15,12 +15,27 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingPassword, setIsLoadingPassword] = useState(true);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already authenticated (stored in sessionStorage)
-    const isAuth = sessionStorage.getItem('app_authenticated') === 'true';
-    setIsAuthenticated(isAuth);
+    // Check if user has a valid session token
+    const token = sessionStorage.getItem('app_session_token');
+    const expiry = sessionStorage.getItem('app_session_expiry');
+    
+    if (token && expiry) {
+      const expiryDate = new Date(expiry);
+      if (expiryDate > new Date()) {
+        setIsAuthenticated(true);
+        setSessionToken(token);
+      } else {
+        // Session expired, clear storage
+        sessionStorage.removeItem('app_session_token');
+        sessionStorage.removeItem('app_session_expiry');
+        sessionStorage.removeItem('app_authenticated');
+      }
+    }
+    
     setIsLoadingPassword(false);
   }, []);
 
@@ -34,12 +49,26 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
       });
 
       if (error) {
+        if (error.message.includes('429')) {
+          toast({
+            variant: "destructive",
+            title: "Too Many Attempts",
+            description: "Please wait a few minutes before trying again.",
+          });
+          return;
+        }
         throw new Error(error.message);
       }
 
-      if (data?.success) {
+      if (data?.success && data?.sessionToken) {
         setIsAuthenticated(true);
+        setSessionToken(data.sessionToken);
+        
+        // Store session information securely
         sessionStorage.setItem('app_authenticated', 'true');
+        sessionStorage.setItem('app_session_token', data.sessionToken);
+        sessionStorage.setItem('app_session_expiry', data.expiresAt);
+        
         toast({
           title: "Welcome!",
           description: "Successfully logged in to your applications.",
@@ -51,16 +80,29 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
           description: "Please enter the correct password.",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred.",
+        description: error.message || "An unexpected error occurred.",
       });
     } finally {
       setIsLoading(false);
       setPassword('');
     }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setSessionToken(null);
+    sessionStorage.removeItem('app_authenticated');
+    sessionStorage.removeItem('app_session_token');
+    sessionStorage.removeItem('app_session_expiry');
+    
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out.",
+    });
   };
 
   if (isLoadingPassword) {
@@ -115,7 +157,22 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="absolute top-4 right-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleLogout}
+          className="flex items-center gap-2"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </Button>
+      </div>
+      {children}
+    </div>
+  );
 };
 
 export default AuthGuard;
