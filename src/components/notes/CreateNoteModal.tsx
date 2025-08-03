@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, X, Save, Eye, Edit } from 'lucide-react';
+import { Plus, X, Save, Eye, Edit, Upload, Image } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -29,6 +29,8 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [activeTab, setActiveTab] = useState('edit');
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const resetForm = () => {
@@ -98,6 +100,91 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
 
   const removeTag = (tagId: string) => {
     setSelectedTags(prev => prev.filter(t => t.id !== tagId));
+  };
+
+  const uploadImage = async (file: File, noteId?: string) => {
+    if (!file.type.startsWith('image/')) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please select an image file.",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('note-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('note-images')
+        .getPublicUrl(filePath);
+
+      if (noteId) {
+        await supabase
+          .from('note_images')
+          .insert({
+            note_id: noteId,
+            image_url: publicUrl,
+            image_name: file.name,
+            image_size: file.size,
+          });
+      }
+
+      const imageMarkdown = `![${file.name}](${publicUrl})`;
+      setContent(prev => prev + '\n\n' + imageMarkdown);
+
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully!",
+      });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to upload image.",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleImageDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      uploadImage(file);
+    }
+  };
+
+  const handleImagePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.indexOf('image') !== -1) {
+        const file = item.getAsFile();
+        if (file) {
+          uploadImage(file);
+        }
+      }
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      uploadImage(file);
+    }
   };
 
   return (
@@ -182,12 +269,40 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
             </TabsList>
             
             <TabsContent value="edit" className="h-full mt-2">
-              <Textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Start writing your note... You can use Markdown syntax!&#10;&#10;Try checkboxes:&#10;- [ ] Unchecked item&#10;- [x] Checked item"
-                className="h-full resize-none font-mono"
-              />
+              <div className="h-full space-y-2">
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    <Image className="w-4 h-4 mr-2" />
+                    {isUploading ? 'Uploading...' : 'Upload Image'}
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <span className="text-sm text-muted-foreground flex items-center">
+                    Or drag & drop / paste images
+                  </span>
+                </div>
+                <Textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  onDrop={handleImageDrop}
+                  onDragOver={(e) => e.preventDefault()}
+                  onPaste={handleImagePaste}
+                  placeholder="Start writing your note... You can use Markdown syntax!&#10;&#10;Try checkboxes:&#10;- [ ] Unchecked item&#10;- [x] Checked item&#10;&#10;You can also drag & drop or paste images directly!"
+                  className="flex-1 resize-none font-mono"
+                  style={{ height: 'calc(100% - 40px)' }}
+                />
+              </div>
             </TabsContent>
             
             <TabsContent value="preview" className="h-full mt-2">
