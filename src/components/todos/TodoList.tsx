@@ -6,17 +6,18 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Calendar, Search, Filter, CheckSquare } from 'lucide-react';
+import { Trash2, Calendar, Search, Filter, CheckSquare, Edit } from 'lucide-react';
 import { Todo } from '../TodoApp';
 
 interface TodoListProps {
   todos: Todo[];
   onToggleComplete: (todoId: string) => void;
   onDeleteTodo: (todoId: string) => void;
+  onEditTodo: (todo: Todo) => void;
   hideCompleted?: boolean;
 }
 
-const TodoList = ({ todos, onToggleComplete, onDeleteTodo, hideCompleted = false }: TodoListProps) => {
+const TodoList = ({ todos, onToggleComplete, onDeleteTodo, onEditTodo, hideCompleted = false }: TodoListProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -141,6 +142,15 @@ const TodoList = ({ todos, onToggleComplete, onDeleteTodo, hideCompleted = false
                         <Badge variant="outline" className={getPriorityColor(todo.priority)}>
                           {todo.priority}
                         </Badge>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onEditTodo(todo)}
+                          className="text-muted-foreground hover:text-foreground"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
                         
                         <Button
                           variant="ghost"

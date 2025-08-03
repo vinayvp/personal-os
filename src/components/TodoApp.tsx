@@ -9,6 +9,7 @@ import { CheckSquare, Plus, List, Eye, EyeOff } from 'lucide-react';
 import TodoList from './todos/TodoList';
 import TodoStats from './todos/TodoStats';
 import CreateTodoModal from './todos/CreateTodoModal';
+import EditTodoModal from './todos/EditTodoModal';
 
 export interface Todo {
   id: string;
@@ -25,6 +26,7 @@ const TodoApp = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [hideCompleted, setHideCompleted] = useState(true);
   const { toast } = useToast();
 
@@ -130,6 +132,15 @@ const TodoApp = () => {
     }
   };
 
+  const handleEditTodo = (todo: Todo) => {
+    setEditingTodo(todo);
+  };
+
+  const handleTodoUpdated = () => {
+    fetchTodos();
+    setEditingTodo(null);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -182,6 +193,7 @@ const TodoApp = () => {
               todos={todos}
               onToggleComplete={handleToggleComplete}
               onDeleteTodo={handleDeleteTodo}
+              onEditTodo={handleEditTodo}
               hideCompleted={hideCompleted}
             />
           </TabsContent>
@@ -195,6 +207,12 @@ const TodoApp = () => {
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           onCreateTodo={handleCreateTodo}
+        />
+
+        <EditTodoModal
+          todo={editingTodo}
+          onTodoUpdated={handleTodoUpdated}
+          onClose={() => setEditingTodo(null)}
         />
       </div>
     </div>
