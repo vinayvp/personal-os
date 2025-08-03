@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Edit, Trash2, X } from 'lucide-react';
@@ -61,84 +60,79 @@ const NoteViewModal: React.FC<NoteViewModalProps> = ({ note, onClose, onEdit, on
 
   return (
     <Dialog open={!!note} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[95vh] w-[95vw] overflow-hidden p-0">
-        <ResizablePanelGroup direction="vertical" className="min-h-[60vh] max-h-[95vh]">
-          <ResizablePanel defaultSize={15} minSize={10} maxSize={25}>
-            <DialogHeader className="flex flex-row items-center justify-between space-y-0 p-6 pb-4 border-b">
-              <DialogTitle className="text-2xl font-bold flex-1 pr-4">
-                {note.title}
-              </DialogTitle>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onEdit(note)}
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
+      <DialogContent className="min-w-[500px] min-h-[400px] max-w-none max-h-none w-[90vw] h-[90vh] overflow-hidden p-0 resize">
+        <div className="flex flex-col h-full">
+          <DialogHeader className="flex flex-row items-center justify-between space-y-0 p-6 pb-4 border-b shrink-0">
+            <DialogTitle className="text-2xl font-bold flex-1 pr-4">
+              {note.title}
+            </DialogTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(note)}
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Note</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{note.title}"? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Note</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete "{note.title}"? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        {isDeleting ? 'Deleting...' : 'Delete'}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onClose}
-                  className="ml-2"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            </DialogHeader>
-            
-            {note.tags && note.tags.length > 0 && (
-              <div className="p-6 pt-4">
-                <div className="flex flex-wrap gap-2">
-                  {note.tags.map(tag => (
-                    <Badge
-                      key={tag.id}
-                      variant="secondary"
-                      className="text-xs"
-                      style={{ backgroundColor: tag.color + '20', color: tag.color }}
-                    >
-                      {tag.name}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </ResizablePanel>
+                      {isDeleting ? 'Deleting...' : 'Delete'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="ml-2"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </DialogHeader>
           
-          <ResizableHandle withHandle />
+          {note.tags && note.tags.length > 0 && (
+            <div className="p-6 pt-4 border-b shrink-0">
+              <div className="flex flex-wrap gap-2">
+                {note.tags.map(tag => (
+                  <Badge
+                    key={tag.id}
+                    variant="secondary"
+                    className="text-xs"
+                    style={{ backgroundColor: tag.color + '20', color: tag.color }}
+                  >
+                    {tag.name}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
           
-          <ResizablePanel defaultSize={85} minSize={60}>
-            <div className="h-full overflow-auto p-6 bg-background prose prose-sm max-w-none dark:prose-invert break-words">
+          <div className="flex-1 overflow-auto p-6 bg-background prose prose-sm max-w-none dark:prose-invert break-words">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeHighlight]}
@@ -221,9 +215,8 @@ const NoteViewModal: React.FC<NoteViewModalProps> = ({ note, onClose, onEdit, on
             <div className="text-sm text-muted-foreground text-right mt-6 pt-4 border-t">
               Last updated: {new Date(note.updated_at).toLocaleDateString()}
             </div>
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
