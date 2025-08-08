@@ -21,11 +21,16 @@ const TodoList = ({ todos, onToggleComplete, onDeleteTodo, onEditTodo, hideCompl
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterTag, setFilterTag] = useState<string>('all');
+
+  // Get all unique tags from todos
+  const allTags = Array.from(new Set(todos.flatMap(todo => todo.tags || [])));
 
   const filteredTodos = todos.filter(todo => {
     const matchesSearch = searchQuery === '' || 
       todo.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      todo.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      todo.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (todo.tags || []).some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesPriority = filterPriority === 'all' || todo.priority === filterPriority;
     
@@ -33,9 +38,11 @@ const TodoList = ({ todos, onToggleComplete, onDeleteTodo, onEditTodo, hideCompl
       (filterStatus === 'completed' && todo.completed) ||
       (filterStatus === 'pending' && !todo.completed);
 
+    const matchesTag = filterTag === 'all' || (todo.tags || []).includes(filterTag);
+
     const notHidden = !hideCompleted || !todo.completed;
 
-    return matchesSearch && matchesPriority && matchesStatus && notHidden;
+    return matchesSearch && matchesPriority && matchesStatus && matchesTag && notHidden;
   });
 
   const getPriorityColor = (priority: string) => {
@@ -94,6 +101,17 @@ const TodoList = ({ todos, onToggleComplete, onDeleteTodo, onEditTodo, hideCompl
                 <SelectItem value="completed">Completed</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={filterTag} onValueChange={setFilterTag}>
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="Filter by tag" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Tags</SelectItem>
+                {allTags.map(tag => (
+                  <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -107,7 +125,7 @@ const TodoList = ({ todos, onToggleComplete, onDeleteTodo, onEditTodo, hideCompl
               No todos found
             </h3>
             <p className="text-muted-foreground">
-              {searchQuery || filterPriority !== 'all' || filterStatus !== 'all' 
+              {searchQuery || filterPriority !== 'all' || filterStatus !== 'all' || filterTag !== 'all'
                 ? 'Try adjusting your filters or search query.'
                 : 'Create your first todo to get started.'}
             </p>
@@ -175,6 +193,16 @@ const TodoList = ({ todos, onToggleComplete, onDeleteTodo, onEditTodo, hideCompl
                         </div>
                       )}
                     </div>
+                    
+                    {todo.tags && todo.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {todo.tags.map(tag => (
+                          <Badge key={tag} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>

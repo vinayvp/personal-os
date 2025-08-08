@@ -18,6 +18,7 @@ export interface Todo {
   completed: boolean;
   priority: 'low' | 'medium' | 'high';
   due_date?: string;
+  tags?: string[];
   created_at: string;
   updated_at: string;
 }

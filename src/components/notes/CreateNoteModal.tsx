@@ -217,26 +217,47 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
           />
 
           <div className="space-y-2">
-            <Select onValueChange={addTag} value="">
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Add tags..." />
-              </SelectTrigger>
-              <SelectContent>
-                {tags
-                  .filter(tag => !selectedTags.find(t => t.id === tag.id))
-                  .map(tag => (
-                    <SelectItem key={tag.id} value={tag.id}>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: tag.color }}
-                        />
-                        {tag.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select onValueChange={addTag} value="">
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Add tags..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {tags
+                    .filter(tag => !selectedTags.find(t => t.id === tag.id))
+                    .map(tag => (
+                      <SelectItem key={tag.id} value={tag.id}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: tag.color }}
+                          />
+                          {tag.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="flex items-center gap-2"
+              >
+                <Image className="w-4 h-4" />
+                {isUploading ? 'Uploading...' : 'Upload Image'}
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
 
             <div className="flex flex-wrap gap-2">
               {selectedTags.map(tag => (
@@ -271,25 +292,8 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
             <TabsContent value="edit" className="h-full mt-2">
               <div className="h-full space-y-2">
                 <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                  >
-                    <Image className="w-4 h-4 mr-2" />
-                    {isUploading ? 'Uploading...' : 'Upload Image'}
-                  </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
                   <span className="text-sm text-muted-foreground flex items-center">
-                    Or drag & drop / paste images
+                    Drag & drop or paste images directly into the editor
                   </span>
                 </div>
                 <Textarea

@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { CalendarIcon, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { Todo } from '../TodoApp';
 
@@ -24,6 +25,8 @@ const EditTodoModal: React.FC<EditTodoModalProps> = ({ todo, onTodoUpdated, onCl
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [tags, setTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
 
@@ -33,6 +36,7 @@ const EditTodoModal: React.FC<EditTodoModalProps> = ({ todo, onTodoUpdated, onCl
       setDescription(todo.description || '');
       setPriority(todo.priority as 'low' | 'medium' | 'high');
       setDueDate(todo.due_date ? new Date(todo.due_date) : undefined);
+      setTags(todo.tags || []);
     }
   }, [todo]);
 
@@ -41,6 +45,26 @@ const EditTodoModal: React.FC<EditTodoModalProps> = ({ todo, onTodoUpdated, onCl
     setDescription('');
     setPriority('medium');
     setDueDate(undefined);
+    setTags([]);
+    setNewTag('');
+  };
+
+  const addTag = () => {
+    if (newTag.trim() && !tags.includes(newTag.trim())) {
+      setTags(prev => [...prev, newTag.trim()]);
+      setNewTag('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(prev => prev.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addTag();
+    }
   };
 
   const handleUpdateTodo = async () => {
@@ -65,6 +89,7 @@ const EditTodoModal: React.FC<EditTodoModalProps> = ({ todo, onTodoUpdated, onCl
           description: description.trim() || null,
           priority,
           due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
+          tags: tags,
           updated_at: new Date().toISOString(),
         })
         .eq('id', todo.id);
@@ -164,6 +189,36 @@ const EditTodoModal: React.FC<EditTodoModalProps> = ({ todo, onTodoUpdated, onCl
               >
                 Clear date
               </Button>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-tags">Tags</Label>
+            <div className="flex gap-2">
+              <Input
+                id="edit-tags"
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Add a tag..."
+                className="flex-1"
+              />
+              <Button type="button" onClick={addTag} variant="outline" size="sm">
+                Add
+              </Button>
+            </div>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {tags.map(tag => (
+                  <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                    {tag}
+                    <X
+                      className="w-3 h-3 cursor-pointer"
+                      onClick={() => removeTag(tag)}
+                    />
+                  </Badge>
+                ))}
+              </div>
             )}
           </div>
 

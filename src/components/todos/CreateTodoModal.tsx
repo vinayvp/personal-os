@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { X } from 'lucide-react';
 import { Todo } from '../TodoApp';
 
 interface CreateTodoModalProps {
@@ -22,6 +24,9 @@ const CreateTodoModal = ({ isOpen, onClose, onCreateTodo }: CreateTodoModalProps
     due_date: '',
     completed: false
   });
+  
+  const [tags, setTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +37,8 @@ const CreateTodoModal = ({ isOpen, onClose, onCreateTodo }: CreateTodoModalProps
       description: formData.description.trim() || undefined,
       priority: formData.priority,
       due_date: formData.due_date || undefined,
-      completed: false
+      completed: false,
+      tags: tags
     });
 
     // Reset form
@@ -43,6 +49,8 @@ const CreateTodoModal = ({ isOpen, onClose, onCreateTodo }: CreateTodoModalProps
       due_date: '',
       completed: false
     });
+    setTags([]);
+    setNewTag('');
   };
 
   const handleClose = () => {
@@ -53,7 +61,27 @@ const CreateTodoModal = ({ isOpen, onClose, onCreateTodo }: CreateTodoModalProps
       due_date: '',
       completed: false
     });
+    setTags([]);
+    setNewTag('');
     onClose();
+  };
+
+  const addTag = () => {
+    if (newTag.trim() && !tags.includes(newTag.trim())) {
+      setTags(prev => [...prev, newTag.trim()]);
+      setNewTag('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(prev => prev.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addTag();
+    }
   };
 
   return (
@@ -110,6 +138,36 @@ const CreateTodoModal = ({ isOpen, onClose, onCreateTodo }: CreateTodoModalProps
               value={formData.due_date}
               onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tags">Tags</Label>
+            <div className="flex gap-2">
+              <Input
+                id="tags"
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Add a tag..."
+                className="flex-1"
+              />
+              <Button type="button" onClick={addTag} variant="outline" size="sm">
+                Add
+              </Button>
+            </div>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {tags.map(tag => (
+                  <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                    {tag}
+                    <X
+                      className="w-3 h-3 cursor-pointer"
+                      onClick={() => removeTag(tag)}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 pt-4">
