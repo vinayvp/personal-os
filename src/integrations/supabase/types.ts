@@ -254,6 +254,7 @@ export type Database = {
           due_date: string | null
           id: string
           priority: string
+          tags: string[] | null
           title: string
           updated_at: string
         }
@@ -264,6 +265,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           priority?: string
+          tags?: string[] | null
           title: string
           updated_at?: string
         }
@@ -274,6 +276,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           priority?: string
+          tags?: string[] | null
           title?: string
           updated_at?: string
         }
