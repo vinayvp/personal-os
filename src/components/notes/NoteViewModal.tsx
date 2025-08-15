@@ -60,8 +60,8 @@ const NoteViewModal: React.FC<NoteViewModalProps> = ({ note, onClose, onEdit, on
 
   return (
     <Dialog open={!!note} onOpenChange={onClose}>
-      <DialogContent className="min-w-[500px] min-h-[400px] max-w-none max-h-none w-[90vw] h-[90vh] p-0 resize">
-        <div className="flex flex-col h-full">
+      <DialogContent className="min-w-[500px] min-h-[400px] max-w-none max-h-none w-[90vw] h-[90vh] p-0 resize overflow-hidden">
+        <div className="flex flex-col h-full overflow-hidden">
           <DialogHeader className="flex flex-row items-center justify-between space-y-0 p-6 pb-4 border-b shrink-0">
             <DialogTitle className="text-2xl font-bold flex-1 pr-4">
               {note.title}
@@ -132,7 +132,7 @@ const NoteViewModal: React.FC<NoteViewModalProps> = ({ note, onClose, onEdit, on
             </div>
           )}
           
-          <div className="flex-1 overflow-auto p-6 bg-background prose prose-sm max-w-none dark:prose-invert break-words">
+          <div className="flex-1 overflow-y-auto overflow-x-auto p-6 bg-background prose prose-sm max-w-none dark:prose-invert break-words min-h-0">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeHighlight]}
