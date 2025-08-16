@@ -3,10 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, RefreshCw, BookOpen, Filter } from 'lucide-react';
+import { Plus, RefreshCw, BookOpen, Filter, FolderPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import CreateLessonModal from './lessons/CreateLessonModal';
+import CreateCategoryModal from './lessons/CreateCategoryModal';
 
 interface Lesson {
   id: string;
@@ -32,6 +33,7 @@ const LessonsApp = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -111,6 +113,15 @@ const LessonsApp = () => {
     });
   };
 
+  const handleCategoryCreated = () => {
+    fetchCategories();
+    setIsCreateCategoryModalOpen(false);
+    toast({
+      title: "Success",
+      description: "Category created successfully"
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 space-y-6">
       <div className="flex justify-between items-center">
@@ -118,10 +129,20 @@ const LessonsApp = () => {
           <h1 className="text-3xl font-bold text-foreground">Life Lessons</h1>
           <p className="text-muted-foreground">Capture and revisit your most important insights</p>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Lesson
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setIsCreateCategoryModalOpen(true)} 
+            className="gap-2"
+          >
+            <FolderPlus className="h-4 w-4" />
+            Add Category
+          </Button>
+          <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Lesson
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="today" className="w-full">
@@ -263,6 +284,12 @@ const LessonsApp = () => {
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={handleLessonCreated}
         categories={categories}
+      />
+
+      <CreateCategoryModal
+        isOpen={isCreateCategoryModalOpen}
+        onClose={() => setIsCreateCategoryModalOpen(false)}
+        onSuccess={handleCategoryCreated}
       />
     </div>
   );
