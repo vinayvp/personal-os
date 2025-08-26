@@ -130,6 +130,45 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_entries: {
+        Row: {
+          attachments: string[] | null
+          content: string | null
+          created_at: string
+          date: string
+          id: string
+          mood: string | null
+          rich_content: Json | null
+          tags: string[] | null
+          updated_at: string
+          word_count: number | null
+        }
+        Insert: {
+          attachments?: string[] | null
+          content?: string | null
+          created_at?: string
+          date: string
+          id?: string
+          mood?: string | null
+          rich_content?: Json | null
+          tags?: string[] | null
+          updated_at?: string
+          word_count?: number | null
+        }
+        Update: {
+          attachments?: string[] | null
+          content?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          mood?: string | null
+          rich_content?: Json | null
+          tags?: string[] | null
+          updated_at?: string
+          word_count?: number | null
+        }
+        Relationships: []
+      }
       lesson_categories: {
         Row: {
           color: string
