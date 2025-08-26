@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare, BookOpen } from 'lucide-react';
+import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare, BookOpen, Notebook } from 'lucide-react';
 import NotesApp from '@/components/NotesApp';
 import TrackingApp from '@/components/TrackingApp';
 import TodoApp from '@/components/TodoApp';
 import LessonsApp from '@/components/LessonsApp';
+import JournalApp from '@/components/JournalApp';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
@@ -40,6 +41,8 @@ const Apps = () => {
         return <TodoApp />;
       case 'lessons':
         return <LessonsApp />;
+      case 'journal':
+        return <JournalApp />;
       default:
         return null;
     }
@@ -76,6 +79,14 @@ const Apps = () => {
             >
               <FileText className="mr-2 h-4 w-4" />
               Notes
+            </Button>
+            <Button
+              variant={selectedApp === 'journal' ? 'default' : 'outline'}
+              onClick={() => setSelectedApp('journal')}
+              size="sm"
+            >
+              <Notebook className="mr-2 h-4 w-4" />
+              Journal
             </Button>
             <Button
               variant={selectedApp === 'lessons' ? 'default' : 'outline'}
@@ -145,6 +156,15 @@ const Apps = () => {
             >
               <FileText className="mr-2 h-4 w-4" />
               Notes
+            </Button>
+            <Button
+              variant={selectedApp === 'journal' ? 'default' : 'outline'}
+              onClick={() => handleAppSelect('journal')}
+              size="sm"
+              className="w-full justify-start"
+            >
+              <Notebook className="mr-2 h-4 w-4" />
+              Journal
             </Button>
             <Button
               variant={selectedApp === 'lessons' ? 'default' : 'outline'}
