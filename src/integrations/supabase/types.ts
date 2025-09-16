@@ -225,6 +225,72 @@ export type Database = {
           },
         ]
       }
+      movies_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      movies_tv: {
+        Row: {
+          created_at: string
+          custom_category: string | null
+          genre: string | null
+          id: string
+          imdb_score: string | null
+          plot: string | null
+          poster_url: string | null
+          rated: string | null
+          release_year: string | null
+          rotten_tomatoes_rating: string | null
+          title: string
+          updated_at: string
+          watched: boolean
+        }
+        Insert: {
+          created_at?: string
+          custom_category?: string | null
+          genre?: string | null
+          id?: string
+          imdb_score?: string | null
+          plot?: string | null
+          poster_url?: string | null
+          rated?: string | null
+          release_year?: string | null
+          rotten_tomatoes_rating?: string | null
+          title: string
+          updated_at?: string
+          watched?: boolean
+        }
+        Update: {
+          created_at?: string
+          custom_category?: string | null
+          genre?: string | null
+          id?: string
+          imdb_score?: string | null
+          plot?: string | null
+          poster_url?: string | null
+          rated?: string | null
+          release_year?: string | null
+          rotten_tomatoes_rating?: string | null
+          title?: string
+          updated_at?: string
+          watched?: boolean
+        }
+        Relationships: []
+      }
       note_images: {
         Row: {
           created_at: string
