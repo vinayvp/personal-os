@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare, BookOpen, Notebook } from 'lucide-react';
+import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare, BookOpen, Notebook, Film } from 'lucide-react';
 import NotesApp from '@/components/NotesApp';
 import TrackingApp from '@/components/TrackingApp';
 import TodoApp from '@/components/TodoApp';
 import LessonsApp from '@/components/LessonsApp';
 import JournalApp from '@/components/JournalApp';
+import MoviesApp from '@/components/MoviesApp';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
@@ -43,6 +44,8 @@ const Apps = () => {
         return <LessonsApp />;
       case 'journal':
         return <JournalApp />;
+      case 'movies':
+        return <MoviesApp />;
       default:
         return null;
     }
@@ -95,6 +98,14 @@ const Apps = () => {
             >
               <BookOpen className="mr-2 h-4 w-4" />
               Lessons
+            </Button>
+            <Button
+              variant={selectedApp === 'movies' ? 'default' : 'outline'}
+              onClick={() => setSelectedApp('movies')}
+              size="sm"
+            >
+              <Film className="mr-2 h-4 w-4" />
+              Movies & TV
             </Button>
           </div>
         </div>
@@ -174,6 +185,15 @@ const Apps = () => {
             >
               <BookOpen className="mr-2 h-4 w-4" />
               Lessons
+            </Button>
+            <Button
+              variant={selectedApp === 'movies' ? 'default' : 'outline'}
+              onClick={() => handleAppSelect('movies')}
+              size="sm"
+              className="w-full justify-start"
+            >
+              <Film className="mr-2 h-4 w-4" />
+              Movies & TV
             </Button>
             <Button 
               variant="outline" 
