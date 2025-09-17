@@ -126,7 +126,11 @@ const MoviesApp = () => {
   };
 
   // Get unique genres and categories for filtering
-  const allGenres = Array.from(new Set(movies.map(movie => movie.genre).filter(Boolean)));
+  const allGenres = Array.from(new Set(
+    movies.flatMap(movie => 
+      movie.genre ? movie.genre.split(',').map(g => g.trim()) : []
+    ).filter(Boolean)
+  ));
   const allCategories = Array.from(new Set(movies.map(movie => movie.custom_category).filter(Boolean)));
   const filterOptions = [
     { value: 'all', label: 'All' },
@@ -139,7 +143,7 @@ const MoviesApp = () => {
     const matchesSearch = movie.title.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = selectedCategory === 'all' || 
-      (selectedCategory.startsWith('genre:') && movie.genre === selectedCategory.replace('genre:', '')) ||
+      (selectedCategory.startsWith('genre:') && movie.genre?.split(',').map(g => g.trim()).includes(selectedCategory.replace('genre:', ''))) ||
       (selectedCategory.startsWith('category:') && movie.custom_category === selectedCategory.replace('category:', ''));
     
     const matchesWatched = watchedFilter === 'all' || 

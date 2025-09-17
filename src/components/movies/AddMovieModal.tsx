@@ -142,6 +142,21 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
         }
       }
 
+      // Split genres and create category entries for each
+      const genreString = editableData.Genre || selectedMovie.Genre;
+      if (genreString) {
+        const genres = genreString.split(',').map(g => g.trim()).filter(g => g.length > 0);
+        for (const genre of genres) {
+          const { error: genreError } = await supabase
+            .from('movies_categories')
+            .upsert({ name: genre });
+          
+          if (genreError) {
+            console.error('Error creating genre category:', genreError);
+          }
+        }
+      }
+
       // Get Rotten Tomatoes rating
       const rottenTomatoesRating = selectedMovie.Ratings?.find(
         rating => rating.Source === 'Rotten Tomatoes'
