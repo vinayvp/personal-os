@@ -123,29 +123,30 @@ const LessonsApp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Life Lessons</h1>
-          <p className="text-muted-foreground">Capture and revisit your most important insights</p>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Life Lessons</h1>
+            <p className="text-muted-foreground">Capture and revisit your most important insights</p>
+          </div>
+          <div className="flex gap-2 mt-4 md:mt-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsCreateCategoryModalOpen(true)} 
+              className="gap-2"
+            >
+              <FolderPlus className="h-4 w-4" />
+              Add Category
+            </Button>
+            <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Lesson
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => setIsCreateCategoryModalOpen(true)} 
-            className="gap-2"
-          >
-            <FolderPlus className="h-4 w-4" />
-            Add Category
-          </Button>
-          <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Lesson
-          </Button>
-        </div>
-      </div>
 
-      <Tabs defaultValue="today" className="w-full">
+        <Tabs defaultValue="today" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="today" className="gap-2">
             <BookOpen className="h-4 w-4" />
@@ -291,6 +292,7 @@ const LessonsApp = () => {
         onClose={() => setIsCreateCategoryModalOpen(false)}
         onSuccess={handleCategoryCreated}
       />
+      </div>
     </div>
   );
 };
