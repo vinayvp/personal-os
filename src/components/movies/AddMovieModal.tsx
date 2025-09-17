@@ -72,23 +72,39 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
     setSearchError('');
     
     try {
-      const response = await fetch(`https://www.omdbapi.com/?apikey=${process.env.REACT_APP_OMDB_API_KEY || 'your-api-key'}&s=${encodeURIComponent(searchTitle)}&type=movie`);
-      const data = await response.json();
+      const { data, error } = await supabase.functions.invoke('search-movie', {
+        body: { title: searchTitle }
+      });
 
-      if (data.Response === 'True') {
-        // Get detailed info for each result
-        const detailedResults = await Promise.all(
-          data.Search.slice(0, 5).map(async (movie: any) => {
-            const detailResponse = await fetch(`https://www.omdbapi.com/?apikey=${process.env.REACT_APP_OMDB_API_KEY || 'your-api-key'}&i=${movie.imdbID}&plot=full`);
-            return await detailResponse.json();
-          })
-        );
-        setSearchResults(detailedResults.filter(result => result.Response === 'True'));
+      if (error) {
+        console.error('Edge function error:', error);
+        setSearchError('Failed to search. Please try again.');
+        setSearchResults([]);
+        return;
+      }
+
+      if (data) {
+        // Convert the edge function response to OMDbData format
+        const movieResult: OMDbData = {
+          Title: data.title,
+          Year: data.release_year,
+          Genre: data.genre,
+          imdbRating: data.imdb_score,
+          Ratings: [
+            { Source: 'Internet Movie Database', Value: `${data.imdb_score}/10` },
+            { Source: 'Rotten Tomatoes', Value: data.rotten_tomatoes_rating }
+          ],
+          Rated: data.rated,
+          Poster: data.poster_url || 'N/A',
+          Plot: data.plot
+        };
+        setSearchResults([movieResult]);
       } else {
-        setSearchError(data.Error || 'No results found');
+        setSearchError('No results found');
         setSearchResults([]);
       }
     } catch (error) {
+      console.error('Search error:', error);
       setSearchError('Failed to search. Please try again.');
       setSearchResults([]);
     } finally {
