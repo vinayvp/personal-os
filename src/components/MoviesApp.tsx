@@ -4,12 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Filter, Grid, List, Play, Check } from "lucide-react";
+import { Plus, Search, Filter, Grid, List, Play, Check, FolderPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AddMovieModal from "@/components/movies/AddMovieModal";
 import MovieCard from "@/components/movies/MovieCard";
 import MovieDetailModal from "@/components/movies/MovieDetailModal";
+import CreateCategoryModal from "@/components/movies/CreateCategoryModal";
 
 interface Movie {
   id: string;
@@ -37,6 +38,7 @@ const MoviesApp = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -97,6 +99,10 @@ const MoviesApp = () => {
 
   const handleMovieDeleted = (movieId: string) => {
     setMovies(prev => prev.filter(movie => movie.id !== movieId));
+  };
+
+  const handleCategoryCreated = (newCategory: Category) => {
+    setCategories(prev => [...prev, newCategory].sort((a, b) => a.name.localeCompare(b.name)));
   };
 
   const toggleWatched = async (movie: Movie) => {
@@ -182,13 +188,21 @@ const MoviesApp = () => {
               {totalCount} total • {watchedCount} watched • {totalCount - watchedCount} unwatched
             </p>
           </div>
-          <Button 
-            onClick={() => setIsAddModalOpen(true)}
-            className="mt-4 md:mt-0"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Movie/TV Show
-          </Button>
+          <div className="flex gap-2 mt-4 md:mt-0">
+            <Button 
+              variant="outline"
+              onClick={() => setIsCreateCategoryModalOpen(true)}
+            >
+              <FolderPlus className="w-4 h-4 mr-2" />
+              Add Category
+            </Button>
+            <Button 
+              onClick={() => setIsAddModalOpen(true)}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Movie/TV Show
+            </Button>
+          </div>
         </div>
 
         {/* Search and Filters */}
@@ -309,6 +323,12 @@ const MoviesApp = () => {
             onToggleWatched={toggleWatched}
           />
         )}
+
+        <CreateCategoryModal
+          isOpen={isCreateCategoryModalOpen}
+          onClose={() => setIsCreateCategoryModalOpen(false)}
+          onCategoryCreated={handleCategoryCreated}
+        />
       </div>
     </div>
   );
