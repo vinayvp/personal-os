@@ -130,6 +130,25 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
 
     setIsSaving(true);
     try {
+      // Check for duplicates first
+      const { data: existingMovies, error: searchError } = await supabase
+        .from('movies_tv')
+        .select('title, release_year')
+        .eq('title', editableData.Title || selectedMovie.Title)
+        .eq('release_year', editableData.Year || selectedMovie.Year);
+
+      if (searchError) {
+        console.error('Error checking for duplicates:', searchError);
+      } else if (existingMovies && existingMovies.length > 0) {
+        toast({
+          title: "Duplicate Found",
+          description: "This movie/TV show is already in your collection.",
+          variant: "destructive",
+        });
+        setIsSaving(false);
+        return;
+      }
+
       // Create custom category if provided
       let categoryToUse = customCategory.trim();
       if (categoryToUse) {
