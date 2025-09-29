@@ -45,6 +45,7 @@ const MoviesApp = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [watchedFilter, setWatchedFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('created_at');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -151,20 +152,38 @@ const MoviesApp = () => {
     ...allCategories.map(category => ({ value: `category:${category}`, label: category })),
   ];
 
-  // Filter movies based on search and filters
-  const filteredMovies = movies.filter(movie => {
-    const matchesSearch = movie.title.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = selectedCategory === 'all' || 
-      (selectedCategory.startsWith('genre:') && movie.genre?.split(',').map(g => g.trim()).includes(selectedCategory.replace('genre:', ''))) ||
-      (selectedCategory.startsWith('category:') && movie.custom_category === selectedCategory.replace('category:', ''));
-    
-    const matchesWatched = watchedFilter === 'all' || 
-      (watchedFilter === 'watched' && movie.watched) ||
-      (watchedFilter === 'unwatched' && !movie.watched);
+  // Filter and sort movies
+  const filteredAndSortedMovies = movies
+    .filter(movie => {
+      const matchesSearch = movie.title.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesCategory = selectedCategory === 'all' || 
+        (selectedCategory.startsWith('genre:') && movie.genre?.split(',').map(g => g.trim()).includes(selectedCategory.replace('genre:', ''))) ||
+        (selectedCategory.startsWith('category:') && movie.custom_category === selectedCategory.replace('category:', ''));
+      
+      const matchesWatched = watchedFilter === 'all' || 
+        (watchedFilter === 'watched' && movie.watched) ||
+        (watchedFilter === 'unwatched' && !movie.watched);
 
-    return matchesSearch && matchesCategory && matchesWatched;
-  });
+      return matchesSearch && matchesCategory && matchesWatched;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'title':
+          return a.title.localeCompare(b.title);
+        case 'year':
+          const yearA = parseInt(a.release_year) || 0;
+          const yearB = parseInt(b.release_year) || 0;
+          return yearB - yearA; // Newest first
+        case 'imdb_rating':
+          const ratingA = parseFloat(a.imdb_score) || 0;
+          const ratingB = parseFloat(b.imdb_score) || 0;
+          return ratingB - ratingA; // Highest rating first
+        case 'created_at':
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); // Newest first
+      }
+    });
 
   const watchedCount = movies.filter(movie => movie.watched).length;
   const totalCount = movies.length;
@@ -254,6 +273,17 @@ const MoviesApp = () => {
               <option value="unwatched">Not Watched</option>
             </select>
 
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-2 border border-input bg-background rounded-md text-sm"
+            >
+              <option value="created_at">Sort by Date Added</option>
+              <option value="title">Sort by Title</option>
+              <option value="year">Sort by Year</option>
+              <option value="imdb_rating">Sort by IMDB Rating</option>
+            </select>
+
             <div className="flex border border-input rounded-md">
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
@@ -276,7 +306,7 @@ const MoviesApp = () => {
         </div>
 
         {/* Movies Grid/List */}
-        {filteredMovies.length === 0 ? (
+        {filteredAndSortedMovies.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Play className="w-12 h-12 text-muted-foreground mb-4" />
@@ -300,7 +330,7 @@ const MoviesApp = () => {
             ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
             : "space-y-4"
           }>
-            {filteredMovies.map((movie) => (
+            {filteredAndSortedMovies.map((movie) => (
               <MovieCard
                 key={movie.id}
                 movie={movie}
