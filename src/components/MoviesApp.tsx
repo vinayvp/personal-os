@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Filter, Grid, List, Play, Check, FolderPlus, Upload } from "lucide-react";
+import { Plus, Search, Filter, Grid, List, Play, Check, FolderPlus, Upload, ChevronUp, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AddMovieModal from "@/components/movies/AddMovieModal";
@@ -46,6 +46,7 @@ const MoviesApp = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [watchedFilter, setWatchedFilter] = useState('all');
   const [sortBy, setSortBy] = useState('created_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -168,21 +169,29 @@ const MoviesApp = () => {
       return matchesSearch && matchesCategory && matchesWatched;
     })
     .sort((a, b) => {
+      let result = 0;
+      
       switch (sortBy) {
         case 'title':
-          return a.title.localeCompare(b.title);
+          result = a.title.localeCompare(b.title);
+          break;
         case 'year':
           const yearA = parseInt(a.release_year) || 0;
           const yearB = parseInt(b.release_year) || 0;
-          return yearB - yearA; // Newest first
+          result = yearA - yearB;
+          break;
         case 'imdb_rating':
           const ratingA = parseFloat(a.imdb_score) || 0;
           const ratingB = parseFloat(b.imdb_score) || 0;
-          return ratingB - ratingA; // Highest rating first
+          result = ratingA - ratingB;
+          break;
         case 'created_at':
         default:
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); // Newest first
+          result = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
       }
+      
+      return sortDirection === 'asc' ? result : -result;
     });
 
   const watchedCount = movies.filter(movie => movie.watched).length;
@@ -273,16 +282,30 @@ const MoviesApp = () => {
               <option value="unwatched">Not Watched</option>
             </select>
 
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 border border-input bg-background rounded-md text-sm"
-            >
-              <option value="created_at">Sort by Date Added</option>
-              <option value="title">Sort by Title</option>
-              <option value="year">Sort by Year</option>
-              <option value="imdb_rating">Sort by IMDB Rating</option>
-            </select>
+            <div className="flex items-center">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 border border-input bg-background rounded-l-md text-sm border-r-0"
+              >
+                <option value="created_at">Sort by Date Added</option>
+                <option value="title">Sort by Title</option>
+                <option value="year">Sort by Year</option>
+                <option value="imdb_rating">Sort by IMDB Rating</option>
+              </select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                className="rounded-l-none px-2"
+              >
+                {sortDirection === 'asc' ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
 
             <div className="flex border border-input rounded-md">
               <Button
