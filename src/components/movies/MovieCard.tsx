@@ -231,11 +231,11 @@ const MovieCard: React.FC<MovieCardProps> = ({
             <img
               src={movie.poster_url}
               alt={movie.title}
-              className="w-full h-64 object-cover cursor-pointer"
+              className="w-full aspect-[2/3] object-contain cursor-pointer"
               onClick={() => onViewDetails(movie)}
             />
           ) : (
-            <div className="w-full h-64 bg-muted flex items-center justify-center">
+            <div className="w-full aspect-[2/3] bg-muted flex items-center justify-center">
               <Eye className="w-12 h-12 text-muted-foreground" />
             </div>
           )}
