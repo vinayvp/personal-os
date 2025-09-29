@@ -4,13 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Filter, Grid, List, Play, Check, FolderPlus } from "lucide-react";
+import { Plus, Search, Filter, Grid, List, Play, Check, FolderPlus, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AddMovieModal from "@/components/movies/AddMovieModal";
 import MovieCard from "@/components/movies/MovieCard";
 import MovieDetailModal from "@/components/movies/MovieDetailModal";
 import CreateCategoryModal from "@/components/movies/CreateCategoryModal";
+import BulkImportModal from "@/components/movies/BulkImportModal";
 
 interface Movie {
   id: string;
@@ -39,6 +40,7 @@ const MoviesApp = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false);
+  const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -89,6 +91,11 @@ const MoviesApp = () => {
   const handleMovieAdded = (newMovie: Movie) => {
     setMovies(prev => [newMovie, ...prev]);
     loadCategories(); // Reload categories in case a new one was added
+  };
+
+  const handleMoviesAdded = (newMovies: Movie[]) => {
+    setMovies(prev => [...newMovies, ...prev]);
+    loadCategories(); // Reload categories in case new ones were added
   };
 
   const handleMovieUpdated = (updatedMovie: Movie) => {
@@ -195,6 +202,13 @@ const MoviesApp = () => {
             >
               <FolderPlus className="w-4 h-4 mr-2" />
               Add Category
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => setIsBulkImportModalOpen(true)}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Bulk Import
             </Button>
             <Button 
               onClick={() => setIsAddModalOpen(true)}
@@ -328,6 +342,12 @@ const MoviesApp = () => {
           isOpen={isCreateCategoryModalOpen}
           onClose={() => setIsCreateCategoryModalOpen(false)}
           onCategoryCreated={handleCategoryCreated}
+        />
+
+        <BulkImportModal
+          isOpen={isBulkImportModalOpen}
+          onClose={() => setIsBulkImportModalOpen(false)}
+          onMoviesAdded={handleMoviesAdded}
         />
       </div>
     </div>
