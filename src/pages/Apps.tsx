@@ -1,13 +1,14 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare, BookOpen, Notebook, Film } from 'lucide-react';
+import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare, BookOpen, Notebook, Film, DollarSign } from 'lucide-react';
 import NotesApp from '@/components/NotesApp';
 import TrackingApp from '@/components/TrackingApp';
 import TodoApp from '@/components/TodoApp';
 import LessonsApp from '@/components/LessonsApp';
 import JournalApp from '@/components/JournalApp';
 import MoviesApp from '@/components/MoviesApp';
+import FinancialApp from '@/components/FinancialApp';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
@@ -46,6 +47,8 @@ const Apps = () => {
         return <JournalApp />;
       case 'movies':
         return <MoviesApp />;
+      case 'financial':
+        return <FinancialApp />;
       default:
         return null;
     }
@@ -106,6 +109,14 @@ const Apps = () => {
             >
               <Film className="mr-2 h-4 w-4" />
               Movies & TV
+            </Button>
+            <Button
+              variant={selectedApp === 'financial' ? 'default' : 'outline'}
+              onClick={() => setSelectedApp('financial')}
+              size="sm"
+            >
+              <DollarSign className="mr-2 h-4 w-4" />
+              Finance
             </Button>
           </div>
         </div>
@@ -194,6 +205,15 @@ const Apps = () => {
             >
               <Film className="mr-2 h-4 w-4" />
               Movies & TV
+            </Button>
+            <Button
+              variant={selectedApp === 'financial' ? 'default' : 'outline'}
+              onClick={() => handleAppSelect('financial')}
+              size="sm"
+              className="w-full justify-start"
+            >
+              <DollarSign className="mr-2 h-4 w-4" />
+              Finance
             </Button>
             <Button 
               variant="outline" 

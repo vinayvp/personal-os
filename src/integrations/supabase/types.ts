@@ -59,6 +59,65 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_breakdown: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          id: string
+          name: string
+          snapshot_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          id?: string
+          name: string
+          snapshot_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          snapshot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_breakdown_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "financial_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_snapshots: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          salary: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          salary: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          salary?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       habit_completions: {
         Row: {
           completed_at: string
