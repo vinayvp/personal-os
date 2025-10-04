@@ -63,7 +63,7 @@ const InvestmentDiversification = ({ breakdowns }: InvestmentDiversificationProp
       <CardContent>
         <div className="mb-4">
           <p className="text-sm text-muted-foreground">Total Investment</p>
-          <p className="text-2xl font-bold">${totalInvestment.toFixed(2)}</p>
+          <p className="text-2xl font-bold">₹{totalInvestment.toFixed(2)}</p>
         </div>
         
         <ResponsiveContainer width="100%" height={300}>
@@ -82,7 +82,7 @@ const InvestmentDiversification = ({ breakdowns }: InvestmentDiversificationProp
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+            <Tooltip formatter={(value: number) => `₹${value.toFixed(2)}`} />
             <Legend />
           </PieChart>
         </ResponsiveContainer>
@@ -98,7 +98,7 @@ const InvestmentDiversification = ({ breakdowns }: InvestmentDiversificationProp
                 <span className="font-medium">{inv.name}</span>
               </div>
               <div className="text-right">
-                <p className="font-semibold">${inv.amount.toFixed(2)}</p>
+                <p className="font-semibold">₹{inv.amount.toFixed(2)}</p>
                 <p className="text-xs text-muted-foreground">
                   {((inv.amount / totalInvestment) * 100).toFixed(1)}%
                 </p>

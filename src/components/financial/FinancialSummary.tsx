@@ -70,7 +70,7 @@ const FinancialSummary = ({ snapshot, breakdowns, onDelete }: FinancialSummaryPr
             {new Date(snapshot.date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Remaining: ${remaining.toFixed(2)}
+            Remaining: ₹{remaining.toFixed(2)}
           </p>
         </div>
         <Button variant="destructive" size="sm" onClick={onDelete}>
@@ -89,7 +89,7 @@ const FinancialSummary = ({ snapshot, breakdowns, onDelete }: FinancialSummaryPr
                   <Icon className={`w-8 h-8 ${stat.color}`} />
                   <div>
                     <p className="text-sm text-muted-foreground">{stat.title}</p>
-                    <p className="text-xl font-semibold">${stat.value.toFixed(2)}</p>
+                    <p className="text-xl font-semibold">₹{stat.value.toFixed(2)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -115,7 +115,7 @@ const FinancialSummary = ({ snapshot, breakdowns, onDelete }: FinancialSummaryPr
                     </span>
                     <span>{item.name}</span>
                   </div>
-                  <span className="font-semibold">${item.amount.toFixed(2)}</span>
+                  <span className="font-semibold">₹{item.amount.toFixed(2)}</span>
                 </div>
               ))}
             </div>

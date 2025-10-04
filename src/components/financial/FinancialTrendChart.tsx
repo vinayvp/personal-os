@@ -60,7 +60,7 @@ const FinancialTrendChart = ({ snapshots, breakdowns }: FinancialTrendChartProps
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="date" />
         <YAxis />
-        <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+        <Tooltip formatter={(value: number) => `₹${value.toFixed(2)}`} />
         <Legend />
         <Line type="monotone" dataKey="salary" stroke="#8884d8" name="Salary" />
         <Line type="monotone" dataKey="expenses" stroke="#ef4444" name="Expenses" />
