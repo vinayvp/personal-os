@@ -8,6 +8,7 @@ import AddFinancialSnapshotModal from "@/components/financial/AddFinancialSnapsh
 import FinancialPieChart from "@/components/financial/FinancialPieChart";
 import FinancialTrendChart from "@/components/financial/FinancialTrendChart";
 import FinancialSummary from "@/components/financial/FinancialSummary";
+import InvestmentDiversification from "@/components/financial/InvestmentDiversification";
 
 interface FinancialSnapshot {
   id: string;
@@ -208,6 +209,8 @@ const FinancialApp = () => {
                     </CardContent>
                   </Card>
                 </div>
+
+                <InvestmentDiversification breakdowns={currentBreakdowns} />
               </>
             )}
           </>
