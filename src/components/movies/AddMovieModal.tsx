@@ -56,6 +56,7 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
   categories
 }) => {
   const [searchTitle, setSearchTitle] = useState('');
+  const [searchYear, setSearchYear] = useState('');
   const [searchResults, setSearchResults] = useState<OMDbData[]>([]);
   const [selectedMovie, setSelectedMovie] = useState<OMDbData | null>(null);
   const [editableData, setEditableData] = useState<Partial<OMDbData>>({});
@@ -73,7 +74,10 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
     
     try {
       const { data, error } = await supabase.functions.invoke('search-movie', {
-        body: { title: searchTitle }
+        body: { 
+          title: searchTitle,
+          year: searchYear.trim() || undefined
+        }
       });
 
       if (error) {
@@ -222,6 +226,7 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
 
   const handleClose = () => {
     setSearchTitle('');
+    setSearchYear('');
     setSearchResults([]);
     setSelectedMovie(null);
     setEditableData({});
@@ -247,6 +252,14 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
                   value={searchTitle}
                   onChange={(e) => setSearchTitle(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && searchOMDb()}
+                  className="flex-1"
+                />
+                <Input
+                  placeholder="Year (optional)"
+                  value={searchYear}
+                  onChange={(e) => setSearchYear(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && searchOMDb()}
+                  className="w-32"
                 />
                 <Button onClick={searchOMDb} disabled={isSearching}>
                   <Search className="w-4 h-4 mr-2" />

@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { title } = await req.json();
+    const { title, year } = await req.json();
     
     if (!title) {
       return new Response(
@@ -38,9 +38,12 @@ serve(async (req) => {
       );
     }
 
-    console.log('Searching for movie:', title);
+    console.log('Searching for movie:', title, year ? `(${year})` : '');
     
-    const omdbUrl = `https://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=${omdbApiKey}`;
+    let omdbUrl = `https://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=${omdbApiKey}`;
+    if (year) {
+      omdbUrl += `&y=${encodeURIComponent(year)}`;
+    }
     
     const response = await fetch(omdbUrl);
     
