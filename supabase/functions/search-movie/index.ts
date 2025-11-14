@@ -13,11 +13,11 @@ serve(async (req) => {
   }
 
   try {
-    const { title, year } = await req.json();
+    const { title, year, imdbId } = await req.json();
     
-    if (!title) {
+    if (!title && !imdbId) {
       return new Response(
-        JSON.stringify({ error: 'Title is required' }),
+        JSON.stringify({ error: 'Title or IMDb ID is required' }),
         { 
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -38,11 +38,16 @@ serve(async (req) => {
       );
     }
 
-    console.log('Searching for movie:', title, year ? `(${year})` : '');
+    console.log('Searching for movie:', imdbId ? `IMDb ID: ${imdbId}` : `${title}${year ? ` (${year})` : ''}`);
     
-    let omdbUrl = `https://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=${omdbApiKey}`;
-    if (year) {
-      omdbUrl += `&y=${encodeURIComponent(year)}`;
+    let omdbUrl = `https://www.omdbapi.com/?apikey=${omdbApiKey}`;
+    if (imdbId) {
+      omdbUrl += `&i=${encodeURIComponent(imdbId)}`;
+    } else {
+      omdbUrl += `&t=${encodeURIComponent(title)}`;
+      if (year) {
+        omdbUrl += `&y=${encodeURIComponent(year)}`;
+      }
     }
     
     const response = await fetch(omdbUrl);

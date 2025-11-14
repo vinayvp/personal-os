@@ -57,6 +57,7 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
 }) => {
   const [searchTitle, setSearchTitle] = useState('');
   const [searchYear, setSearchYear] = useState('');
+  const [searchImdbId, setSearchImdbId] = useState('');
   const [searchResults, setSearchResults] = useState<OMDbData[]>([]);
   const [selectedMovie, setSelectedMovie] = useState<OMDbData | null>(null);
   const [editableData, setEditableData] = useState<Partial<OMDbData>>({});
@@ -67,7 +68,7 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
   const { toast } = useToast();
 
   const searchOMDb = async () => {
-    if (!searchTitle.trim()) return;
+    if (!searchTitle.trim() && !searchImdbId.trim()) return;
 
     setIsSearching(true);
     setSearchError('');
@@ -76,7 +77,8 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
       const { data, error } = await supabase.functions.invoke('search-movie', {
         body: { 
           title: searchTitle,
-          year: searchYear.trim() || undefined
+          year: searchYear.trim() || undefined,
+          imdbId: searchImdbId.trim() || undefined
         }
       });
 
@@ -227,6 +229,7 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
   const handleClose = () => {
     setSearchTitle('');
     setSearchYear('');
+    setSearchImdbId('');
     setSearchResults([]);
     setSelectedMovie(null);
     setEditableData({});
@@ -260,6 +263,26 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
                   onChange={(e) => setSearchYear(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && searchOMDb()}
                   className="w-32"
+                />
+                <Button onClick={searchOMDb} disabled={isSearching}>
+                  <Search className="w-4 h-4 mr-2" />
+                  {isSearching ? 'Searching...' : 'Search'}
+                </Button>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <div className="flex-1 border-t border-border"></div>
+                <span className="text-sm text-muted-foreground">OR</span>
+                <div className="flex-1 border-t border-border"></div>
+              </div>
+              
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Search by IMDb ID (e.g., tt1234567)"
+                  value={searchImdbId}
+                  onChange={(e) => setSearchImdbId(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && searchOMDb()}
+                  className="flex-1"
                 />
                 <Button onClick={searchOMDb} disabled={isSearching}>
                   <Search className="w-4 h-4 mr-2" />
