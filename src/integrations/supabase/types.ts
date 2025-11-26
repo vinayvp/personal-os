@@ -64,6 +64,7 @@ export type Database = {
           amount: number
           category: string
           created_at: string
+          current_value: number | null
           id: string
           name: string
           snapshot_id: string
@@ -72,6 +73,7 @@ export type Database = {
           amount: number
           category: string
           created_at?: string
+          current_value?: number | null
           id?: string
           name: string
           snapshot_id: string
@@ -80,6 +82,7 @@ export type Database = {
           amount?: number
           category?: string
           created_at?: string
+          current_value?: number | null
           id?: string
           name?: string
           snapshot_id?: string

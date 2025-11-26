@@ -16,6 +16,7 @@ interface BreakdownItem {
   category: 'expense' | 'investment' | 'savings';
   name: string;
   amount: string;
+  current_value?: string;
 }
 
 interface AddFinancialSnapshotModalProps {
@@ -34,7 +35,7 @@ const AddFinancialSnapshotModal = ({ open, onOpenChange, onSuccess }: AddFinanci
   const { toast } = useToast();
 
   const handleAddItem = () => {
-    setBreakdownItems([...breakdownItems, { category: 'expense', name: '', amount: '' }]);
+    setBreakdownItems([...breakdownItems, { category: 'expense', name: '', amount: '', current_value: '' }]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -80,6 +81,9 @@ const AddFinancialSnapshotModal = ({ open, onOpenChange, onSuccess }: AddFinanci
           category: item.category,
           name: item.name,
           amount: parseFloat(item.amount),
+          current_value: item.category === 'investment' && item.current_value 
+            ? parseFloat(item.current_value) 
+            : null,
         }));
 
         const { error: breakdownError } = await supabase
@@ -95,7 +99,7 @@ const AddFinancialSnapshotModal = ({ open, onOpenChange, onSuccess }: AddFinanci
       });
 
       setSalary("");
-      setBreakdownItems([{ category: 'expense', name: '', amount: '' }]);
+      setBreakdownItems([{ category: 'expense', name: '', amount: '', current_value: '' }]);
       setDate(new Date());
       onSuccess();
       onOpenChange(false);
@@ -168,49 +172,65 @@ const AddFinancialSnapshotModal = ({ open, onOpenChange, onSuccess }: AddFinanci
               </div>
 
               {breakdownItems.map((item, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 items-end">
-                  <div className="col-span-3">
-                    <Select
-                      value={item.category}
-                      onValueChange={(value) => handleItemChange(index, 'category', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="expense">Expense</SelectItem>
-                        <SelectItem value="investment">Investment</SelectItem>
-                        <SelectItem value="savings">Savings</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <div key={index} className="space-y-2">
+                  <div className="grid grid-cols-12 gap-2 items-end">
+                    <div className="col-span-3">
+                      <Select
+                        value={item.category}
+                        onValueChange={(value) => handleItemChange(index, 'category', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="expense">Expense</SelectItem>
+                          <SelectItem value="investment">Investment</SelectItem>
+                          <SelectItem value="savings">Savings</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-5">
+                      <Input
+                        placeholder="Name"
+                        value={item.name}
+                        onChange={(e) => handleItemChange(index, 'name', e.target.value)}
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Amount"
+                        value={item.amount}
+                        onChange={(e) => handleItemChange(index, 'amount', e.target.value)}
+                      />
+                    </div>
+                    <div className="col-span-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveItem(index)}
+                        disabled={breakdownItems.length === 1}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="col-span-5">
-                    <Input
-                      placeholder="Name"
-                      value={item.name}
-                      onChange={(e) => handleItemChange(index, 'name', e.target.value)}
-                    />
-                  </div>
-                  <div className="col-span-3">
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="Amount"
-                      value={item.amount}
-                      onChange={(e) => handleItemChange(index, 'amount', e.target.value)}
-                    />
-                  </div>
-                  <div className="col-span-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveItem(index)}
-                      disabled={breakdownItems.length === 1}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  {item.category === 'investment' && (
+                    <div className="grid grid-cols-12 gap-2 pl-8">
+                      <div className="col-span-11">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Current Value (Optional)"
+                          value={item.current_value || ''}
+                          onChange={(e) => handleItemChange(index, 'current_value', e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Enter the current market value of this investment</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
