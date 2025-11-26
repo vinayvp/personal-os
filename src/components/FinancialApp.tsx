@@ -9,6 +9,7 @@ import FinancialPieChart from "@/components/financial/FinancialPieChart";
 import FinancialTrendChart from "@/components/financial/FinancialTrendChart";
 import FinancialSummary from "@/components/financial/FinancialSummary";
 import InvestmentDiversification from "@/components/financial/InvestmentDiversification";
+import InvestmentGrowthChart from "@/components/financial/InvestmentGrowthChart";
 
 interface FinancialSnapshot {
   id: string;
@@ -24,6 +25,7 @@ interface FinancialBreakdown {
   category: 'expense' | 'investment' | 'savings';
   name: string;
   amount: number;
+  current_value: number | null;
   created_at: string;
 }
 
@@ -211,6 +213,11 @@ const FinancialApp = () => {
                 </div>
 
                 <InvestmentDiversification breakdowns={currentBreakdowns} />
+                
+                <InvestmentGrowthChart 
+                  snapshots={snapshots}
+                  breakdowns={breakdowns}
+                />
               </>
             )}
           </>
