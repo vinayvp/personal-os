@@ -1,63 +1,51 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, PieChart as PieChartIcon, TrendingUp } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Wallet, Receipt, Briefcase, PieChart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import AddFinancialSnapshotModal from "@/components/financial/AddFinancialSnapshotModal";
-import FinancialPieChart from "@/components/financial/FinancialPieChart";
-import FinancialTrendChart from "@/components/financial/FinancialTrendChart";
-import FinancialSummary from "@/components/financial/FinancialSummary";
-import InvestmentDiversification from "@/components/financial/InvestmentDiversification";
-import InvestmentGrowthChart from "@/components/financial/InvestmentGrowthChart";
-
-interface FinancialSnapshot {
-  id: string;
-  date: string;
-  salary: number;
-  created_at: string;
-  updated_at: string;
-}
-
-interface FinancialBreakdown {
-  id: string;
-  snapshot_id: string;
-  category: 'expense' | 'investment' | 'savings';
-  name: string;
-  amount: number;
-  current_value: number | null;
-  created_at: string;
-}
+import HeroMetrics from "@/components/financial/HeroMetrics";
+import AssetAllocationChart from "@/components/financial/AssetAllocationChart";
+import PerformanceLeaderboard from "@/components/financial/PerformanceLeaderboard";
+import HistoricalChart from "@/components/financial/HistoricalChart";
+import AddInvestmentModal from "@/components/financial/AddInvestmentModal";
+import AddTransactionModal from "@/components/financial/AddTransactionModal";
+import { 
+  Investment, 
+  InvestmentTransaction, 
+  InvestmentWithLatest, 
+  AssetType 
+} from "@/components/financial/types";
 
 const FinancialApp = () => {
-  const [snapshots, setSnapshots] = useState<FinancialSnapshot[]>([]);
-  const [breakdowns, setBreakdowns] = useState<FinancialBreakdown[]>([]);
-  const [selectedSnapshot, setSelectedSnapshot] = useState<string | null>(null);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [investments, setInvestments] = useState<Investment[]>([]);
+  const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAddInvestmentOpen, setIsAddInvestmentOpen] = useState(false);
+  const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchSnapshots();
-    fetchBreakdowns();
+    fetchData();
   }, []);
 
-  const fetchSnapshots = async () => {
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('financial_snapshots')
-        .select('*')
-        .order('date', { ascending: false });
+      const [investmentsRes, transactionsRes] = await Promise.all([
+        supabase.from("investments").select("*").order("created_at", { ascending: false }),
+        supabase.from("investment_transactions").select("*").order("transaction_date", { ascending: true }),
+      ]);
 
-      if (error) throw error;
+      if (investmentsRes.error) throw investmentsRes.error;
+      if (transactionsRes.error) throw transactionsRes.error;
 
-      setSnapshots(data || []);
-      if (data && data.length > 0 && !selectedSnapshot) {
-        setSelectedSnapshot(data[0].id);
-      }
+      setInvestments((investmentsRes.data || []) as Investment[]);
+      setTransactions((transactionsRes.data || []) as InvestmentTransaction[]);
     } catch (error: any) {
       toast({
-        title: "Error fetching snapshots",
+        title: "Error fetching data",
         description: error.message,
         variant: "destructive",
       });
@@ -66,167 +54,184 @@ const FinancialApp = () => {
     }
   };
 
-  const fetchBreakdowns = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('financial_breakdown')
-        .select('*');
+  // Calculate investment metrics with latest transaction values
+  const investmentsWithMetrics = useMemo((): InvestmentWithLatest[] => {
+    return investments.map((inv) => {
+      const invTransactions = transactions.filter((t) => t.investment_id === inv.id);
+      
+      if (invTransactions.length === 0) {
+        return {
+          ...inv,
+          total_invested: 0,
+          current_value: 0,
+          gain_loss: 0,
+          gain_loss_percent: 0,
+        };
+      }
 
-      if (error) throw error;
+      // Get the latest transaction for current value
+      const latestTransaction = invTransactions[invTransactions.length - 1];
+      const totalInvested = Number(latestTransaction.amount_invested);
+      const currentValue = Number(latestTransaction.current_value);
+      const gainLoss = currentValue - totalInvested;
+      const gainLossPercent = totalInvested > 0 ? (gainLoss / totalInvested) * 100 : 0;
 
-      setBreakdowns((data || []) as FinancialBreakdown[]);
-    } catch (error: any) {
-      toast({
-        title: "Error fetching breakdown",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
+      return {
+        ...inv,
+        total_invested: totalInvested,
+        current_value: currentValue,
+        gain_loss: gainLoss,
+        gain_loss_percent: gainLossPercent,
+      };
+    });
+  }, [investments, transactions]);
 
-  const handleSnapshotAdded = () => {
-    fetchSnapshots();
-    fetchBreakdowns();
-  };
+  // Calculate portfolio totals
+  const portfolioMetrics = useMemo(() => {
+    const totalPortfolioValue = investmentsWithMetrics.reduce((sum, inv) => sum + inv.current_value, 0);
+    const totalInvested = investmentsWithMetrics.reduce((sum, inv) => sum + inv.total_invested, 0);
+    const totalGainLoss = totalPortfolioValue - totalInvested;
+    const totalGainLossPercent = totalInvested > 0 ? (totalGainLoss / totalInvested) * 100 : 0;
 
-  const handleDeleteSnapshot = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('financial_snapshots')
-        .delete()
-        .eq('id', id);
+    return {
+      totalPortfolioValue,
+      totalInvested,
+      totalGainLoss,
+      totalGainLossPercent,
+    };
+  }, [investmentsWithMetrics]);
 
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Snapshot deleted successfully",
-      });
-
-      fetchSnapshots();
-      fetchBreakdowns();
-    } catch (error: any) {
-      toast({
-        title: "Error deleting snapshot",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const currentSnapshot = snapshots.find(s => s.id === selectedSnapshot);
-  const currentBreakdowns = breakdowns.filter(b => b.snapshot_id === selectedSnapshot);
+  // Get unique asset types that have data
+  const activeAssetTypes = useMemo(() => {
+    return [...new Set(investments.map((inv) => inv.asset_type))] as AssetType[];
+  }, [investments]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background p-8">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center">Loading...</div>
+          <div className="text-center py-12">Loading...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-8">
+    <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex justify-between items-center">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold">Financial Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Track your salary, expenses, and investments</p>
+            <p className="text-muted-foreground mt-1">Track your investments and portfolio performance</p>
           </div>
-          <Button onClick={() => setIsAddModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Snapshot
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsAddInvestmentOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Investment
+            </Button>
+            <Button onClick={() => setIsAddTransactionOpen(true)} disabled={investments.length === 0}>
+              <Plus className="w-4 h-4 mr-2" />
+              Log Transaction
+            </Button>
+          </div>
         </div>
 
-        {snapshots.length === 0 ? (
-          <Card>
-            <CardContent className="py-12">
-              <div className="text-center space-y-4">
-                <PieChartIcon className="w-12 h-12 mx-auto text-muted-foreground" />
-                <div>
-                  <h3 className="text-lg font-semibold">No financial data yet</h3>
-                  <p className="text-muted-foreground">Add your first snapshot to get started</p>
-                </div>
-                <Button onClick={() => setIsAddModalOpen(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Snapshot
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {snapshots.map((snapshot) => (
-                <Button
-                  key={snapshot.id}
-                  variant={selectedSnapshot === snapshot.id ? "default" : "outline"}
-                  onClick={() => setSelectedSnapshot(snapshot.id)}
-                  className="whitespace-nowrap"
-                >
-                  {new Date(snapshot.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                </Button>
-              ))}
-            </div>
+        {/* Navigation Tabs */}
+        <Tabs defaultValue="portfolio" className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-3">
+            <TabsTrigger value="income" disabled className="gap-2">
+              <Wallet className="w-4 h-4" />
+              Income
+            </TabsTrigger>
+            <TabsTrigger value="expenses" disabled className="gap-2">
+              <Receipt className="w-4 h-4" />
+              Expenses
+            </TabsTrigger>
+            <TabsTrigger value="portfolio" className="gap-2">
+              <Briefcase className="w-4 h-4" />
+              Portfolio
+            </TabsTrigger>
+          </TabsList>
 
-            {currentSnapshot && (
+          <TabsContent value="portfolio" className="space-y-8 mt-8">
+            {investments.length === 0 ? (
+              <Card className="bg-card border-border">
+                <CardContent className="py-16">
+                  <div className="text-center space-y-4">
+                    <PieChart className="w-16 h-16 mx-auto text-muted-foreground" />
+                    <div>
+                      <h3 className="text-xl font-semibold">No investments yet</h3>
+                      <p className="text-muted-foreground mt-2">
+                        Start by adding your first investment to track your portfolio
+                      </p>
+                    </div>
+                    <Button onClick={() => setIsAddInvestmentOpen(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Your First Investment
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
               <>
-                <FinancialSummary
-                  snapshot={currentSnapshot}
-                  breakdowns={currentBreakdowns}
-                  onDelete={() => handleDeleteSnapshot(currentSnapshot.id)}
-                />
+                {/* Hero Metrics */}
+                <HeroMetrics {...portfolioMetrics} />
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <PieChartIcon className="w-5 h-5" />
-                        Current Breakdown
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <FinancialPieChart
-                        salary={currentSnapshot.salary}
-                        breakdowns={currentBreakdowns}
-                      />
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5" />
-                        Trend Over Time
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <FinancialTrendChart
-                        snapshots={snapshots}
-                        breakdowns={breakdowns}
-                      />
-                    </CardContent>
-                  </Card>
+                {/* Charts Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <AssetAllocationChart investments={investmentsWithMetrics} />
+                  <PerformanceLeaderboard investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)} />
                 </div>
 
-                <InvestmentDiversification breakdowns={currentBreakdowns} />
-                
-                <InvestmentGrowthChart 
-                  snapshots={snapshots}
-                  breakdowns={breakdowns}
-                />
+                {/* Historical Performance Charts */}
+                {activeAssetTypes.length > 0 && (
+                  <div className="space-y-6">
+                    <h2 className="text-xl font-semibold">Historical Performance by Asset Type</h2>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {activeAssetTypes.map((assetType) => (
+                        <HistoricalChart
+                          key={assetType}
+                          assetType={assetType}
+                          investments={investments}
+                          transactions={transactions}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
-          </>
-        )}
+          </TabsContent>
 
-        <AddFinancialSnapshotModal
-          open={isAddModalOpen}
-          onOpenChange={setIsAddModalOpen}
-          onSuccess={handleSnapshotAdded}
+          <TabsContent value="income">
+            <Card className="bg-card border-border">
+              <CardContent className="py-16 text-center">
+                <p className="text-muted-foreground">Income tracking coming soon</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="expenses">
+            <Card className="bg-card border-border">
+              <CardContent className="py-16 text-center">
+                <p className="text-muted-foreground">Expense tracking coming soon</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Modals */}
+        <AddInvestmentModal
+          open={isAddInvestmentOpen}
+          onOpenChange={setIsAddInvestmentOpen}
+          onSuccess={fetchData}
+        />
+        <AddTransactionModal
+          open={isAddTransactionOpen}
+          onOpenChange={setIsAddTransactionOpen}
+          onSuccess={fetchData}
+          investments={investments}
         />
       </div>
     </div>
