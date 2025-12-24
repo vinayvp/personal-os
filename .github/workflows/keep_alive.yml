@@ -2,8 +2,8 @@ name: Supabase Keep Alive
 
 on:
   schedule:
-    # Runs at 00:00 UTC every day
-    - cron: '0 0 * * *'
+    # Runs at 11:00 AM IST = 05:30 UTC everyday 
+    - cron: '30 5 * * *'
   workflow_dispatch: # Allows you to run it manually for testing
 
 jobs:
@@ -20,6 +20,12 @@ jobs:
           
           echo "Response received: $RESPONSE"
 
-          # 2. Send notification to mobile
-          curl -d "Supabase Check-in Successful: $RESPONSE" \
-                 ntfy.sh/vinayvp-app-alerts
+          # 2. Extract values using jq
+          # -r ensures raw output (removes the quotes from the strings)
+          MSG=$(echo $RESPONSE | jq -r '.message')
+          STATUS=$(echo $RESPONSE | jq -r '.dbStatus')
+
+          # 3. Send formatted notification to ntfy
+          # Format: Message: {message} , dbStatus : {dbStatus}
+          curl -d "Message: $MSG , dbStatus : $STATUS" \
+               ntfy.sh/vinayvp-app-alerts
