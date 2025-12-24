@@ -47,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({ scrollToSection }) => {
             
             <div className="pl-2">
               <Button asChild size="sm">
-                <a href="/Vinayak_Pastey_Resume.pdf" download>
+                <a href="/Vinayak_Pastey_Resume.pdf" download data-umami-event="Download Resume">
                   <Download className="w-4 h-4 mr-2" />
                   Download Resume
                 </a>
