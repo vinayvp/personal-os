@@ -11,6 +11,7 @@ import PerformanceLeaderboard from "@/components/financial/PerformanceLeaderboar
 import HistoricalChart from "@/components/financial/HistoricalChart";
 import AddInvestmentModal from "@/components/financial/AddInvestmentModal";
 import AddTransactionModal from "@/components/financial/AddTransactionModal";
+import AddAssetTypeModal from "@/components/financial/AddAssetTypeModal";
 import { 
   Investment, 
   InvestmentTransaction, 
@@ -21,9 +22,11 @@ import {
 const FinancialApp = () => {
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
+  const [assetTypes, setAssetTypes] = useState<AssetType[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddInvestmentOpen, setIsAddInvestmentOpen] = useState(false);
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
+  const [isAddAssetTypeOpen, setIsAddAssetTypeOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -33,16 +36,19 @@ const FinancialApp = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [investmentsRes, transactionsRes] = await Promise.all([
-        supabase.from("investments").select("*").order("created_at", { ascending: false }),
+      const [investmentsRes, transactionsRes, assetTypesRes] = await Promise.all([
+        supabase.from("investments").select("*, asset_type:asset_types(*)").order("created_at", { ascending: false }),
         supabase.from("investment_transactions").select("*").order("transaction_date", { ascending: true }),
+        supabase.from("asset_types").select("*").order("name", { ascending: true }),
       ]);
 
       if (investmentsRes.error) throw investmentsRes.error;
       if (transactionsRes.error) throw transactionsRes.error;
+      if (assetTypesRes.error) throw assetTypesRes.error;
 
       setInvestments((investmentsRes.data || []) as Investment[]);
       setTransactions((transactionsRes.data || []) as InvestmentTransaction[]);
+      setAssetTypes((assetTypesRes.data || []) as AssetType[]);
     } catch (error: any) {
       toast({
         title: "Error fetching data",
@@ -103,8 +109,9 @@ const FinancialApp = () => {
 
   // Get unique asset types that have data
   const activeAssetTypes = useMemo(() => {
-    return [...new Set(investments.map((inv) => inv.asset_type))] as AssetType[];
-  }, [investments]);
+    const activeIds = [...new Set(investments.map((inv) => inv.asset_type_id))];
+    return assetTypes.filter((at) => activeIds.includes(at.id));
+  }, [investments, assetTypes]);
 
   if (loading) {
     return (
@@ -125,7 +132,11 @@ const FinancialApp = () => {
             <h1 className="text-3xl font-bold">Financial Dashboard</h1>
             <p className="text-muted-foreground mt-1">Track your investments and portfolio performance</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" onClick={() => setIsAddAssetTypeOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Asset Type
+            </Button>
             <Button variant="outline" onClick={() => setIsAddInvestmentOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Add Investment
@@ -180,7 +191,7 @@ const FinancialApp = () => {
 
                 {/* Charts Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <AssetAllocationChart investments={investmentsWithMetrics} />
+                  <AssetAllocationChart investments={investmentsWithMetrics} assetTypes={assetTypes} />
                   <PerformanceLeaderboard investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)} />
                 </div>
 
@@ -191,7 +202,7 @@ const FinancialApp = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {activeAssetTypes.map((assetType) => (
                         <HistoricalChart
-                          key={assetType}
+                          key={assetType.id}
                           assetType={assetType}
                           investments={investments}
                           transactions={transactions}
@@ -222,10 +233,16 @@ const FinancialApp = () => {
         </Tabs>
 
         {/* Modals */}
+        <AddAssetTypeModal
+          open={isAddAssetTypeOpen}
+          onOpenChange={setIsAddAssetTypeOpen}
+          onSuccess={fetchData}
+        />
         <AddInvestmentModal
           open={isAddInvestmentOpen}
           onOpenChange={setIsAddInvestmentOpen}
           onSuccess={fetchData}
+          assetTypes={assetTypes}
         />
         <AddTransactionModal
           open={isAddTransactionOpen}

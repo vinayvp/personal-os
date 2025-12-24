@@ -8,7 +8,7 @@ import TodoApp from '@/components/TodoApp';
 import LessonsApp from '@/components/LessonsApp';
 import JournalApp from '@/components/JournalApp';
 import MoviesApp from '@/components/MoviesApp';
-import FinancialApp from '@/components/FinancialApp';
+import FinancialApp from '@/components/financial/FinancialApp';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 

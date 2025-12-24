@@ -35,6 +35,27 @@ export type Database = {
         }
         Relationships: []
       }
+      asset_types: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       contact_messages: {
         Row: {
           created_at: string
@@ -167,7 +188,7 @@ export type Database = {
       }
       investments: {
         Row: {
-          asset_type: string
+          asset_type_id: string
           created_at: string
           id: string
           name: string
@@ -175,7 +196,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          asset_type: string
+          asset_type_id: string
           created_at?: string
           id?: string
           name: string
@@ -183,14 +204,22 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          asset_type?: string
+          asset_type_id?: string
           created_at?: string
           id?: string
           name?: string
           notes?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "investments_asset_type_id_fkey"
+            columns: ["asset_type_id"]
+            isOneToOne: false
+            referencedRelation: "asset_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       journal_entries: {
         Row: {
