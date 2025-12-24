@@ -11,6 +11,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script defer src="https://cloud.umami.is/script.js" data-website-id="37e82014-725b-465e-8bd0-a9fba2fe9e04"></script>
+    <script>
+      function beforeSend(type, payload) {
+        const excludedPages = ['/app'];
+    
+        if (excludedPages.includes(payload.url)) {
+          return false; // This cancels the tracking request
+        }
+        return payload; // This allows tracking for all other pages
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
