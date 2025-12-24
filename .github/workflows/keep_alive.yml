@@ -10,8 +10,16 @@ jobs:
   ping_supabase:
     runs-on: ubuntu-latest
     steps:
-      - name: Call Supabase Edge Function
+      - name: Call Supabase Edge Function and Notify
         run: |
-          curl -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/daily-checkin" \
-          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-          -H "Content-Type: application/json"
+          # 1. Run the curl and capture the response body
+          # Using -s to stay silent and -w to handle potential errors
+          RESPONSE=$(curl -s -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/daily-checkin" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json")
+          
+          echo "Response received: $RESPONSE"
+
+          # 2. Send notification to mobile
+          curl -d "Supabase Check-in Successful: $RESPONSE" \
+                 ntfy.sh/vinayvp-app-alerts
