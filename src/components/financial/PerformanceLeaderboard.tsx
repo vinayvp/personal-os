@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Trophy } from "lucide-react";
-import { InvestmentWithLatest, ASSET_TYPE_LABELS, ASSET_TYPE_COLORS } from "./types";
+import { InvestmentWithLatest } from "./types";
 
 interface PerformanceLeaderboardProps {
   investments: InvestmentWithLatest[];
@@ -47,6 +47,10 @@ const PerformanceLeaderboard = ({ investments }: PerformanceLeaderboardProps) =>
       <CardContent className="space-y-3">
         {sortedInvestments.map((investment, index) => {
           const isPositive = investment.gain_loss_percent >= 0;
+          const assetType = investment.asset_type;
+          const assetColor = assetType?.color || 'hsl(var(--muted-foreground))';
+          const assetName = assetType?.name || 'Unknown';
+
           return (
             <div
               key={investment.id}
@@ -61,7 +65,7 @@ const PerformanceLeaderboard = ({ investments }: PerformanceLeaderboardProps) =>
               <div className="flex items-center gap-4">
                 <div
                   className="text-2xl font-bold w-8 text-center"
-                  style={{ color: index < 3 ? ASSET_TYPE_COLORS[investment.asset_type] : undefined }}
+                  style={{ color: index < 3 ? assetColor : undefined }}
                 >
                   {index + 1}
                 </div>
@@ -71,11 +75,11 @@ const PerformanceLeaderboard = ({ investments }: PerformanceLeaderboardProps) =>
                     <Badge
                       variant="secondary"
                       style={{ 
-                        backgroundColor: `${ASSET_TYPE_COLORS[investment.asset_type]}20`,
-                        color: ASSET_TYPE_COLORS[investment.asset_type],
+                        backgroundColor: `${assetColor}20`,
+                        color: assetColor,
                       }}
                     >
-                      {ASSET_TYPE_LABELS[investment.asset_type]}
+                      {assetName}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">

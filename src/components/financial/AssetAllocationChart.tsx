@@ -1,36 +1,37 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { PieChart as PieChartIcon } from "lucide-react";
-import { AssetType, ASSET_TYPE_LABELS, ASSET_TYPE_COLORS, InvestmentWithLatest } from "./types";
+import { InvestmentWithLatest, AssetType } from "./types";
 
 interface AssetAllocationChartProps {
   investments: InvestmentWithLatest[];
+  assetTypes: AssetType[];
 }
 
-const AssetAllocationChart = ({ investments }: AssetAllocationChartProps) => {
-  // Group by asset type
-  const allocationData = Object.entries(
-    investments.reduce((acc, inv) => {
-      acc[inv.asset_type] = (acc[inv.asset_type] || 0) + inv.current_value;
-      return acc;
-    }, {} as Record<AssetType, number>)
-  ).map(([type, value]) => ({
-    name: ASSET_TYPE_LABELS[type as AssetType],
-    value,
-    color: ASSET_TYPE_COLORS[type as AssetType],
-  }));
+const AssetAllocationChart = ({ investments, assetTypes }: AssetAllocationChartProps) => {
+  // Group investments by asset type
+  const assetTypeMap = new Map<string, { name: string; color: string; value: number }>();
+  
+  investments.forEach((inv) => {
+    const assetType = inv.asset_type || assetTypes.find((at) => at.id === inv.asset_type_id);
+    if (!assetType) return;
 
-  const total = allocationData.reduce((sum, item) => sum + item.value, 0);
+    const existing = assetTypeMap.get(assetType.id);
+    if (existing) {
+      existing.value += inv.current_value;
+    } else {
+      assetTypeMap.set(assetType.id, {
+        name: assetType.name,
+        color: assetType.color,
+        value: inv.current_value,
+      });
+    }
+  });
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
+  const chartData = Array.from(assetTypeMap.values()).filter((d) => d.value > 0);
+  const totalValue = chartData.reduce((sum, d) => sum + d.value, 0);
 
-  if (allocationData.length === 0) {
+  if (chartData.length === 0) {
     return (
       <Card className="bg-card border-border">
         <CardHeader>
@@ -39,12 +40,20 @@ const AssetAllocationChart = ({ investments }: AssetAllocationChartProps) => {
             Asset Allocation
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-center h-64">
-          <p className="text-muted-foreground">No investments to display</p>
+        <CardContent className="flex items-center justify-center h-80">
+          <p className="text-muted-foreground">No data to display</p>
         </CardContent>
       </Card>
     );
   }
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
 
   return (
     <Card className="bg-card border-border">
@@ -58,7 +67,7 @@ const AssetAllocationChart = ({ investments }: AssetAllocationChartProps) => {
         <ResponsiveContainer width="100%" height={280}>
           <PieChart>
             <Pie
-              data={allocationData}
+              data={chartData}
               cx="50%"
               cy="50%"
               innerRadius={60}
@@ -66,22 +75,23 @@ const AssetAllocationChart = ({ investments }: AssetAllocationChartProps) => {
               paddingAngle={2}
               dataKey="value"
             >
-              {allocationData.map((entry, index) => (
+              {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number) => [formatCurrency(value), 'Value']}
               contentStyle={{
                 backgroundColor: 'hsl(var(--card))',
                 border: '1px solid hsl(var(--border))',
                 borderRadius: '8px',
               }}
+              formatter={(value: number) => [
+                `${formatCurrency(value)} (${((value / totalValue) * 100).toFixed(1)}%)`,
+              ]}
             />
             <Legend
-              formatter={(value: string) => {
-                const item = allocationData.find((d) => d.name === value);
-                const percent = item ? ((item.value / total) * 100).toFixed(1) : 0;
+              formatter={(value, entry: any) => {
+                const percent = ((entry.payload.value / totalValue) * 100).toFixed(1);
                 return `${value} (${percent}%)`;
               }}
             />

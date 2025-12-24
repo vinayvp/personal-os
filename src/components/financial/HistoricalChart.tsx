@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { TrendingUp } from "lucide-react";
 import { format } from "date-fns";
-import { AssetType, ASSET_TYPE_LABELS, ASSET_TYPE_COLORS, Investment, InvestmentTransaction } from "./types";
+import { AssetType, Investment, InvestmentTransaction } from "./types";
 
 interface HistoricalChartProps {
   assetType: AssetType;
@@ -12,7 +12,7 @@ interface HistoricalChartProps {
 
 const HistoricalChart = ({ assetType, investments, transactions }: HistoricalChartProps) => {
   // Filter investments by asset type
-  const assetInvestments = investments.filter((inv) => inv.asset_type === assetType);
+  const assetInvestments = investments.filter((inv) => inv.asset_type_id === assetType.id);
   const investmentIds = new Set(assetInvestments.map((inv) => inv.id));
   
   // Get transactions for these investments
@@ -59,8 +59,8 @@ const HistoricalChart = ({ assetType, investments, transactions }: HistoricalCha
     <Card className="bg-card border-border">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <TrendingUp className="h-5 w-5" style={{ color: ASSET_TYPE_COLORS[assetType] }} />
-          {ASSET_TYPE_LABELS[assetType]} Performance
+          <TrendingUp className="h-5 w-5" style={{ color: assetType.color }} />
+          {assetType.name} Performance
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -104,9 +104,9 @@ const HistoricalChart = ({ assetType, investments, transactions }: HistoricalCha
               type="monotone"
               dataKey="current"
               name="Current Value"
-              stroke={ASSET_TYPE_COLORS[assetType]}
+              stroke={assetType.color}
               strokeWidth={2}
-              dot={{ fill: ASSET_TYPE_COLORS[assetType], strokeWidth: 2, r: 4 }}
+              dot={{ fill: assetType.color, strokeWidth: 2, r: 4 }}
             />
           </LineChart>
         </ResponsiveContainer>
