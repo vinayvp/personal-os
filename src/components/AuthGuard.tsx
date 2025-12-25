@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+// 1. Import the Biometric Plugin
+import { NativeBiometric } from 'capacitor-native-biometric';
+import { Capacitor } from '@capacitor/core';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -17,34 +20,76 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
   const [isLoadingPassword, setIsLoadingPassword] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Check if user is already authenticated (stored in sessionStorage)
-    const isAuth = sessionStorage.getItem('app_authenticated') === 'true';
-    setIsAuthenticated(isAuth);
-    setIsLoadingPassword(false);
+  // 2. Wrap login logic in a reusable function for auto-fill
+  const performLogin = useCallback(async (pwd: string) => {
+    const { data, error } = await supabase.functions.invoke('check-app-password', {
+      body: { password: pwd },
+    });
+
+    if (data?.success) {
+      setIsAuthenticated(true);
+      sessionStorage.setItem('app_authenticated', 'true');
+      
+      // 3. Save to Secure Storage on successful manual login
+      if (Capacitor.getPlatform() === 'android') {
+        await NativeBiometric.setCredentials({
+          address: 'vinayak-app',
+          username: 'user',
+          password: pwd,
+          server: 'auth-vault',
+        }).catch(e => console.error("Could not save credentials", e));
+      }
+      return true;
+    }
+    return false;
   }, []);
+
+  useEffect(() => {
+    const initAuth = async () => {
+      const isAuth = sessionStorage.getItem('app_authenticated') === 'true';
+      setIsAuthenticated(isAuth);
+
+      // 4. BIOMETRIC AUTO-LOGIN ATTEMPT
+      if (!isAuth && Capacitor.getPlatform() === 'android') {
+        try {
+          const available = await NativeBiometric.isAvailable();
+          if (available.isAvailable) {
+            const credentials = await NativeBiometric.getCredentials({
+              address: 'vinayak-app',
+              server: 'auth-vault',
+            });
+
+            if (credentials) {
+              await NativeBiometric.verifyIdentity({
+                reason: "Unlock your applications",
+                title: "Login with Fingerprint"
+              });
+
+              setIsLoading(true);
+              const success = await performLogin(credentials.password);
+              if (success) {
+                toast({ title: "Welcome back!", description: "Biometric auth successful." });
+              }
+              setIsLoading(false);
+            }
+          }
+        } catch (e) {
+          console.log("Biometric auth skipped or failed", e);
+        }
+      }
+      setIsLoadingPassword(false);
+    };
+
+    initAuth();
+  }, [performLogin, toast]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('check-app-password', {
-        body: { password },
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data?.success) {
-        setIsAuthenticated(true);
-        sessionStorage.setItem('app_authenticated', 'true');
-        toast({
-          title: "Welcome!",
-          description: "Successfully logged in to your applications.",
-        });
-      } else {
+      const success = await performLogin(password);
+      if (!success) {
         toast({
           variant: "destructive",
           title: "Invalid Password",

@@ -4,17 +4,6 @@
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
 
-:root {
-  /* This detects the status bar height automatically */
-  --sat: env(safe-area-inset-top);
-}
-
-body {
-  /* This pushes the entire website down by exactly the height of the status bar */
-  padding-top: var(--sat, 20px); 
-  background-color: #ffffff; /* Match this to your header color */
-}
-
 @layer base {
   :root {
     /* Dark theme as default - comfortable mid-dark like GitHub */
@@ -244,5 +233,12 @@ body {
 @media (min-width: 768px) {
   .portfolio-bg-desktop {
     background-image: url('/portfolio_backgrounds/background_desktop_1.gif') !important;
+  }
+}
+
+/* Simple hardcoded padding for mobile only */
+@media (max-width: 768px) {
+  body {
+    padding-top: 20px !important;
   }
 }
