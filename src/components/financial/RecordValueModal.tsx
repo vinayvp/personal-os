@@ -13,25 +13,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Investment } from "./types";
 
-interface AddTransactionModalProps {
+interface RecordValueModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
   investments: Investment[];
 }
 
-const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: AddTransactionModalProps) => {
+const RecordValueModal = ({ open, onOpenChange, onSuccess, investments }: RecordValueModalProps) => {
   const [investmentId, setInvestmentId] = useState("");
-  const [transactionType, setTransactionType] = useState<"buy" | "withdraw">("buy");
   const [date, setDate] = useState<Date>(new Date());
-  const [amount, setAmount] = useState("");
+  const [currentValue, setCurrentValue] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!investmentId || !amount) {
+    if (!investmentId || !currentValue) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -42,28 +41,24 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: Add
 
     setLoading(true);
     try {
-      // For now, we store buy as positive amount_invested and withdraw as negative
-      const amountValue = parseFloat(amount);
-      const finalAmount = transactionType === "withdraw" ? -amountValue : amountValue;
-      
+      // Record a value snapshot (amount_invested = 0 for pure value recording)
       const { error } = await supabase.from("investment_transactions").insert({
         investment_id: investmentId,
         transaction_date: format(date, "yyyy-MM-dd"),
-        amount_invested: finalAmount,
-        current_value: 0, // Will be updated via Record Value
+        amount_invested: 0,
+        current_value: parseFloat(currentValue),
       });
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: `${transactionType === "buy" ? "Buy" : "Withdrawal"} recorded successfully`,
+        description: "Investment value recorded",
       });
 
       setInvestmentId("");
-      setTransactionType("buy");
       setDate(new Date());
-      setAmount("");
+      setCurrentValue("");
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
@@ -81,7 +76,7 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: Add
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Transaction</DialogTitle>
+          <DialogTitle>Record Current Value</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -96,19 +91,6 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: Add
                     {inv.name}
                   </SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Transaction Type</Label>
-            <Select value={transactionType} onValueChange={(v) => setTransactionType(v as "buy" | "withdraw")}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="buy">Buy / Invest</SelectItem>
-                <SelectItem value="withdraw">Withdraw / Sell</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -141,13 +123,13 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: Add
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount (₹)</Label>
+            <Label htmlFor="currentValue">Current Value (₹)</Label>
             <Input
-              id="amount"
+              id="currentValue"
               type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="100000"
+              value={currentValue}
+              onChange={(e) => setCurrentValue(e.target.value)}
+              placeholder="150000"
             />
           </div>
 
@@ -156,7 +138,7 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: Add
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : "Add Transaction"}
+              {loading ? "Saving..." : "Record Value"}
             </Button>
           </div>
         </form>
@@ -165,4 +147,4 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: Add
   );
 };
 
-export default AddTransactionModal;
+export default RecordValueModal;

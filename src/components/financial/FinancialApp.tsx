@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Wallet, Receipt, Briefcase, PieChart } from "lucide-react";
+import { Plus, Wallet, Receipt, Briefcase, PieChart, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import HeroMetrics from "@/components/financial/HeroMetrics";
@@ -12,6 +12,7 @@ import HistoricalChart from "@/components/financial/HistoricalChart";
 import AddInvestmentModal from "@/components/financial/AddInvestmentModal";
 import AddTransactionModal from "@/components/financial/AddTransactionModal";
 import AddAssetTypeModal from "@/components/financial/AddAssetTypeModal";
+import RecordValueModal from "@/components/financial/RecordValueModal";
 import { 
   Investment, 
   InvestmentTransaction, 
@@ -27,6 +28,7 @@ const FinancialApp = () => {
   const [isAddInvestmentOpen, setIsAddInvestmentOpen] = useState(false);
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isAddAssetTypeOpen, setIsAddAssetTypeOpen] = useState(false);
+  const [isRecordValueOpen, setIsRecordValueOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -135,15 +137,19 @@ const FinancialApp = () => {
           <div className="flex gap-2 flex-wrap">
             <Button variant="outline" onClick={() => setIsAddAssetTypeOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
-              Add Asset Type
+              Asset Type
             </Button>
             <Button variant="outline" onClick={() => setIsAddInvestmentOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
-              Add Investment
+              Investment
             </Button>
-            <Button onClick={() => setIsAddTransactionOpen(true)} disabled={investments.length === 0}>
+            <Button variant="outline" onClick={() => setIsAddTransactionOpen(true)} disabled={investments.length === 0}>
               <Plus className="w-4 h-4 mr-2" />
-              Log Transaction
+              Transaction
+            </Button>
+            <Button onClick={() => setIsRecordValueOpen(true)} disabled={investments.length === 0}>
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Record Value
             </Button>
           </div>
         </div>
@@ -247,6 +253,12 @@ const FinancialApp = () => {
         <AddTransactionModal
           open={isAddTransactionOpen}
           onOpenChange={setIsAddTransactionOpen}
+          onSuccess={fetchData}
+          investments={investments}
+        />
+        <RecordValueModal
+          open={isRecordValueOpen}
+          onOpenChange={setIsRecordValueOpen}
           onSuccess={fetchData}
           investments={investments}
         />
