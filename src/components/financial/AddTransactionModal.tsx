@@ -26,6 +26,7 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: Add
   const [date, setDate] = useState<Date>(new Date());
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,7 +123,7 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: Add
 
           <div className="space-y-2">
             <Label>Date</Label>
-            <Popover>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -139,7 +140,12 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: Add
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={(d) => d && setDate(d)}
+                  onSelect={(d) => {
+                    if (d) {
+                      setDate(d);
+                      setCalendarOpen(false);
+                    }
+                  }}
                   initialFocus
                   className="pointer-events-auto"
                 />
