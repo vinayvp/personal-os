@@ -33,10 +33,9 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
       // 3. Save to Secure Storage on successful manual login
       if (Capacitor.getPlatform() === 'android') {
         await NativeBiometric.setCredentials({
-          address: 'vinayak-app',
           username: 'user',
           password: pwd,
-          server: 'auth-vault',
+          server: 'vinayak-app',
         }).catch(e => console.error("Could not save credentials", e));
       }
       return true;
@@ -55,8 +54,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
           const available = await NativeBiometric.isAvailable();
           if (available.isAvailable) {
             const credentials = await NativeBiometric.getCredentials({
-              address: 'vinayak-app',
-              server: 'auth-vault',
+              server: 'vinayak-app',
             });
 
             if (credentials) {
