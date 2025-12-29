@@ -22,15 +22,38 @@ const HistoricalChart = ({ assetType, investments, transactions }: HistoricalCha
     return null;
   }
 
-  // Group by date and sum values
+  // Sort transactions by date
+  const sortedTransactions = [...assetTransactions].sort(
+    (a, b) => new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime()
+  );
+
+  // Build chart data with cumulative invested values
+  // For "Record Value" entries (amount_invested = 0), use the last cumulative invested amount
+  let cumulativeInvested = 0;
   const dateMap = new Map<string, { invested: number; current: number }>();
   
-  assetTransactions.forEach((t) => {
-    const existing = dateMap.get(t.transaction_date) || { invested: 0, current: 0 };
-    dateMap.set(t.transaction_date, {
-      invested: existing.invested + Number(t.amount_invested),
-      current: existing.current + Number(t.current_value),
-    });
+  sortedTransactions.forEach((t) => {
+    const amountInvested = Number(t.amount_invested);
+    const currentValue = Number(t.current_value);
+    
+    // Update cumulative invested only if there's an actual investment/withdrawal
+    if (amountInvested !== 0) {
+      cumulativeInvested += amountInvested;
+    }
+    
+    const existing = dateMap.get(t.transaction_date);
+    if (existing) {
+      // If there's already data for this date, update it
+      dateMap.set(t.transaction_date, {
+        invested: cumulativeInvested,
+        current: currentValue > 0 ? currentValue : existing.current,
+      });
+    } else {
+      dateMap.set(t.transaction_date, {
+        invested: cumulativeInvested,
+        current: currentValue > 0 ? currentValue : cumulativeInvested,
+      });
+    }
   });
 
   const chartData = Array.from(dateMap.entries())

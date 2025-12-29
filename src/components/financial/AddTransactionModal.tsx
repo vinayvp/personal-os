@@ -55,9 +55,16 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: Add
 
       if (error) throw error;
 
+      const selectedInvestment = investments.find((inv) => inv.id === investmentId);
+      const formattedAmount = new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        maximumFractionDigits: 0,
+      }).format(amountValue);
+      
       toast({
-        title: "Success",
-        description: `${transactionType === "buy" ? "Buy" : "Withdrawal"} recorded successfully`,
+        title: "Transaction Recorded",
+        description: `${transactionType === "buy" ? "Invested" : "Withdrew"} ${formattedAmount} in ${selectedInvestment?.name || "investment"} on ${format(date, "PPP")}`,
       });
 
       setInvestmentId("");

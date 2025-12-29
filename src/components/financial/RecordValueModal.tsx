@@ -51,9 +51,16 @@ const RecordValueModal = ({ open, onOpenChange, onSuccess, investments }: Record
 
       if (error) throw error;
 
+      const selectedInvestment = investments.find((inv) => inv.id === investmentId);
+      const formattedValue = new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        maximumFractionDigits: 0,
+      }).format(parseFloat(currentValue));
+      
       toast({
-        title: "Success",
-        description: "Investment value recorded",
+        title: "Value Recorded",
+        description: `${selectedInvestment?.name || "Investment"} current value: ${formattedValue} on ${format(date, "PPP")}`,
       });
 
       setInvestmentId("");
