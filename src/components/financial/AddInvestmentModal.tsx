@@ -104,16 +104,16 @@ const AddInvestmentModal = ({ open, onOpenChange, onSuccess, assetTypes }: AddIn
               <SelectTrigger>
                 <SelectValue placeholder="Select asset type" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-popover z-[100]">
                 {assetTypes.map((type) => (
                   <SelectItem key={type.id} value={type.id}>
-                    <div className="flex items-center gap-2">
+                    <span className="flex items-center gap-2">
                       <span
-                        className="w-3 h-3 rounded-full"
+                        className="w-3 h-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: type.color }}
                       />
-                      {type.name}
-                    </div>
+                      <span>{type.name}</span>
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
