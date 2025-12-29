@@ -25,6 +25,7 @@ const RecordValueModal = ({ open, onOpenChange, onSuccess, investments }: Record
   const [date, setDate] = useState<Date>(new Date());
   const [currentValue, setCurrentValue] = useState("");
   const [loading, setLoading] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,7 +105,7 @@ const RecordValueModal = ({ open, onOpenChange, onSuccess, investments }: Record
 
           <div className="space-y-2">
             <Label>Date</Label>
-            <Popover>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -121,7 +122,12 @@ const RecordValueModal = ({ open, onOpenChange, onSuccess, investments }: Record
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={(d) => d && setDate(d)}
+                  onSelect={(d) => {
+                    if (d) {
+                      setDate(d);
+                      setCalendarOpen(false);
+                    }
+                  }}
                   initialFocus
                   className="pointer-events-auto"
                 />
