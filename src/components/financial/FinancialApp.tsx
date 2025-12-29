@@ -77,10 +77,17 @@ const FinancialApp = () => {
         };
       }
 
-      // Get the latest transaction for current value
-      const latestTransaction = invTransactions[invTransactions.length - 1];
-      const totalInvested = Number(latestTransaction.amount_invested);
-      const currentValue = Number(latestTransaction.current_value);
+      // Sum all amount_invested values (buy = positive, withdraw = negative)
+      const totalInvested = invTransactions.reduce((sum, t) => sum + Number(t.amount_invested), 0);
+      
+      // Get the latest current_value that is not zero (from Record Value entries)
+      // Sort by date descending to find the most recent value record
+      const sortedByDate = [...invTransactions].sort(
+        (a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
+      );
+      const latestValueRecord = sortedByDate.find((t) => Number(t.current_value) > 0);
+      const currentValue = latestValueRecord ? Number(latestValueRecord.current_value) : totalInvested;
+      
       const gainLoss = currentValue - totalInvested;
       const gainLossPercent = totalInvested > 0 ? (gainLoss / totalInvested) * 100 : 0;
 
