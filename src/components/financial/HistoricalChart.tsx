@@ -29,6 +29,7 @@ const HistoricalChart = ({ assetType, investments, transactions }: HistoricalCha
 
   // Build chart data with cumulative invested values
   // For "Record Value" entries (amount_invested = 0), use the last cumulative invested amount
+  // Sum all current values for each day
   let cumulativeInvested = 0;
   const dateMap = new Map<string, { invested: number; current: number }>();
   
@@ -43,15 +44,15 @@ const HistoricalChart = ({ assetType, investments, transactions }: HistoricalCha
     
     const existing = dateMap.get(t.transaction_date);
     if (existing) {
-      // If there's already data for this date, update it
+      // Sum current values for the same date
       dateMap.set(t.transaction_date, {
         invested: cumulativeInvested,
-        current: currentValue > 0 ? currentValue : existing.current,
+        current: existing.current + currentValue,
       });
     } else {
       dateMap.set(t.transaction_date, {
         invested: cumulativeInvested,
-        current: currentValue > 0 ? currentValue : cumulativeInvested,
+        current: currentValue,
       });
     }
   });
