@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import HeroMetrics from "@/components/financial/HeroMetrics";
 import AssetAllocationChart from "@/components/financial/AssetAllocationChart";
 import PerformanceLeaderboard from "@/components/financial/PerformanceLeaderboard";
+import InvestmentsList from "@/components/financial/InvestmentsList";
 import HistoricalChart from "@/components/financial/HistoricalChart";
 import AddInvestmentModal from "@/components/financial/AddInvestmentModal";
 import AddTransactionModal from "@/components/financial/AddTransactionModal";
@@ -141,42 +142,45 @@ const FinancialApp = () => {
             <h1 className="text-3xl font-bold">Financial Dashboard</h1>
             <p className="text-muted-foreground mt-1">Track your investments and portfolio performance</p>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" onClick={() => setIsAddAssetTypeOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Asset Type
-            </Button>
-            <Button variant="outline" onClick={() => setIsAddInvestmentOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Investment
-            </Button>
-            <Button variant="outline" onClick={() => setIsAddTransactionOpen(true)} disabled={investments.length === 0}>
-              <Plus className="w-4 h-4 mr-2" />
-              Transaction
-            </Button>
-            <Button onClick={() => setIsRecordValueOpen(true)} disabled={investments.length === 0}>
-              <TrendingUp className="w-4 h-4 mr-2" />
-              Record Value
-            </Button>
-          </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <Tabs defaultValue="portfolio" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="income" disabled className="gap-2">
-              <Wallet className="w-4 h-4" />
-              Income
-            </TabsTrigger>
-            <TabsTrigger value="expenses" disabled className="gap-2">
-              <Receipt className="w-4 h-4" />
-              Expenses
-            </TabsTrigger>
-            <TabsTrigger value="portfolio" className="gap-2">
-              <Briefcase className="w-4 h-4" />
-              Portfolio
-            </TabsTrigger>
-          </TabsList>
+        {/* Navigation Tabs with Actions */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <Tabs defaultValue="portfolio" className="w-full">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <TabsList className="grid w-full max-w-md grid-cols-3">
+                <TabsTrigger value="income" disabled className="gap-2">
+                  <Wallet className="w-4 h-4" />
+                  Income
+                </TabsTrigger>
+                <TabsTrigger value="expenses" disabled className="gap-2">
+                  <Receipt className="w-4 h-4" />
+                  Expenses
+                </TabsTrigger>
+                <TabsTrigger value="portfolio" className="gap-2">
+                  <Briefcase className="w-4 h-4" />
+                  Portfolio
+                </TabsTrigger>
+              </TabsList>
+              <div className="flex gap-2 flex-wrap">
+                <Button variant="outline" size="sm" onClick={() => setIsAddAssetTypeOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Asset Type
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setIsAddInvestmentOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Investment
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setIsAddTransactionOpen(true)} disabled={investments.length === 0}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Transaction
+                </Button>
+                <Button size="sm" onClick={() => setIsRecordValueOpen(true)} disabled={investments.length === 0}>
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Record Value
+                </Button>
+              </div>
+            </div>
 
           <TabsContent value="portfolio" className="space-y-8 mt-8">
             {investments.length === 0 ? (
@@ -207,6 +211,9 @@ const FinancialApp = () => {
                   <AssetAllocationChart investments={investmentsWithMetrics} assetTypes={assetTypes} />
                   <PerformanceLeaderboard investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)} />
                 </div>
+
+                {/* All Investments List */}
+                <InvestmentsList investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)} />
 
                 {/* Historical Performance Charts */}
                 {activeAssetTypes.length > 0 && (
@@ -243,7 +250,8 @@ const FinancialApp = () => {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        </div>
 
         {/* Modals */}
         <AddAssetTypeModal
