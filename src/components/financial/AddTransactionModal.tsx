@@ -22,7 +22,7 @@ interface AddTransactionModalProps {
 
 const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: AddTransactionModalProps) => {
   const [investmentId, setInvestmentId] = useState("");
-  const [transactionType, setTransactionType] = useState<"buy" | "withdraw">("buy");
+  const [transactionType, setTransactionType] = useState<"buy" | "withdraw" | "fees">("buy");
   const [date, setDate] = useState<Date>(new Date());
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
@@ -43,9 +43,9 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: Add
 
     setLoading(true);
     try {
-      // For now, we store buy as positive amount_invested and withdraw as negative
+      // Buy is positive, withdraw and fees are negative
       const amountValue = parseFloat(amount);
-      const finalAmount = transactionType === "withdraw" ? -amountValue : amountValue;
+      const finalAmount = transactionType === "buy" ? amountValue : -amountValue;
       
       const { error } = await supabase.from("investment_transactions").insert({
         investment_id: investmentId,
@@ -63,9 +63,11 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: Add
         maximumFractionDigits: 0,
       }).format(amountValue);
       
+      const transactionLabel = transactionType === "buy" ? "Invested" : transactionType === "withdraw" ? "Withdrew" : "Fees paid";
+      
       toast({
         title: "Transaction Recorded",
-        description: `${transactionType === "buy" ? "Invested" : "Withdrew"} ${formattedAmount} in ${selectedInvestment?.name || "investment"} on ${format(date, "PPP")}`,
+        description: `${transactionLabel} ${formattedAmount} in ${selectedInvestment?.name || "investment"} on ${format(date, "PPP")}`,
       });
 
       setInvestmentId("");
@@ -110,13 +112,14 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: Add
 
           <div className="space-y-2">
             <Label>Transaction Type</Label>
-            <Select value={transactionType} onValueChange={(v) => setTransactionType(v as "buy" | "withdraw")}>
+            <Select value={transactionType} onValueChange={(v) => setTransactionType(v as "buy" | "withdraw" | "fees")}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="buy">Buy / Invest</SelectItem>
                 <SelectItem value="withdraw">Withdraw / Sell</SelectItem>
+                <SelectItem value="fees">Fees / Charges</SelectItem>
               </SelectContent>
             </Select>
           </div>
