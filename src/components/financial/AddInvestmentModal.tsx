@@ -11,11 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { AssetType } from "./types";
@@ -31,19 +26,8 @@ const AddInvestmentModal = ({ open, onOpenChange, onSuccess, assetTypes }: AddIn
   const [name, setName] = useState("");
   const [assetTypeId, setAssetTypeId] = useState("");
   const [notes, setNotes] = useState("");
-  const [tenureMonths, setTenureMonths] = useState("");
-  const [interestRate, setInterestRate] = useState("");
-  const [maturityDate, setMaturityDate] = useState<Date | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-
-  // Check if the selected asset type is a fixed-income type (bonds, FDs, etc.)
-  const selectedAssetType = assetTypes.find(at => at.id === assetTypeId);
-  const isFixedIncome = selectedAssetType?.name.toLowerCase().includes("bond") || 
-                        selectedAssetType?.name.toLowerCase().includes("fd") ||
-                        selectedAssetType?.name.toLowerCase().includes("fixed deposit") ||
-                        selectedAssetType?.name.toLowerCase().includes("deposit") ||
-                        selectedAssetType?.name.toLowerCase().includes("debt");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,9 +56,6 @@ const AddInvestmentModal = ({ open, onOpenChange, onSuccess, assetTypes }: AddIn
         name: name.trim(),
         asset_type_id: assetTypeId,
         notes: notes.trim() || null,
-        tenure_months: tenureMonths ? parseInt(tenureMonths) : null,
-        interest_rate: interestRate ? parseFloat(interestRate) : null,
-        maturity_date: maturityDate ? format(maturityDate, "yyyy-MM-dd") : null,
       });
 
       if (error) throw error;
@@ -87,9 +68,6 @@ const AddInvestmentModal = ({ open, onOpenChange, onSuccess, assetTypes }: AddIn
       setName("");
       setAssetTypeId("");
       setNotes("");
-      setTenureMonths("");
-      setInterestRate("");
-      setMaturityDate(undefined);
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
@@ -141,64 +119,6 @@ const AddInvestmentModal = ({ open, onOpenChange, onSuccess, assetTypes }: AddIn
               </SelectContent>
             </Select>
           </div>
-
-          {/* Fixed Income Fields */}
-          {isFixedIncome && (
-            <div className="space-y-4 p-4 bg-muted/50 rounded-lg border border-border">
-              <p className="text-sm font-medium text-muted-foreground">Fixed Income Details</p>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="interestRate">Interest Rate (%)</Label>
-                  <Input
-                    id="interestRate"
-                    type="number"
-                    step="0.01"
-                    value={interestRate}
-                    onChange={(e) => setInterestRate(e.target.value)}
-                    placeholder="e.g., 7.5"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tenureMonths">Tenure (months)</Label>
-                  <Input
-                    id="tenureMonths"
-                    type="number"
-                    value={tenureMonths}
-                    onChange={(e) => setTenureMonths(e.target.value)}
-                    placeholder="e.g., 12"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Maturity Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !maturityDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {maturityDate ? format(maturityDate, "PPP") : <span>Pick maturity date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={maturityDate}
-                      onSelect={setMaturityDate}
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-          )}
 
           <div className="space-y-2">
             <Label htmlFor="notes">Notes (Optional)</Label>

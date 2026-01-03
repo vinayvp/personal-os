@@ -217,7 +217,7 @@ const FinancialApp = () => {
                 <InvestmentsList investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)} />
 
                 {/* Fixed Income Details Section */}
-                <FixedIncomeDetails investments={investmentsWithMetrics} />
+                <FixedIncomeDetails investments={investmentsWithMetrics} transactions={transactions} />
 
                 {/* Historical Performance Charts */}
                 {activeAssetTypes.length > 0 && (
@@ -274,6 +274,7 @@ const FinancialApp = () => {
           onOpenChange={setIsAddTransactionOpen}
           onSuccess={fetchData}
           investments={investments}
+          assetTypes={assetTypes}
         />
         <RecordValueModal
           open={isRecordValueOpen}

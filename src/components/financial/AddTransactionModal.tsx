@@ -6,28 +6,44 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Investment } from "./types";
+import { Investment, AssetType } from "./types";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface AddTransactionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
   investments: Investment[];
+  assetTypes?: AssetType[];
 }
 
-const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: AddTransactionModalProps) => {
+const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments, assetTypes = [] }: AddTransactionModalProps) => {
   const [investmentId, setInvestmentId] = useState("");
   const [transactionType, setTransactionType] = useState<"buy" | "withdraw" | "fees">("buy");
   const [date, setDate] = useState<Date>(new Date());
   const [amount, setAmount] = useState("");
+  const [tenureMonths, setTenureMonths] = useState("");
+  const [interestRate, setInterestRate] = useState("");
+  const [maturityDate, setMaturityDate] = useState<Date | undefined>(undefined);
+  const [showFixedIncomeFields, setShowFixedIncomeFields] = useState(false);
   const [loading, setLoading] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [maturityCalendarOpen, setMaturityCalendarOpen] = useState(false);
   const { toast } = useToast();
+
+  // Check if the selected investment is a fixed-income type
+  const selectedInvestment = investments.find((inv) => inv.id === investmentId);
+  const selectedAssetType = assetTypes.find(at => at.id === selectedInvestment?.asset_type_id);
+  const isFixedIncome = selectedAssetType?.name.toLowerCase().includes("bond") || 
+                        selectedAssetType?.name.toLowerCase().includes("fd") ||
+                        selectedAssetType?.name.toLowerCase().includes("fixed deposit") ||
+                        selectedAssetType?.name.toLowerCase().includes("deposit") ||
+                        selectedAssetType?.name.toLowerCase().includes("debt");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,11 +68,13 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: Add
         transaction_date: format(date, "yyyy-MM-dd"),
         amount_invested: finalAmount,
         current_value: 0, // Will be updated via Record Value
+        tenure_months: tenureMonths ? parseInt(tenureMonths) : null,
+        interest_rate: interestRate ? parseFloat(interestRate) : null,
+        maturity_date: maturityDate ? format(maturityDate, "yyyy-MM-dd") : null,
       });
 
       if (error) throw error;
 
-      const selectedInvestment = investments.find((inv) => inv.id === investmentId);
       const formattedAmount = new Intl.NumberFormat('en-IN', {
         style: 'currency',
         currency: 'INR',
@@ -74,6 +92,10 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: Add
       setTransactionType("buy");
       setDate(new Date());
       setAmount("");
+      setTenureMonths("");
+      setInterestRate("");
+      setMaturityDate(undefined);
+      setShowFixedIncomeFields(false);
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
@@ -166,6 +188,75 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments }: Add
               placeholder="100000"
             />
           </div>
+
+          {/* Fixed Income Fields - Collapsible */}
+          {isFixedIncome && (
+            <Collapsible open={showFixedIncomeFields} onOpenChange={setShowFixedIncomeFields}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between p-2 h-auto">
+                  <span className="text-sm text-muted-foreground">Fixed Income Details (Optional)</span>
+                  {showFixedIncomeFields ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4 pt-2">
+                <div className="p-4 bg-muted/50 rounded-lg border border-border space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="interestRate">Interest Rate (%)</Label>
+                      <Input
+                        id="interestRate"
+                        type="number"
+                        step="0.01"
+                        value={interestRate}
+                        onChange={(e) => setInterestRate(e.target.value)}
+                        placeholder="e.g., 7.5"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="tenureMonths">Tenure (months)</Label>
+                      <Input
+                        id="tenureMonths"
+                        type="number"
+                        value={tenureMonths}
+                        onChange={(e) => setTenureMonths(e.target.value)}
+                        placeholder="e.g., 12"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Maturity Date</Label>
+                    <Popover open={maturityCalendarOpen} onOpenChange={setMaturityCalendarOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !maturityDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {maturityDate ? format(maturityDate, "PPP") : <span>Pick maturity date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto min-w-[280px] p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={maturityDate}
+                          onSelect={(d) => {
+                            setMaturityDate(d);
+                            setMaturityCalendarOpen(false);
+                          }}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

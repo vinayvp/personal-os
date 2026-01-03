@@ -10,9 +10,6 @@ export interface Investment {
   name: string;
   asset_type_id: string;
   notes: string | null;
-  tenure_months: number | null;
-  interest_rate: number | null;
-  maturity_date: string | null;
   created_at: string;
   updated_at: string;
   asset_type?: AssetType;
@@ -24,6 +21,9 @@ export interface InvestmentTransaction {
   transaction_date: string;
   amount_invested: number;
   current_value: number;
+  tenure_months: number | null;
+  interest_rate: number | null;
+  maturity_date: string | null;
   created_at: string;
 }
 

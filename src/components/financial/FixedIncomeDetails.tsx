@@ -3,19 +3,32 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Calendar, Percent, Clock, TrendingUp, AlertCircle } from "lucide-react";
 import { format, differenceInDays, isPast, isFuture } from "date-fns";
-import { InvestmentWithLatest } from "./types";
+import { InvestmentTransaction, InvestmentWithLatest } from "./types";
 
 interface FixedIncomeDetailsProps {
   investments: InvestmentWithLatest[];
+  transactions: InvestmentTransaction[];
 }
 
-const FixedIncomeDetails = ({ investments }: FixedIncomeDetailsProps) => {
-  // Filter only fixed income investments (those with maturity date or interest rate)
-  const fixedIncomeInvestments = investments.filter(
-    (inv) => inv.maturity_date || inv.interest_rate || inv.tenure_months
-  );
+interface TransactionWithDetails extends InvestmentTransaction {
+  investment_name: string;
+  asset_type_name: string;
+}
 
-  if (fixedIncomeInvestments.length === 0) {
+const FixedIncomeDetails = ({ investments, transactions }: FixedIncomeDetailsProps) => {
+  // Filter only transactions with fixed income details (those with maturity date or interest rate)
+  const fixedIncomeTransactions: TransactionWithDetails[] = transactions
+    .filter((t) => t.maturity_date || t.interest_rate || t.tenure_months)
+    .map((t) => {
+      const inv = investments.find((i) => i.id === t.investment_id);
+      return {
+        ...t,
+        investment_name: inv?.name || "Unknown",
+        asset_type_name: inv?.asset_type?.name || "Unknown",
+      };
+    });
+
+  if (fixedIncomeTransactions.length === 0) {
     return null;
   }
 
@@ -28,10 +41,10 @@ const FixedIncomeDetails = ({ investments }: FixedIncomeDetailsProps) => {
     }).format(value);
   };
 
-  const calculateMaturityProgress = (inv: InvestmentWithLatest) => {
-    if (!inv.maturity_date || !inv.created_at) return 0;
-    const startDate = new Date(inv.created_at);
-    const maturityDate = new Date(inv.maturity_date);
+  const calculateMaturityProgress = (transaction: TransactionWithDetails) => {
+    if (!transaction.maturity_date || !transaction.transaction_date) return 0;
+    const startDate = new Date(transaction.transaction_date);
+    const maturityDate = new Date(transaction.maturity_date);
     const today = new Date();
     
     const totalDays = differenceInDays(maturityDate, startDate);
@@ -47,23 +60,23 @@ const FixedIncomeDetails = ({ investments }: FixedIncomeDetailsProps) => {
     return differenceInDays(maturity, today);
   };
 
-  const calculateExpectedReturn = (inv: InvestmentWithLatest) => {
-    if (!inv.interest_rate || !inv.tenure_months) return null;
-    const principal = inv.total_invested;
-    const rate = Number(inv.interest_rate) / 100;
-    const years = Number(inv.tenure_months) / 12;
+  const calculateExpectedReturn = (transaction: TransactionWithDetails) => {
+    if (!transaction.interest_rate || !transaction.tenure_months) return null;
+    const principal = Math.abs(Number(transaction.amount_invested));
+    const rate = Number(transaction.interest_rate) / 100;
+    const years = Number(transaction.tenure_months) / 12;
     // Simple interest calculation
     const interest = principal * rate * years;
     return { interest, maturityValue: principal + interest };
   };
 
   // Summary stats
-  const totalFixedIncomeValue = fixedIncomeInvestments.reduce((sum, inv) => sum + inv.current_value, 0);
-  const upcomingMaturities = fixedIncomeInvestments.filter(
-    (inv) => inv.maturity_date && isFuture(new Date(inv.maturity_date)) && getDaysUntilMaturity(inv.maturity_date) <= 90
+  const totalFixedIncomeValue = fixedIncomeTransactions.reduce((sum, t) => sum + Math.abs(Number(t.amount_invested)), 0);
+  const upcomingMaturities = fixedIncomeTransactions.filter(
+    (t) => t.maturity_date && isFuture(new Date(t.maturity_date)) && getDaysUntilMaturity(t.maturity_date) <= 90
   );
-  const maturedInvestments = fixedIncomeInvestments.filter(
-    (inv) => inv.maturity_date && isPast(new Date(inv.maturity_date))
+  const maturedTransactions = fixedIncomeTransactions.filter(
+    (t) => t.maturity_date && isPast(new Date(t.maturity_date))
   );
 
   return (
@@ -94,7 +107,7 @@ const FixedIncomeDetails = ({ investments }: FixedIncomeDetailsProps) => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Maturing in 90 days</p>
-                <p className="text-xl font-bold">{upcomingMaturities.length} investments</p>
+                <p className="text-xl font-bold">{upcomingMaturities.length} transactions</p>
               </div>
             </div>
           </CardContent>
@@ -108,30 +121,31 @@ const FixedIncomeDetails = ({ investments }: FixedIncomeDetailsProps) => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Matured</p>
-                <p className="text-xl font-bold">{maturedInvestments.length} investments</p>
+                <p className="text-xl font-bold">{maturedTransactions.length} transactions</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Individual Investment Cards */}
+      {/* Individual Transaction Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {fixedIncomeInvestments.map((inv) => {
-          const expectedReturn = calculateExpectedReturn(inv);
-          const maturityProgress = calculateMaturityProgress(inv);
-          const daysUntilMaturity = inv.maturity_date ? getDaysUntilMaturity(inv.maturity_date) : null;
+        {fixedIncomeTransactions.map((transaction) => {
+          const expectedReturn = calculateExpectedReturn(transaction);
+          const maturityProgress = calculateMaturityProgress(transaction);
+          const daysUntilMaturity = transaction.maturity_date ? getDaysUntilMaturity(transaction.maturity_date) : null;
           const isMatured = daysUntilMaturity !== null && daysUntilMaturity < 0;
           const isMaturingSoon = daysUntilMaturity !== null && daysUntilMaturity >= 0 && daysUntilMaturity <= 30;
+          const principal = Math.abs(Number(transaction.amount_invested));
 
           return (
-            <Card key={inv.id} className="bg-card border-border">
+            <Card key={transaction.id} className="bg-card border-border">
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="text-base font-semibold">{inv.name}</CardTitle>
+                    <CardTitle className="text-base font-semibold">{transaction.investment_name}</CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      {inv.asset_type?.name}
+                      {transaction.asset_type_name} • {format(new Date(transaction.transaction_date), "PP")}
                     </p>
                   </div>
                   {isMatured && (
@@ -145,36 +159,30 @@ const FixedIncomeDetails = ({ investments }: FixedIncomeDetailsProps) => {
               <CardContent className="space-y-4">
                 {/* Key Metrics */}
                 <div className="grid grid-cols-2 gap-4">
-                  {inv.interest_rate && (
+                  {transaction.interest_rate && (
                     <div className="flex items-center gap-2">
                       <Percent className="w-4 h-4 text-muted-foreground" />
                       <div>
                         <p className="text-xs text-muted-foreground">Interest Rate</p>
-                        <p className="font-semibold">{Number(inv.interest_rate).toFixed(2)}%</p>
+                        <p className="font-semibold">{Number(transaction.interest_rate).toFixed(2)}%</p>
                       </div>
                     </div>
                   )}
-                  {inv.tenure_months && (
+                  {transaction.tenure_months && (
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-muted-foreground" />
                       <div>
                         <p className="text-xs text-muted-foreground">Tenure</p>
-                        <p className="font-semibold">{inv.tenure_months} months</p>
+                        <p className="font-semibold">{transaction.tenure_months} months</p>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Invested & Current Value */}
-                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Invested</p>
-                    <p className="font-semibold">{formatCurrency(inv.total_invested)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Current Value</p>
-                    <p className="font-semibold">{formatCurrency(inv.current_value)}</p>
-                  </div>
+                {/* Principal Amount */}
+                <div className="pt-2 border-t border-border">
+                  <p className="text-xs text-muted-foreground">Principal</p>
+                  <p className="font-semibold">{formatCurrency(principal)}</p>
                 </div>
 
                 {/* Expected Return */}
@@ -192,14 +200,14 @@ const FixedIncomeDetails = ({ investments }: FixedIncomeDetailsProps) => {
                 )}
 
                 {/* Maturity Progress */}
-                {inv.maturity_date && (
+                {transaction.maturity_date && (
                   <div className="space-y-2 pt-2 border-t border-border">
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
                         <span className="text-muted-foreground">Maturity Date</span>
                       </div>
-                      <span className="font-medium">{format(new Date(inv.maturity_date), "PPP")}</span>
+                      <span className="font-medium">{format(new Date(transaction.maturity_date), "PPP")}</span>
                     </div>
                     <Progress value={maturityProgress} className="h-2" />
                     <p className="text-xs text-muted-foreground text-right">

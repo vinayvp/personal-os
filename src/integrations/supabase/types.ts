@@ -157,7 +157,10 @@ export type Database = {
           created_at: string
           current_value: number
           id: string
+          interest_rate: number | null
           investment_id: string
+          maturity_date: string | null
+          tenure_months: number | null
           transaction_date: string
         }
         Insert: {
@@ -165,7 +168,10 @@ export type Database = {
           created_at?: string
           current_value: number
           id?: string
+          interest_rate?: number | null
           investment_id: string
+          maturity_date?: string | null
+          tenure_months?: number | null
           transaction_date: string
         }
         Update: {
@@ -173,7 +179,10 @@ export type Database = {
           created_at?: string
           current_value?: number
           id?: string
+          interest_rate?: number | null
           investment_id?: string
+          maturity_date?: string | null
+          tenure_months?: number | null
           transaction_date?: string
         }
         Relationships: [
@@ -191,33 +200,24 @@ export type Database = {
           asset_type_id: string
           created_at: string
           id: string
-          interest_rate: number | null
-          maturity_date: string | null
           name: string
           notes: string | null
-          tenure_months: number | null
           updated_at: string
         }
         Insert: {
           asset_type_id: string
           created_at?: string
           id?: string
-          interest_rate?: number | null
-          maturity_date?: string | null
           name: string
           notes?: string | null
-          tenure_months?: number | null
           updated_at?: string
         }
         Update: {
           asset_type_id?: string
           created_at?: string
           id?: string
-          interest_rate?: number | null
-          maturity_date?: string | null
           name?: string
           notes?: string | null
-          tenure_months?: number | null
           updated_at?: string
         }
         Relationships: [
