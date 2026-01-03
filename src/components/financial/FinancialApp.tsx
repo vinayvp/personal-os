@@ -10,6 +10,7 @@ import AssetAllocationChart from "@/components/financial/AssetAllocationChart";
 import PerformanceLeaderboard from "@/components/financial/PerformanceLeaderboard";
 import InvestmentsList from "@/components/financial/InvestmentsList";
 import HistoricalChart from "@/components/financial/HistoricalChart";
+import FixedIncomeDetails from "@/components/financial/FixedIncomeDetails";
 import AddInvestmentModal from "@/components/financial/AddInvestmentModal";
 import AddTransactionModal from "@/components/financial/AddTransactionModal";
 import AddAssetTypeModal from "@/components/financial/AddAssetTypeModal";
@@ -214,6 +215,9 @@ const FinancialApp = () => {
 
                 {/* All Investments List */}
                 <InvestmentsList investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)} />
+
+                {/* Fixed Income Details Section */}
+                <FixedIncomeDetails investments={investmentsWithMetrics} />
 
                 {/* Historical Performance Charts */}
                 {activeAssetTypes.length > 0 && (
