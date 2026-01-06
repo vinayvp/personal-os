@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare, BookOpen, Notebook, Film, DollarSign } from 'lucide-react';
+import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare, BookOpen, Notebook, Film, DollarSign, Github } from 'lucide-react';
 import NotesApp from '@/components/NotesApp';
 import TrackingApp from '@/components/TrackingApp';
 import TodoApp from '@/components/TodoApp';
@@ -122,6 +122,21 @@ const Apps = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Desktop External Links */}
+          <Button variant="outline" size="sm" asChild className="hidden md:flex">
+            <a href="https://github.com/vinayvp/portfolio_and_apps" target="_blank" rel="noopener noreferrer">
+              <Github className="mr-2 h-4 w-4" />
+              GitHub
+            </a>
+          </Button>
+          <Button variant="outline" size="sm" asChild className="hidden md:flex">
+            <a href="https://app.netlify.com/projects/vinayvp/overview" target="_blank" rel="noopener noreferrer">
+              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16.934 8.519a1.044 1.044 0 0 1 .303.23l2.349-1.045-2.192-2.171-.491 2.954zM12.06 6.546a1.305 1.305 0 0 1 .209.574l3.497 1.482a1.044 1.044 0 0 1 .366-.18l.575-3.455-2.13-.472-2.517 2.051zM11.2 8.292l-5.099 4.391.862 10.217 2.937-2.937-1.5-5.8 5.1-4.391-.8-1.48zm.053-1.016l.773 1.428 5.937-2.489.491-2.953-7.201 4.014zm.053 1.016l.8 1.48 4.2-1.76-1.503-3.234-3.497 1.514zm-5.099 4.391l1.5 5.8 6.1-5.252-.8-1.48-5.8 4.932-.862-10.217-4.591.491 4.453 5.726zm5.099-4.391l.8 1.48 5.099-4.391-7.599 2.091.8 1.48 5.099-4.391-.8-1.48-3.399 5.211z"/>
+              </svg>
+              Netlify
+            </a>
+          </Button>
           {/* Desktop Logout */}
           <Button variant="outline" size="sm" onClick={handleLogout} className="hidden md:flex">
             <LogOut className="mr-2 h-4 w-4" />
@@ -214,6 +229,20 @@ const Apps = () => {
             >
               <DollarSign className="mr-2 h-4 w-4" />
               Finance
+            </Button>
+            <Button variant="outline" size="sm" asChild className="w-full justify-start">
+              <a href="https://github.com/vinayvp/portfolio_and_apps" target="_blank" rel="noopener noreferrer">
+                <Github className="mr-2 h-4 w-4" />
+                GitHub
+              </a>
+            </Button>
+            <Button variant="outline" size="sm" asChild className="w-full justify-start">
+              <a href="https://app.netlify.com/projects/vinayvp/overview" target="_blank" rel="noopener noreferrer">
+                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M16.934 8.519a1.044 1.044 0 0 1 .303.23l2.349-1.045-2.192-2.171-.491 2.954zM12.06 6.546a1.305 1.305 0 0 1 .209.574l3.497 1.482a1.044 1.044 0 0 1 .366-.18l.575-3.455-2.13-.472-2.517 2.051zM11.2 8.292l-5.099 4.391.862 10.217 2.937-2.937-1.5-5.8 5.1-4.391-.8-1.48zm.053-1.016l.773 1.428 5.937-2.489.491-2.953-7.201 4.014zm.053 1.016l.8 1.48 4.2-1.76-1.503-3.234-3.497 1.514zm-5.099 4.391l1.5 5.8 6.1-5.252-.8-1.48-5.8 4.932-.862-10.217-4.591.491 4.453 5.726zm5.099-4.391l.8 1.48 5.099-4.391-7.599 2.091.8 1.48 5.099-4.391-.8-1.48-3.399 5.211z"/>
+                </svg>
+                Netlify
+              </a>
             </Button>
             <Button 
               variant="outline" 
