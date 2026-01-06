@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, Maximize2 } from "lucide-react";
 import { format } from "date-fns";
 import { AssetType, Investment, InvestmentTransaction } from "./types";
+import HistoricalChartModal from "./HistoricalChartModal";
 
 interface HistoricalChartProps {
   assetType: AssetType;
@@ -11,6 +14,8 @@ interface HistoricalChartProps {
 }
 
 const HistoricalChart = ({ assetType, investments, transactions }: HistoricalChartProps) => {
+  const [modalOpen, setModalOpen] = useState(false);
+
   // Filter investments by asset type
   const assetInvestments = investments.filter((inv) => inv.asset_type_id === assetType.id);
   const investmentIds = new Set(assetInvestments.map((inv) => inv.id));
@@ -28,8 +33,6 @@ const HistoricalChart = ({ assetType, investments, transactions }: HistoricalCha
   );
 
   // Build chart data with cumulative invested values
-  // For "Record Value" entries (amount_invested = 0), use the last cumulative invested amount
-  // Sum all current values for each day
   let cumulativeInvested = 0;
   const dateMap = new Map<string, { invested: number; current: number }>();
   
@@ -37,14 +40,12 @@ const HistoricalChart = ({ assetType, investments, transactions }: HistoricalCha
     const amountInvested = Number(t.amount_invested);
     const currentValue = Number(t.current_value);
     
-    // Update cumulative invested only if there's an actual investment/withdrawal
     if (amountInvested !== 0) {
       cumulativeInvested += amountInvested;
     }
     
     const existing = dateMap.get(t.transaction_date);
     if (existing) {
-      // Sum current values for the same date
       dateMap.set(t.transaction_date, {
         invested: cumulativeInvested,
         current: existing.current + currentValue,
@@ -80,62 +81,80 @@ const HistoricalChart = ({ assetType, investments, transactions }: HistoricalCha
   };
 
   return (
-    <Card className="bg-card border-border">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <TrendingUp className="h-5 w-5" style={{ color: assetType.color }} />
-          {assetType.name} Performance
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis
-              dataKey="dateFormatted"
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={12}
-            />
-            <YAxis
-              tickFormatter={formatCurrency}
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={12}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
-              }}
-              formatter={(value: number) => [
-                new Intl.NumberFormat('en-IN', {
-                  style: 'currency',
-                  currency: 'INR',
-                  maximumFractionDigits: 0,
-                }).format(value),
-              ]}
-            />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="invested"
-              name="Invested Value"
-              stroke="hsl(var(--muted-foreground))"
-              strokeWidth={2}
-              dot={{ fill: 'hsl(var(--muted-foreground))', strokeWidth: 2, r: 4 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="current"
-              name="Current Value"
-              stroke={assetType.color}
-              strokeWidth={2}
-              dot={{ fill: assetType.color, strokeWidth: 2, r: 4 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
+    <>
+      <Card className="bg-card border-border">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <TrendingUp className="h-5 w-5" style={{ color: assetType.color }} />
+            {assetType.name} Performance
+          </CardTitle>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setModalOpen(true)}
+            className="h-8 w-8"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis
+                dataKey="dateFormatted"
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+              />
+              <YAxis
+                tickFormatter={formatCurrency}
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                }}
+                formatter={(value: number) => [
+                  new Intl.NumberFormat('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                    maximumFractionDigits: 0,
+                  }).format(value),
+                ]}
+              />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="invested"
+                name="Invested Value"
+                stroke="hsl(var(--muted-foreground))"
+                strokeWidth={2}
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="current"
+                name="Current Value"
+                stroke={assetType.color}
+                strokeWidth={2}
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <HistoricalChartModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        assetType={assetType}
+        investments={investments}
+        transactions={transactions}
+      />
+    </>
   );
 };
 
