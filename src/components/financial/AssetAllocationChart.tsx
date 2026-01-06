@@ -74,9 +74,15 @@ const AssetAllocationChart = ({ investments, assetTypes }: AssetAllocationChartP
               outerRadius={100}
               paddingAngle={2}
               dataKey="value"
+              stroke="none"
+              activeIndex={0}
             >
               {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={entry.color}
+                  className="outline-none focus:outline-none"
+                />
               ))}
             </Pie>
             <Tooltip
@@ -84,6 +90,10 @@ const AssetAllocationChart = ({ investments, assetTypes }: AssetAllocationChartP
                 backgroundColor: 'hsl(var(--card))',
                 border: '1px solid hsl(var(--border))',
                 borderRadius: '8px',
+                color: 'hsl(var(--card-foreground))',
+              }}
+              itemStyle={{
+                color: 'hsl(var(--card-foreground))',
               }}
               formatter={(value: number) => [
                 `${formatCurrency(value)} (${((value / totalValue) * 100).toFixed(1)}%)`,
