@@ -55,9 +55,9 @@ const EditHabitModal = ({ isOpen, onClose, onEditHabit, habit }: EditHabitModalP
   const [formData, setFormData] = useState({
     name: '',
     goal: '',
-    frequency_type: 'daily' as 'daily' | 'weekly' | 'custom',
+    frequency_type: 'daily' as 'daily' | 'weekly' | 'custom' | 'none',
     target_count: 1,
-    target_period: 'weekly' as 'weekly' | 'monthly' | 'yearly',
+    target_period: 'weekly' as 'weekly' | 'monthly' | 'yearly' | 'total',
     custom_days: [] as number[],
     icon: 'radio_button_checked',
     color: '#3B82F6'
@@ -170,7 +170,16 @@ const EditHabitModal = ({ isOpen, onClose, onEditHabit, habit }: EditHabitModalP
 
           <div>
             <Label>Frequency</Label>
-            <Select value={formData.frequency_type} onValueChange={(value: any) => setFormData(prev => ({ ...prev, frequency_type: value }))}>
+            <Select 
+              value={formData.frequency_type} 
+              onValueChange={(value: 'daily' | 'weekly' | 'custom' | 'none') => 
+                setFormData(prev => ({ 
+                  ...prev, 
+                  frequency_type: value,
+                  target_period: value === 'none' ? 'total' : prev.target_period === 'total' ? 'weekly' : prev.target_period
+                }))
+              }
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -178,6 +187,7 @@ const EditHabitModal = ({ isOpen, onClose, onEditHabit, habit }: EditHabitModalP
                 <SelectItem value="daily">Daily</SelectItem>
                 <SelectItem value="weekly">Weekly</SelectItem>
                 <SelectItem value="custom">Custom Days</SelectItem>
+                <SelectItem value="none">No Frequency (Total Count Only)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -202,9 +212,11 @@ const EditHabitModal = ({ isOpen, onClose, onEditHabit, habit }: EditHabitModalP
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className={formData.frequency_type === 'none' ? '' : 'grid grid-cols-2 gap-4'}>
             <div>
-              <Label htmlFor="target_count">Target Count</Label>
+              <Label htmlFor="target_count">
+                {formData.frequency_type === 'none' ? 'Total Target Count' : 'Target Count'}
+              </Label>
               <Input
                 id="target_count"
                 type="number"
@@ -212,21 +224,28 @@ const EditHabitModal = ({ isOpen, onClose, onEditHabit, habit }: EditHabitModalP
                 value={formData.target_count}
                 onChange={(e) => setFormData(prev => ({ ...prev, target_count: parseInt(e.target.value) || 1 }))}
               />
+              {formData.frequency_type === 'none' && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Track progress toward a total goal
+                </p>
+              )}
             </div>
 
-            <div>
-              <Label>Target Period</Label>
-              <Select value={formData.target_period} onValueChange={(value: any) => setFormData(prev => ({ ...prev, target_period: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="yearly">Yearly</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {formData.frequency_type !== 'none' && (
+              <div>
+                <Label>Target Period</Label>
+                <Select value={formData.target_period} onValueChange={(value: any) => setFormData(prev => ({ ...prev, target_period: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="yearly">Yearly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-2 justify-end pt-4">

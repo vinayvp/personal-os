@@ -20,9 +20,9 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
   const [formData, setFormData] = useState({
     name: '',
     goal: '',
-    frequency_type: 'daily' as 'daily' | 'weekly' | 'custom',
+    frequency_type: 'daily' as 'daily' | 'weekly' | 'custom' | 'none',
     target_count: 1,
-    target_period: 'weekly' as 'weekly' | 'monthly' | 'yearly',
+    target_period: 'weekly' as 'weekly' | 'monthly' | 'yearly' | 'total',
     custom_days: [] as number[],
     icon: 'radio_button_checked',
     color: '#3B82F6'
@@ -118,6 +118,8 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
     setErrors({});
     onClose();
   };
+
+  const showTargetPeriod = formData.frequency_type !== 'none';
 
   const handleCustomDayToggle = (day: number) => {
     setFormData(prev => ({
@@ -217,8 +219,13 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
             <Label>Frequency</Label>
             <Select
               value={formData.frequency_type}
-              onValueChange={(value: 'daily' | 'weekly' | 'custom') => 
-                setFormData(prev => ({ ...prev, frequency_type: value, custom_days: [] }))
+              onValueChange={(value: 'daily' | 'weekly' | 'custom' | 'none') => 
+                setFormData(prev => ({ 
+                  ...prev, 
+                  frequency_type: value, 
+                  custom_days: [],
+                  target_period: value === 'none' ? 'total' : prev.target_period === 'total' ? 'weekly' : prev.target_period
+                }))
               }
             >
               <SelectTrigger>
@@ -228,6 +235,7 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
                 <SelectItem value="daily">Daily</SelectItem>
                 <SelectItem value="weekly">Weekly</SelectItem>
                 <SelectItem value="custom">Custom Days</SelectItem>
+                <SelectItem value="none">No Frequency (Total Count Only)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -259,9 +267,11 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className={formData.frequency_type === 'none' ? '' : 'grid grid-cols-2 gap-4'}>
             <div className="space-y-2">
-              <Label htmlFor="target_count">Target Count</Label>
+              <Label htmlFor="target_count">
+                {formData.frequency_type === 'none' ? 'Total Target Count' : 'Target Count'}
+              </Label>
               <Input
                 id="target_count"
                 type="number"
@@ -276,26 +286,33 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
               {errors.target_count && (
                 <p className="text-sm text-destructive">{errors.target_count}</p>
               )}
+              {formData.frequency_type === 'none' && (
+                <p className="text-xs text-muted-foreground">
+                  Track progress toward a total goal (e.g., complete 30 lessons)
+                </p>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label>Per</Label>
-              <Select
-                value={formData.target_period}
-                onValueChange={(value: 'weekly' | 'monthly' | 'yearly') => 
-                  setFormData(prev => ({ ...prev, target_period: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="weekly">Week</SelectItem>
-                  <SelectItem value="monthly">Month</SelectItem>
-                  <SelectItem value="yearly">Year</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {formData.frequency_type !== 'none' && (
+              <div className="space-y-2">
+                <Label>Per</Label>
+                <Select
+                  value={formData.target_period}
+                  onValueChange={(value: 'weekly' | 'monthly' | 'yearly') => 
+                    setFormData(prev => ({ ...prev, target_period: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="weekly">Week</SelectItem>
+                    <SelectItem value="monthly">Month</SelectItem>
+                    <SelectItem value="yearly">Year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
