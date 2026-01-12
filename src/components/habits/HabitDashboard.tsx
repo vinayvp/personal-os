@@ -63,6 +63,16 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
   };
 
   const calculateProgress = (habit: Habit) => {
+    // For "total" target period (no frequency), count all completions
+    if (habit.target_period === 'total' || habit.frequency_type === 'none') {
+      const totalCompletions = completions.filter(c => c.habit_id === habit.id).length;
+      return {
+        completed: totalCompletions,
+        target: habit.target_count,
+        percentage: Math.min((totalCompletions / habit.target_count) * 100, 100)
+      };
+    }
+
     const now = new Date();
     let periodStart: Date;
     let periodEnd: Date;
@@ -99,6 +109,7 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
   };
 
   const getFrequencyDisplay = (habit: Habit) => {
+    if (habit.frequency_type === 'none') return 'Total Goal';
     if (habit.frequency_type === 'daily') return 'Daily';
     if (habit.frequency_type === 'weekly') return 'Weekly';
     if (habit.frequency_type === 'custom' && habit.custom_days) {
@@ -106,6 +117,14 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
       return habit.custom_days.map(day => dayNames[day]).join(', ');
     }
     return 'Custom';
+  };
+
+  const getProgressLabel = (habit: Habit, progress: { completed: number; target: number }) => {
+    if (habit.target_period === 'total' || habit.frequency_type === 'none') {
+      return `${progress.completed}/${progress.target} total`;
+    }
+    const periodLabel = habit.target_period.slice(0, -2); // weekly -> week, monthly -> month
+    return `${progress.completed}/${progress.target} this ${periodLabel}`;
   };
 
   if (habits.length === 0) {
@@ -173,7 +192,7 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
                     </Badge>
                     <Badge variant="outline" className="text-xs">
                       <Target className="w-3 h-3 mr-1" />
-                      {progress.completed}/{progress.target} this {habit.target_period.slice(0, -2)}
+                      {getProgressLabel(habit, progress)}
                     </Badge>
                   </div>
                 </div>

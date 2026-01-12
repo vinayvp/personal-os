@@ -16,9 +16,9 @@ export interface Habit {
   id: string;
   name: string;
   goal?: string;
-  frequency_type: 'daily' | 'weekly' | 'custom';
+  frequency_type: 'daily' | 'weekly' | 'custom' | 'none';
   target_count: number;
-  target_period: 'weekly' | 'monthly' | 'yearly';
+  target_period: 'weekly' | 'monthly' | 'yearly' | 'total';
   custom_days?: number[];
   icon?: string;
   color?: string;
