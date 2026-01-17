@@ -307,7 +307,7 @@ const MoviesApp = () => {
               </Button>
             </div>
 
-            <div className="flex border border-input rounded-md flex-shrink-0">
+            {/* <div className="flex border border-input rounded-md flex-shrink-0">
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="sm"
@@ -324,7 +324,7 @@ const MoviesApp = () => {
               >
                 <List className="w-4 h-4" />
               </Button>
-            </div>
+            </div> */}
           </div>
         </div>
 
