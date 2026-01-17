@@ -259,11 +259,11 @@ const MoviesApp = () => {
             />
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-2 -mb-2">
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 border border-input bg-background rounded-md text-sm"
+              className="px-3 py-2 border border-input bg-background rounded-md text-sm flex-shrink-0"
             >
               {filterOptions.map(option => (
                 <option key={option.value} value={option.value}>
@@ -275,14 +275,14 @@ const MoviesApp = () => {
             <select
               value={watchedFilter}
               onChange={(e) => setWatchedFilter(e.target.value)}
-              className="px-3 py-2 border border-input bg-background rounded-md text-sm"
+              className="px-3 py-2 border border-input bg-background rounded-md text-sm flex-shrink-0"
             >
               <option value="all">All Status</option>
               <option value="watched">Watched</option>
               <option value="unwatched">Not Watched</option>
             </select>
 
-            <div className="flex items-center">
+            <div className="flex items-center flex-shrink-0">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -307,7 +307,7 @@ const MoviesApp = () => {
               </Button>
             </div>
 
-            <div className="flex border border-input rounded-md">
+            <div className="flex border border-input rounded-md flex-shrink-0">
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="sm"
