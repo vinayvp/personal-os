@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { X, Save, Eye, Edit, Image, Upload } from 'lucide-react';
+import { X, Save, Eye, Edit, Image, Upload, HelpCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -289,6 +289,14 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
                 >
                   <Upload className="w-4 h-4 mr-2" />
                   Upload Images
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => window.open('https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax', '_blank')}
+                  title="Markdown syntax help"
+                >
+                  <HelpCircle className="w-4 h-4" />
                 </Button>
               </div>
 
