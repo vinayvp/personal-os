@@ -10,7 +10,8 @@ import {
   EyeOff, 
   Clock,
   Award,
-  Film 
+  Film,
+  Play
 } from "lucide-react";
 
 interface Movie {
@@ -57,6 +58,11 @@ const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
     });
   };
 
+  const getWatchNowUrl = (title: string) => {
+    const formattedTitle = title.toLowerCase().replace(/\s+/g, '+');
+    return `https://tmovie.tv/search?query=${formattedTitle}`;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -100,24 +106,32 @@ const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                 )}
               </div>
 
-              {/* Watch Status */}
-              <Button
-                onClick={() => onToggleWatched(movie)}
-                variant={movie.watched ? "default" : "outline"}
-                className="mb-4"
-              >
-                {movie.watched ? (
-                  <>
-                    <Eye className="w-4 h-4 mr-2" />
-                    Watched
-                  </>
-                ) : (
-                  <>
-                    <EyeOff className="w-4 h-4 mr-2" />
-                    Mark as Watched
-                  </>
-                )}
-              </Button>
+              {/* Watch Status & Watch Now */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Button
+                  onClick={() => onToggleWatched(movie)}
+                  variant={movie.watched ? "default" : "outline"}
+                >
+                  {movie.watched ? (
+                    <>
+                      <Eye className="w-4 h-4 mr-2" />
+                      Watched
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="w-4 h-4 mr-2" />
+                      Mark as Watched
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => window.open(getWatchNowUrl(movie.title), '_blank')}
+                  variant="secondary"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Watch Now
+                </Button>
+              </div>
             </div>
 
             {/* Ratings */}
