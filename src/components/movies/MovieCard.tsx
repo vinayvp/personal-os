@@ -222,7 +222,7 @@ const MovieCard: React.FC<MovieCardProps> = ({
     );
   }
 
-  // Grid view
+  // Grid view - compact design
   return (
     <>
       <Card className="group hover:shadow-lg transition-all duration-200 overflow-hidden">
@@ -231,28 +231,28 @@ const MovieCard: React.FC<MovieCardProps> = ({
             <img
               src={movie.poster_url}
               alt={movie.title}
-              className="w-full aspect-[2/3] object-contain cursor-pointer"
+              className="w-full aspect-[2/3] object-cover cursor-pointer"
               onClick={() => onViewDetails(movie)}
             />
           ) : (
             <div className="w-full aspect-[2/3] bg-muted flex items-center justify-center">
-              <Eye className="w-12 h-12 text-muted-foreground" />
+              <Eye className="w-8 h-8 text-muted-foreground" />
             </div>
           )}
           
           {/* Watched status overlay */}
           {movie.watched && (
-            <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
-              <Eye className="w-4 h-4" />
+            <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full p-0.5 sm:p-1">
+              <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
             </div>
           )}
 
           {/* Action menu */}
-          <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="secondary" size="sm">
-                  <MoreVertical className="w-4 h-4" />
+                <Button variant="secondary" size="sm" className="h-6 w-6 p-0 sm:h-8 sm:w-8">
+                  <MoreVertical className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
@@ -275,60 +275,29 @@ const MovieCard: React.FC<MovieCardProps> = ({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+
+          {/* Rating overlay at bottom */}
+          {formatRating(movie.imdb_score) && (
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1 sm:p-2">
+              <div className="flex items-center gap-1 text-white">
+                <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                <span className="text-xs font-medium">{movie.imdb_score}</span>
+              </div>
+            </div>
+          )}
         </div>
 
-        <CardContent className="p-4">
+        <CardContent className="p-1.5 sm:p-2">
           <h3 
-            className="font-semibold text-lg mb-2 line-clamp-2 cursor-pointer hover:text-primary"
+            className="font-medium text-xs sm:text-sm line-clamp-2 cursor-pointer hover:text-primary leading-tight"
             onClick={() => onViewDetails(movie)}
           >
             {movie.title}
           </h3>
           
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-            <Calendar className="w-4 h-4" />
-            <span>{movie.release_year}</span>
-            <span>•</span>
-            <span>{movie.genre}</span>
-          </div>
-
-          <div className="flex flex-wrap gap-2 mb-4">
-            {formatRating(movie.imdb_score) && (
-              <Badge variant="secondary" className="text-xs">
-                <Star className="w-3 h-3 mr-1" />
-                {movie.imdb_score}/10
-              </Badge>
-            )}
-            {formatRating(movie.rotten_tomatoes_rating) && (
-              <Badge variant="outline" className="text-xs">
-                🍅 {movie.rotten_tomatoes_rating}
-              </Badge>
-            )}
-            {movie.custom_category && (
-              <Badge variant="default" className="text-xs">
-                {movie.custom_category}
-              </Badge>
-            )}
-          </div>
-
-          <Button
-            variant={movie.watched ? "default" : "outline"}
-            size="sm"
-            onClick={() => onToggleWatched(movie)}
-            className="w-full"
-          >
-            {movie.watched ? (
-              <>
-                <Eye className="w-4 h-4 mr-2" />
-                Watched
-              </>
-            ) : (
-              <>
-                <EyeOff className="w-4 h-4 mr-2" />
-                Mark as Watched
-              </>
-            )}
-          </Button>
+          <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 truncate">
+            {movie.release_year}
+          </p>
         </CardContent>
       </Card>
 
