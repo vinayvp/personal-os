@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -9,12 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, FileText, Tag } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import NoteEditor from './notes/NoteEditor';
 import NoteViewModal from './notes/NoteViewModal';
+import NoteEditModal from './notes/NoteEditModal';
 import TagManager from './notes/TagManager';
 import CreateNoteModal from './notes/CreateNoteModal';
 import { Note, Tag as NoteTag } from './notes/types';
-
 const NotesApp = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [tags, setTags] = useState<NoteTag[]>([]);
@@ -319,18 +317,13 @@ const NotesApp = () => {
               onDelete={handleNoteDeleted}
             />
 
-            {/* Note Editor Sheet */}
-            {editingNote && (
-              <Sheet open={!!editingNote} onOpenChange={handleCloseEditSheet}>
-                <SheetContent side="right" className="w-full sm:max-w-4xl">
-                  <NoteEditor
-                    note={editingNote}
-                    tags={tags}
-                    onSave={handleNoteSaved}
-                  />
-                </SheetContent>
-              </Sheet>
-            )}
+            {/* Note Edit Modal */}
+            <NoteEditModal
+              note={editingNote}
+              tags={tags}
+              onSave={handleNoteSaved}
+              onClose={handleCloseEditSheet}
+            />
           </TabsContent>
 
           <TabsContent value="tags">
