@@ -11,7 +11,7 @@ import type { Habit, HabitCompletion } from '../HabitTracker';
 interface HabitCalendarProps {
   habits: Habit[];
   completions: HabitCompletion[];
-  onToggleCompletion: (habitId: string, date: string) => void;
+  onToggleCompletion: (habitId: string, date: string, forceAdd?: boolean) => void;
 }
 
 const HabitCalendar = ({ habits, completions, onToggleCompletion }: HabitCalendarProps) => {
