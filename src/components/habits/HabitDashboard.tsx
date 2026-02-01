@@ -2,14 +2,14 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Circle, Trash2, Target, Calendar, Edit2 } from 'lucide-react';
+import { CheckCircle2, Circle, Trash2, Target, Calendar, Edit2, Plus, Minus } from 'lucide-react';
 import { format, isToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import type { Habit, HabitCompletion } from '../HabitTracker';
 
 interface HabitDashboardProps {
   habits: Habit[];
   completions: HabitCompletion[];
-  onToggleCompletion: (habitId: string, date: string) => void;
+  onToggleCompletion: (habitId: string, date: string, forceAdd?: boolean) => void;
   onDeleteHabit: (habitId: string) => void;
   onEditHabit: (habit: Habit) => void;
 }
@@ -149,6 +149,9 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
         const isCompleted = isHabitCompletedToday(habit.id);
         const streak = calculateStreak(habit.id);
         const progress = calculateProgress(habit);
+        const todayCompletions = completions.filter(c => c.habit_id === habit.id && c.completion_date === today).length;
+        const isNoFrequencyHabit = habit.frequency_type === 'none';
+        const canAddMore = isNoFrequencyHabit && progress.completed < progress.target;
 
         return (
           <Card key={habit.id} className="transition-all hover:shadow-md">
@@ -156,25 +159,57 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-0 h-auto"
-                      onClick={() => onToggleCompletion(habit.id, today)}
-                    >
-                      {isCompleted ? (
-                        <CheckCircle2 className="w-6 h-6 text-green-500" />
-                      ) : (
-                        <div className="flex items-center justify-center w-6 h-6">
-                          <span 
-                            className="material-icons text-lg hover:text-primary" 
-                            style={{ color: habit.color || '#3B82F6' }}
-                          >
-                            {habit.icon || 'radio_button_checked'}
-                          </span>
+                    {isNoFrequencyHabit ? (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-0 h-8 w-8"
+                          onClick={() => onToggleCompletion(habit.id, today, false)}
+                          disabled={todayCompletions === 0}
+                        >
+                          <Minus className="w-5 h-5 text-muted-foreground hover:text-destructive" />
+                        </Button>
+                        <div 
+                          className="flex items-center justify-center min-w-[2.5rem] h-8 px-2 rounded-md font-semibold text-sm"
+                          style={{ 
+                            backgroundColor: `${habit.color || '#3B82F6'}20`,
+                            color: habit.color || '#3B82F6'
+                          }}
+                        >
+                          {progress.completed}/{progress.target}
                         </div>
-                      )}
-                    </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-0 h-8 w-8"
+                          onClick={() => onToggleCompletion(habit.id, today, true)}
+                          disabled={!canAddMore}
+                        >
+                          <Plus className="w-5 h-5 text-muted-foreground hover:text-green-500" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-0 h-auto"
+                        onClick={() => onToggleCompletion(habit.id, today)}
+                      >
+                        {isCompleted ? (
+                          <CheckCircle2 className="w-6 h-6 text-green-500" />
+                        ) : (
+                          <div className="flex items-center justify-center w-6 h-6">
+                            <span 
+                              className="material-icons text-lg hover:text-primary" 
+                              style={{ color: habit.color || '#3B82F6' }}
+                            >
+                              {habit.icon || 'radio_button_checked'}
+                            </span>
+                          </div>
+                        )}
+                      </Button>
+                    )}
                     <div>
                       <CardTitle className={`text-lg ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
                         {habit.name}

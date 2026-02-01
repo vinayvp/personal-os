@@ -170,34 +170,66 @@ const HabitTracker = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleToggleCompletion = async (habitId: string, date: string) => {
+  const handleToggleCompletion = async (habitId: string, date: string, forceAdd?: boolean) => {
     try {
-      const existing = completions.find(c => 
+      const habit = habits.find(h => h.id === habitId);
+      const existingCompletions = completions.filter(c => 
         c.habit_id === habitId && c.completion_date === date
       );
 
-      if (existing) {
-        // Remove completion
-        const { error } = await supabase
-          .from('habit_completions')
-          .delete()
-          .eq('id', existing.id);
+      // For habits with no frequency, allow multiple completions up to target_count
+      if (habit && habit.frequency_type === 'none') {
+        const totalCompletions = completions.filter(c => c.habit_id === habitId).length;
+        
+        if (forceAdd === false && existingCompletions.length > 0) {
+          // Remove last completion for today
+          const lastCompletion = existingCompletions[existingCompletions.length - 1];
+          const { error } = await supabase
+            .from('habit_completions')
+            .delete()
+            .eq('id', lastCompletion.id);
 
-        if (error) throw error;
-        setCompletions(prev => prev.filter(c => c.id !== existing.id));
+          if (error) throw error;
+          setCompletions(prev => prev.filter(c => c.id !== lastCompletion.id));
+        } else if (totalCompletions < habit.target_count) {
+          // Add new completion
+          const { data, error } = await supabase
+            .from('habit_completions')
+            .insert({
+              habit_id: habitId,
+              completion_date: date
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+          setCompletions(prev => [...prev, data as HabitCompletion]);
+        }
       } else {
-        // Add completion
-        const { data, error } = await supabase
-          .from('habit_completions')
-          .insert({
-            habit_id: habitId,
-            completion_date: date
-          })
-          .select()
-          .single();
+        // Standard toggle behavior for regular habits
+        const existing = existingCompletions[0];
 
-        if (error) throw error;
-        setCompletions(prev => [...prev, data as HabitCompletion]);
+        if (existing) {
+          const { error } = await supabase
+            .from('habit_completions')
+            .delete()
+            .eq('id', existing.id);
+
+          if (error) throw error;
+          setCompletions(prev => prev.filter(c => c.id !== existing.id));
+        } else {
+          const { data, error } = await supabase
+            .from('habit_completions')
+            .insert({
+              habit_id: habitId,
+              completion_date: date
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+          setCompletions(prev => [...prev, data as HabitCompletion]);
+        }
       }
     } catch (error) {
       console.error('Error toggling completion:', error);
