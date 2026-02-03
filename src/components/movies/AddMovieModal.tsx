@@ -24,6 +24,8 @@ interface Movie {
   plot: string;
   watched: boolean;
   actors?: string;
+  directors?: string;
+  imdb_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -43,6 +45,8 @@ interface OMDbData {
   Poster: string;
   Plot: string;
   Actors?: string;
+  Director?: string;
+  imdbID?: string;
 }
 
 interface AddMovieModalProps {
@@ -107,7 +111,9 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
           Rated: data.rated,
           Poster: data.poster_url || 'N/A',
           Plot: data.plot,
-          Actors: data.actors
+          Actors: data.actors,
+          Director: data.directors,
+          imdbID: data.imdb_id
         };
         setSearchResults([movieResult]);
       } else {
@@ -133,7 +139,9 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
       Rated: movie.Rated,
       Poster: movie.Poster,
       Plot: movie.Plot,
-      Actors: movie.Actors
+      Actors: movie.Actors,
+      Director: movie.Director,
+      imdbID: movie.imdbID
     });
     setMarkAsWatched(false);
   };
@@ -205,6 +213,8 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
         poster_url: editableData.Poster || selectedMovie.Poster,
         plot: editableData.Plot || selectedMovie.Plot,
         actors: editableData.Actors || selectedMovie.Actors || null,
+        directors: editableData.Director || selectedMovie.Director || null,
+        imdb_id: editableData.imdbID || selectedMovie.imdbID || null,
         watched: markAsWatched
       };
 
@@ -443,6 +453,16 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
                       value={editableData.Actors || ''}
                       onChange={(e) => setEditableData(prev => ({ ...prev, Actors: e.target.value }))}
                       placeholder="e.g., Robert Downey Jr., Chris Evans"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="directors">Director(s)</Label>
+                    <Input
+                      id="directors"
+                      value={editableData.Director || ''}
+                      onChange={(e) => setEditableData(prev => ({ ...prev, Director: e.target.value }))}
+                      placeholder="e.g., Christopher Nolan"
                     />
                   </div>
 
