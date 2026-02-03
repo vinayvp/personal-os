@@ -87,7 +87,9 @@ serve(async (req) => {
       rated: data.Rated,
       poster_url: data.Poster !== 'N/A' ? data.Poster : null,
       plot: data.Plot,
-      actors: data.Actors !== 'N/A' ? data.Actors : null
+      actors: data.Actors !== 'N/A' ? data.Actors : null,
+      directors: data.Director !== 'N/A' ? data.Director : null,
+      imdb_id: data.imdbID || null
     };
 
     return new Response(

@@ -348,8 +348,10 @@ export type Database = {
           actors: string | null
           created_at: string
           custom_category: string | null
+          directors: string | null
           genre: string | null
           id: string
+          imdb_id: string | null
           imdb_score: string | null
           plot: string | null
           poster_url: string | null
@@ -364,8 +366,10 @@ export type Database = {
           actors?: string | null
           created_at?: string
           custom_category?: string | null
+          directors?: string | null
           genre?: string | null
           id?: string
+          imdb_id?: string | null
           imdb_score?: string | null
           plot?: string | null
           poster_url?: string | null
@@ -380,8 +384,10 @@ export type Database = {
           actors?: string | null
           created_at?: string
           custom_category?: string | null
+          directors?: string | null
           genre?: string | null
           id?: string
+          imdb_id?: string | null
           imdb_score?: string | null
           plot?: string | null
           poster_url?: string | null
