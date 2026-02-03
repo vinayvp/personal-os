@@ -86,7 +86,8 @@ serve(async (req) => {
       rotten_tomatoes_rating: data.Ratings?.find((r: any) => r.Source === 'Rotten Tomatoes')?.Value || 'N/A',
       rated: data.Rated,
       poster_url: data.Poster !== 'N/A' ? data.Poster : null,
-      plot: data.Plot
+      plot: data.Plot,
+      actors: data.Actors !== 'N/A' ? data.Actors : null
     };
 
     return new Response(

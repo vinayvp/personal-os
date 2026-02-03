@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Star, Calendar, Eye } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Search, Star, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,6 +23,7 @@ interface Movie {
   poster_url: string;
   plot: string;
   watched: boolean;
+  actors?: string;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +42,7 @@ interface OMDbData {
   Rated: string;
   Poster: string;
   Plot: string;
+  Actors?: string;
 }
 
 interface AddMovieModalProps {
@@ -62,6 +65,7 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
   const [selectedMovie, setSelectedMovie] = useState<OMDbData | null>(null);
   const [editableData, setEditableData] = useState<Partial<OMDbData>>({});
   const [customCategory, setCustomCategory] = useState('');
+  const [markAsWatched, setMarkAsWatched] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [searchError, setSearchError] = useState('');
@@ -102,7 +106,8 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
           ],
           Rated: data.rated,
           Poster: data.poster_url || 'N/A',
-          Plot: data.plot
+          Plot: data.plot,
+          Actors: data.actors
         };
         setSearchResults([movieResult]);
       } else {
@@ -127,8 +132,10 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
       imdbRating: movie.imdbRating,
       Rated: movie.Rated,
       Poster: movie.Poster,
-      Plot: movie.Plot
+      Plot: movie.Plot,
+      Actors: movie.Actors
     });
+    setMarkAsWatched(false);
   };
 
   const saveMovie = async () => {
@@ -197,7 +204,8 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
         rated: editableData.Rated || selectedMovie.Rated,
         poster_url: editableData.Poster || selectedMovie.Poster,
         plot: editableData.Plot || selectedMovie.Plot,
-        watched: false
+        actors: editableData.Actors || selectedMovie.Actors || null,
+        watched: markAsWatched
       };
 
       const { data, error } = await supabase
@@ -234,6 +242,7 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
     setSelectedMovie(null);
     setEditableData({});
     setCustomCategory('');
+    setMarkAsWatched(false);
     setSearchError('');
     onClose();
   };
@@ -313,6 +322,12 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
                             <div className="flex-1">
                               <h4 className="font-semibold">{movie.Title}</h4>
                               <p className="text-sm text-muted-foreground">{movie.Year} • {movie.Genre}</p>
+                              {movie.Actors && (
+                                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                                  <Users className="w-3 h-3" />
+                                  {movie.Actors}
+                                </p>
+                              )}
                               <div className="flex items-center gap-2 mt-2">
                                 <Badge variant="secondary" className="text-xs">
                                   <Star className="w-3 h-3 mr-1" />
@@ -422,12 +437,33 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
                   </div>
 
                   <div>
+                    <Label htmlFor="actors">Actors</Label>
+                    <Input
+                      id="actors"
+                      value={editableData.Actors || ''}
+                      onChange={(e) => setEditableData(prev => ({ ...prev, Actors: e.target.value }))}
+                      placeholder="e.g., Robert Downey Jr., Chris Evans"
+                    />
+                  </div>
+
+                  <div>
                     <Label htmlFor="poster">Poster URL</Label>
                     <Input
                       id="poster"
                       value={editableData.Poster || ''}
                       onChange={(e) => setEditableData(prev => ({ ...prev, Poster: e.target.value }))}
                     />
+                  </div>
+
+                  <div className="flex items-center space-x-2 pt-2">
+                    <Checkbox
+                      id="watched"
+                      checked={markAsWatched}
+                      onCheckedChange={(checked) => setMarkAsWatched(checked === true)}
+                    />
+                    <Label htmlFor="watched" className="text-sm font-normal cursor-pointer">
+                      Mark as already watched
+                    </Label>
                   </div>
                 </div>
               </div>

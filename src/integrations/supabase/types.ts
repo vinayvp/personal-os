@@ -345,6 +345,7 @@ export type Database = {
       }
       movies_tv: {
         Row: {
+          actors: string | null
           created_at: string
           custom_category: string | null
           genre: string | null
@@ -360,6 +361,7 @@ export type Database = {
           watched: boolean
         }
         Insert: {
+          actors?: string | null
           created_at?: string
           custom_category?: string | null
           genre?: string | null
@@ -375,6 +377,7 @@ export type Database = {
           watched?: boolean
         }
         Update: {
+          actors?: string | null
           created_at?: string
           custom_category?: string | null
           genre?: string | null

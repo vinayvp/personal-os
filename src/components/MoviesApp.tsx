@@ -25,6 +25,7 @@ interface Movie {
   poster_url: string;
   plot: string;
   watched: boolean;
+  actors?: string;
   created_at: string;
   updated_at: string;
 }
@@ -156,7 +157,9 @@ const MoviesApp = () => {
   // Filter and sort movies
   const filteredAndSortedMovies = movies
     .filter(movie => {
-      const matchesSearch = movie.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = movie.title.toLowerCase().includes(searchLower) ||
+        (movie.actors && movie.actors.toLowerCase().includes(searchLower));
       
       const matchesCategory = selectedCategory === 'all' || 
         (selectedCategory.startsWith('genre:') && movie.genre?.split(',').map(g => g.trim()).includes(selectedCategory.replace('genre:', ''))) ||
@@ -252,7 +255,7 @@ const MoviesApp = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              placeholder="Search movies and TV shows..."
+              placeholder="Search by title or actor name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
