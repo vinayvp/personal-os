@@ -260,22 +260,22 @@ const MoviesApp = () => {
         </div>
 
         {/* Search and Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-3 mb-6">
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="Search by title, actor, or director..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 w-full"
             />
           </div>
           
-          <div className="flex gap-2 overflow-x-auto pb-2 -mb-2">
+          <div className="grid grid-cols-2 md:flex md:flex-row gap-2 w-full">
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 border border-input bg-background rounded-md text-sm flex-shrink-0"
+              className="px-2.5 py-2 border border-input bg-background rounded-md text-xs min-w-0 truncate"
             >
               {filterOptions.map(option => (
                 <option key={option.value} value={option.value}>
@@ -287,29 +287,29 @@ const MoviesApp = () => {
             <select
               value={watchedFilter}
               onChange={(e) => setWatchedFilter(e.target.value)}
-              className="px-3 py-2 border border-input bg-background rounded-md text-sm flex-shrink-0"
+              className="px-2.5 py-2 border border-input bg-background rounded-md text-xs min-w-0"
             >
               <option value="all">All Status</option>
               <option value="watched">Watched</option>
               <option value="unwatched">Not Watched</option>
             </select>
 
-            <div className="flex items-center flex-shrink-0">
+            <div className="flex items-center col-span-2 md:col-span-1">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 border border-input bg-background rounded-l-md text-sm border-r-0"
+                className="flex-1 px-2.5 py-2 border border-input bg-background rounded-l-md text-xs border-r-0 min-w-0"
               >
-                <option value="created_at">Sort by Date Added</option>
-                <option value="title">Sort by Title</option>
-                <option value="year">Sort by Year</option>
-                <option value="imdb_rating">Sort by IMDB Rating</option>
+                <option value="created_at">Date Added</option>
+                <option value="title">Title</option>
+                <option value="year">Year</option>
+                <option value="imdb_rating">IMDB</option>
               </select>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
-                className="rounded-l-none px-2"
+                className="rounded-l-none px-2 h-[38px]"
               >
                 {sortDirection === 'asc' ? (
                   <ChevronUp className="w-4 h-4" />
@@ -318,26 +318,8 @@ const MoviesApp = () => {
                 )}
               </Button>
             </div>
-
-            {/* <div className="flex border border-input rounded-md flex-shrink-0">
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-                className="rounded-none rounded-l-md"
-              >
-                <Grid className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="rounded-none rounded-r-md"
-              >
-                <List className="w-4 h-4" />
-              </Button>
-            </div> */}
           </div>
+
         </div>
 
         {/* Movies Grid/List */}
