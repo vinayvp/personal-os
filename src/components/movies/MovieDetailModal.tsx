@@ -11,7 +11,9 @@ import {
   Clock,
   Award,
   Film,
-  Play
+  Play,
+  Users,
+  Clapperboard
 } from "lucide-react";
 
 interface Movie {
@@ -26,6 +28,9 @@ interface Movie {
   poster_url: string;
   plot: string;
   watched: boolean;
+  actors?: string;
+  directors?: string;
+  imdb_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -176,6 +181,42 @@ const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                   <p className="text-muted-foreground leading-relaxed">
                     {movie.plot}
                   </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Cast & Crew */}
+            {(movie.directors || movie.actors) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clapperboard className="w-5 h-5" />
+                    Cast & Crew
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {movie.directors && (
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-medium mb-1.5">
+                        <Clapperboard className="w-4 h-4 text-muted-foreground" />
+                        Director{movie.directors.includes(',') ? 's' : ''}
+                      </div>
+                      <p className="text-muted-foreground text-sm leading-relaxed">
+                        {movie.directors}
+                      </p>
+                    </div>
+                  )}
+                  {movie.actors && (
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-medium mb-1.5">
+                        <Users className="w-4 h-4 text-muted-foreground" />
+                        Cast
+                      </div>
+                      <p className="text-muted-foreground text-sm leading-relaxed">
+                        {movie.actors}
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

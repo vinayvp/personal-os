@@ -229,26 +229,32 @@ const MoviesApp = () => {
               {totalCount} total • {watchedCount} watched • {totalCount - watchedCount} unwatched
             </p>
           </div>
-          <div className="flex gap-2 mt-4 md:mt-0">
+          <div className="flex gap-1.5 mt-4 md:mt-0">
             <Button 
               variant="outline"
+              size="sm"
               onClick={() => setIsCreateCategoryModalOpen(true)}
+              className="text-xs px-2.5 py-1.5 h-8"
             >
-              <FolderPlus className="w-4 h-4 mr-2" />
-              Add Category
+              <FolderPlus className="w-3.5 h-3.5 mr-1.5" />
+              Category
             </Button>
             <Button 
               variant="outline"
+              size="sm"
               onClick={() => setIsBulkImportModalOpen(true)}
+              className="text-xs px-2.5 py-1.5 h-8"
             >
-              <Upload className="w-4 h-4 mr-2" />
-              Bulk Import
+              <Upload className="w-3.5 h-3.5 mr-1.5" />
+              Import
             </Button>
             <Button 
+              size="sm"
               onClick={() => setIsAddModalOpen(true)}
+              className="text-xs px-2.5 py-1.5 h-8"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Movie/TV Show
+              <Plus className="w-3.5 h-3.5 mr-1.5" />
+              Add
             </Button>
           </div>
         </div>
