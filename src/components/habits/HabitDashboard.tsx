@@ -144,7 +144,7 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2.5 md:space-y-4">
       {habits.map((habit) => {
         const isCompleted = isHabitCompletedToday(habit.id);
         const streak = calculateStreak(habit.id);
@@ -155,23 +155,23 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
 
         return (
           <Card key={habit.id} className="transition-all hover:shadow-md">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
+            <CardHeader className="p-3 md:p-6 pb-2 md:pb-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 md:gap-3 mb-1.5 md:mb-2">
                     {isNoFrequencyHabit ? (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5 md:gap-1 shrink-0">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="p-0 h-8 w-8"
+                          className="p-0 h-6 w-6 md:h-8 md:w-8"
                           onClick={() => onToggleCompletion(habit.id, today, false)}
                           disabled={todayCompletions === 0}
                         >
-                          <Minus className="w-5 h-5 text-muted-foreground hover:text-destructive" />
+                          <Minus className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground hover:text-destructive" />
                         </Button>
                         <div 
-                          className="flex items-center justify-center min-w-[2.5rem] h-8 px-2 rounded-md font-semibold text-sm"
+                          className="flex items-center justify-center min-w-[2rem] md:min-w-[2.5rem] h-6 md:h-8 px-1.5 md:px-2 rounded-md font-semibold text-xs md:text-sm"
                           style={{ 
                             backgroundColor: `${habit.color || '#3B82F6'}20`,
                             color: habit.color || '#3B82F6'
@@ -182,26 +182,26 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="p-0 h-8 w-8"
+                          className="p-0 h-6 w-6 md:h-8 md:w-8"
                           onClick={() => onToggleCompletion(habit.id, today, true)}
                           disabled={!canAddMore}
                         >
-                          <Plus className="w-5 h-5 text-muted-foreground hover:text-green-500" />
+                          <Plus className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground hover:text-green-500" />
                         </Button>
                       </div>
                     ) : (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="p-0 h-auto"
+                        className="p-0 h-auto shrink-0"
                         onClick={() => onToggleCompletion(habit.id, today)}
                       >
                         {isCompleted ? (
-                          <CheckCircle2 className="w-6 h-6 text-green-500" />
+                          <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 text-green-500" />
                         ) : (
-                          <div className="flex items-center justify-center w-6 h-6">
+                          <div className="flex items-center justify-center w-5 h-5 md:w-6 md:h-6">
                             <span 
-                              className="material-icons text-lg hover:text-primary" 
+                              className="material-icons text-base md:text-lg hover:text-primary" 
                               style={{ color: habit.color || '#3B82F6' }}
                             >
                               {habit.icon || 'radio_button_checked'}
@@ -210,59 +210,59 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
                         )}
                       </Button>
                     )}
-                    <div>
-                      <CardTitle className={`text-lg ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className={`text-sm md:text-lg truncate ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
                         {habit.name}
                       </CardTitle>
                       {habit.goal && (
-                        <p className="text-sm text-muted-foreground mt-1">{habit.goal}</p>
+                        <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1 line-clamp-1">{habit.goal}</p>
                       )}
                     </div>
                   </div>
                   
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      <Calendar className="w-3 h-3 mr-1" />
+                  <div className="flex flex-wrap gap-1.5 md:gap-2 mt-1.5 md:mt-0">
+                    <Badge variant="outline" className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5">
+                      <Calendar className="w-2.5 h-2.5 md:w-3 md:h-3 mr-0.5 md:mr-1" />
                       {getFrequencyDisplay(habit)}
                     </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      <Target className="w-3 h-3 mr-1" />
+                    <Badge variant="outline" className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5">
+                      <Target className="w-2.5 h-2.5 md:w-3 md:h-3 mr-0.5 md:mr-1" />
                       {getProgressLabel(habit, progress)}
                     </Badge>
                   </div>
                 </div>
                 
-                <div className="flex gap-1">
+                <div className="flex gap-0.5 md:gap-1 shrink-0">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onEditHabit(habit)}
-                    className="text-muted-foreground hover:text-foreground"
+                    className="text-muted-foreground hover:text-foreground h-7 w-7 md:h-8 md:w-8 p-0"
                   >
-                    <Edit2 className="w-4 h-4" />
+                    <Edit2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onDeleteHabit(habit.id)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 w-7 md:h-8 md:w-8 p-0"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   </Button>
                 </div>
               </div>
             </CardHeader>
             
-            <CardContent className="pt-0">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
+            <CardContent className="p-3 md:p-6 pt-0">
+              <div className="grid grid-cols-2 gap-3 md:gap-4">
+                <div className="space-y-1.5 md:space-y-2">
+                  <div className="flex justify-between text-xs md:text-sm">
                     <span className="text-muted-foreground">Progress</span>
                     <span className="font-medium">{Math.round(progress.percentage)}%</span>
                   </div>
-                  <div className="w-full bg-muted rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-1.5 md:h-2">
                     <div
-                      className="h-2 rounded-full transition-all"
+                      className="h-1.5 md:h-2 rounded-full transition-all"
                       style={{ 
                         width: `${progress.percentage}%`,
                         backgroundColor: habit.color || '#3B82F6'
@@ -272,11 +272,11 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
                 </div>
                 
                 <div className="text-center">
-                  <div className="text-2xl font-bold" style={{ color: habit.color || '#3B82F6' }}>
+                  <div className="text-xl md:text-2xl font-bold" style={{ color: habit.color || '#3B82F6' }}>
                     {streak.current}
                   </div>
-                  <div className="text-xs text-muted-foreground">Current Streak</div>
-                  <div className="text-xs text-muted-foreground">Best: {streak.longest}</div>
+                  <div className="text-[10px] md:text-xs text-muted-foreground">Current Streak</div>
+                  <div className="text-[10px] md:text-xs text-muted-foreground">Best: {streak.longest}</div>
                 </div>
               </div>
             </CardContent>
