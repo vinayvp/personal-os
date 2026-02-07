@@ -5,7 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, FileText, AlertCircle, CheckCircle, X } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Upload, FileText, AlertCircle, CheckCircle, X, Type } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -50,6 +52,8 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({
   onMoviesAdded
 }) => {
   const [file, setFile] = useState<File | null>(null);
+  const [jsonText, setJsonText] = useState('');
+  const [inputMode, setInputMode] = useState<'file' | 'text'>('file');
   const [items, setItems] = useState<ProcessedItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -240,8 +244,59 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({
     }
   };
 
+  const parseJsonContent = (content: string) => {
+    try {
+      const jsonData = JSON.parse(content);
+      
+      if (!Array.isArray(jsonData)) {
+        throw new Error("JSON must be an array");
+      }
+
+      const processedItems: ProcessedItem[] = jsonData.map((item: any) => {
+        if (!item.title || typeof item.title !== 'string') {
+          return {
+            title: item.title || 'Unknown',
+            custom_category: item.custom_category,
+            status: 'error' as const,
+            error: 'Missing or invalid title'
+          };
+        }
+        
+        return {
+          title: item.title,
+          custom_category: item.custom_category,
+          status: 'pending' as const
+        };
+      });
+
+      setItems(processedItems);
+      return true;
+    } catch (error) {
+      toast({
+        title: "Invalid JSON",
+        description: "Please check your JSON format.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const handleJsonTextSubmit = () => {
+    if (!jsonText.trim()) {
+      toast({
+        title: "Empty Input",
+        description: "Please paste JSON content.",
+        variant: "destructive",
+      });
+      return;
+    }
+    parseJsonContent(jsonText);
+  };
+
   const handleClose = () => {
     setFile(null);
+    setJsonText('');
+    setInputMode('file');
     setItems([]);
     setIsProcessing(false);
     setProgress(0);
@@ -252,14 +307,14 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({
   const getStatusIcon = (status: ProcessedItem['status']) => {
     switch (status) {
       case 'success':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
+        return <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />;
       case 'error':
       case 'duplicate':
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
+        return <AlertCircle className="w-4 h-4 text-destructive" />;
       case 'processing':
-        return <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />;
+        return <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />;
       default:
-        return <div className="w-4 h-4 border border-gray-300 rounded-full" />;
+        return <div className="w-4 h-4 border border-muted-foreground rounded-full" />;
     }
   };
 
@@ -275,24 +330,60 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* File Upload Section */}
-          {!file && (
+          {/* Input Section - File or Text */}
+          {items.length === 0 && (
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="json-file">Upload JSON File</Label>
-                <Input
-                  id="json-file"
-                  type="file"
-                  accept=".json"
-                  onChange={handleFileUpload}
-                  className="mt-2"
-                />
-              </div>
+              <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as 'file' | 'text')}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="file" className="flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Upload File
+                  </TabsTrigger>
+                  <TabsTrigger value="text" className="flex items-center gap-2">
+                    <Type className="w-4 h-4" />
+                    Paste JSON
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="file" className="space-y-4">
+                  <div>
+                    <Label htmlFor="json-file">Upload JSON File</Label>
+                    <Input
+                      id="json-file"
+                      type="file"
+                      accept=".json"
+                      onChange={handleFileUpload}
+                      className="mt-2"
+                    />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="text" className="space-y-4">
+                  <div>
+                    <Label htmlFor="json-text">Paste JSON Content</Label>
+                    <Textarea
+                      id="json-text"
+                      placeholder={`[
+  {
+    "title": "The Matrix",
+    "custom_category": "Sci-Fi Favorites"
+  }
+]`}
+                      value={jsonText}
+                      onChange={(e) => setJsonText(e.target.value)}
+                      className="mt-2 font-mono text-xs min-h-[150px]"
+                    />
+                  </div>
+                  <Button onClick={handleJsonTextSubmit} className="w-full">
+                    Parse JSON
+                  </Button>
+                </TabsContent>
+              </Tabs>
               
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
-                    <FileText className="w-5 h-5 text-blue-500 mt-0.5" />
+                    <FileText className="w-5 h-5 text-primary mt-0.5" />
                     <div>
                       <h4 className="font-medium text-sm mb-2">Expected JSON Format:</h4>
                       <pre className="text-xs bg-muted p-3 rounded overflow-x-auto">
@@ -315,11 +406,13 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({
           )}
 
           {/* Preview and Processing Section */}
-          {file && items.length > 0 && (
+          {items.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold">Preview: {file.name}</h3>
+                  <h3 className="font-semibold">
+                    {file ? `Preview: ${file.name}` : 'Preview: Pasted JSON'}
+                  </h3>
                   <p className="text-sm text-muted-foreground">
                     {items.length} items found
                     {successCount > 0 && ` • ${successCount} successful`}
@@ -332,6 +425,7 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({
                   size="sm"
                   onClick={() => {
                     setFile(null);
+                    setJsonText('');
                     setItems([]);
                   }}
                 >
@@ -362,7 +456,7 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({
                         </div>
                       )}
                       {item.error && (
-                        <div className="text-xs text-red-500 mt-1">{item.error}</div>
+                        <div className="text-xs text-destructive mt-1">{item.error}</div>
                       )}
                     </div>
                   </div>

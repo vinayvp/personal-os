@@ -130,6 +130,11 @@ const MoviesApp = () => {
 
       setMovies(prev => prev.map(m => m.id === movie.id ? data : m));
       
+      // Also update selectedMovie if this is the movie being viewed in detail modal
+      if (selectedMovie && selectedMovie.id === movie.id) {
+        setSelectedMovie(data);
+      }
+      
       toast({
         title: "Status Updated",
         description: `Marked as ${!movie.watched ? 'watched' : 'not watched'}`,
