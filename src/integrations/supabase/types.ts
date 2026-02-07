@@ -114,6 +114,7 @@ export type Database = {
           color: string | null
           created_at: string
           custom_days: number[] | null
+          end_date: string | null
           frequency_type: string
           goal: string | null
           icon: string | null
@@ -127,6 +128,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           custom_days?: number[] | null
+          end_date?: string | null
           frequency_type: string
           goal?: string | null
           icon?: string | null
@@ -140,6 +142,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           custom_days?: number[] | null
+          end_date?: string | null
           frequency_type?: string
           goal?: string | null
           icon?: string | null
