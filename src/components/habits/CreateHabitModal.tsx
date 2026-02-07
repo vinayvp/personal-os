@@ -25,7 +25,8 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
     target_period: 'weekly' as 'weekly' | 'monthly' | 'yearly' | 'total',
     custom_days: [] as number[],
     icon: 'radio_button_checked',
-    color: '#3B82F6'
+    color: '#3B82F6',
+    end_date: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -56,7 +57,11 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
     { name: 'spa', label: 'Wellness' },
     { name: 'phone', label: 'Communication' },
     { name: 'home', label: 'Home' },
-    { name: 'favorite', label: 'Health' }
+    { name: 'favorite', label: 'Health' },
+    { name: 'attach_money', label: 'Money' },
+    { name: 'savings', label: 'Savings' },
+    { name: 'account_balance', label: 'Finance' },
+    { name: 'trending_up', label: 'Investment' }
   ];
 
   const colorOptions = [
@@ -97,7 +102,8 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
       target_period: formData.target_period,
       custom_days: formData.frequency_type === 'custom' ? formData.custom_days : undefined,
       icon: formData.icon,
-      color: formData.color
+      color: formData.color,
+      end_date: formData.end_date || undefined
     };
 
     onCreateHabit(habitData);
@@ -113,7 +119,8 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
       target_period: 'weekly',
       custom_days: [],
       icon: 'radio_button_checked',
-      color: '#3B82F6'
+      color: '#3B82F6',
+      end_date: ''
     });
     setErrors({});
     onClose();
@@ -313,6 +320,19 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
                 </Select>
               </div>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="end_date">End Date (Optional)</Label>
+            <Input
+              id="end_date"
+              type="date"
+              value={formData.end_date}
+              onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
+            />
+            <p className="text-xs text-muted-foreground">
+              Habit will stop showing after this date
+            </p>
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">

@@ -22,6 +22,7 @@ export interface Habit {
   custom_days?: number[];
   icon?: string;
   color?: string;
+  end_date?: string;
   created_at: string;
   updated_at: string;
 }
@@ -285,7 +286,13 @@ const HabitTracker = () => {
 
           <TabsContent value="dashboard">
             <HabitDashboard
-              habits={habits}
+              habits={habits.filter(h => {
+                if (!h.end_date) return true;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const endDate = new Date(h.end_date);
+                return endDate >= today;
+              })}
               completions={completions}
               onToggleCompletion={handleToggleCompletion}
               onDeleteHabit={handleDeleteHabit}

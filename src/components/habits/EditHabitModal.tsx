@@ -35,7 +35,11 @@ const COMMON_ICONS = [
   'self_improvement',
   'restaurant',
   'work',
-  'school'
+  'school',
+  'attach_money',
+  'savings',
+  'account_balance',
+  'trending_up'
 ];
 
 const COMMON_COLORS = [
@@ -60,7 +64,8 @@ const EditHabitModal = ({ isOpen, onClose, onEditHabit, habit }: EditHabitModalP
     target_period: 'weekly' as 'weekly' | 'monthly' | 'yearly' | 'total',
     custom_days: [] as number[],
     icon: 'radio_button_checked',
-    color: '#3B82F6'
+    color: '#3B82F6',
+    end_date: ''
   });
 
   useEffect(() => {
@@ -73,7 +78,8 @@ const EditHabitModal = ({ isOpen, onClose, onEditHabit, habit }: EditHabitModalP
         target_period: habit.target_period,
         custom_days: habit.custom_days || [],
         icon: habit.icon || 'radio_button_checked',
-        color: habit.color || '#3B82F6'
+        color: habit.color || '#3B82F6',
+        end_date: habit.end_date || ''
       });
     }
   }, [habit]);
@@ -86,6 +92,7 @@ const EditHabitModal = ({ isOpen, onClose, onEditHabit, habit }: EditHabitModalP
       ...formData,
       goal: formData.goal || undefined,
       custom_days: formData.frequency_type === 'custom' ? formData.custom_days : undefined,
+      end_date: formData.end_date || undefined,
     };
     
     onEditHabit(habit.id, habitData);
@@ -246,6 +253,19 @@ const EditHabitModal = ({ isOpen, onClose, onEditHabit, habit }: EditHabitModalP
                 </Select>
               </div>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="end_date">End Date (Optional)</Label>
+            <Input
+              id="end_date"
+              type="date"
+              value={formData.end_date}
+              onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
+            />
+            <p className="text-xs text-muted-foreground">
+              Habit will stop showing after this date
+            </p>
           </div>
 
           <div className="flex gap-2 justify-end pt-4">
