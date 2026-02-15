@@ -10,6 +10,7 @@ export interface Investment {
   name: string;
   asset_type_id: string;
   notes: string | null;
+  mf_scheme_code: string | null;
   created_at: string;
   updated_at: string;
   asset_type?: AssetType;
