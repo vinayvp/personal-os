@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { financeDb } from "@/integrations/supabase/financeClient";
 import { useToast } from "@/hooks/use-toast";
 import { AssetType } from "./types";
 
@@ -26,6 +26,7 @@ const AddInvestmentModal = ({ open, onOpenChange, onSuccess, assetTypes }: AddIn
   const [name, setName] = useState("");
   const [assetTypeId, setAssetTypeId] = useState("");
   const [notes, setNotes] = useState("");
+  const [mfSchemeCode, setMfSchemeCode] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -52,10 +53,11 @@ const AddInvestmentModal = ({ open, onOpenChange, onSuccess, assetTypes }: AddIn
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("investments").insert({
+      const { error } = await financeDb.from("investments").insert({
         name: name.trim(),
         asset_type_id: assetTypeId,
         notes: notes.trim() || null,
+        mf_scheme_code: mfSchemeCode.trim() || null,
       });
 
       if (error) throw error;
@@ -68,6 +70,7 @@ const AddInvestmentModal = ({ open, onOpenChange, onSuccess, assetTypes }: AddIn
       setName("");
       setAssetTypeId("");
       setNotes("");
+      setMfSchemeCode("");
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
@@ -129,6 +132,19 @@ const AddInvestmentModal = ({ open, onOpenChange, onSuccess, assetTypes }: AddIn
               placeholder="Any additional notes about this investment..."
               rows={3}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="mfSchemeCode">MF Scheme Code (Optional)</Label>
+            <Input
+              id="mfSchemeCode"
+              value={mfSchemeCode}
+              onChange={(e) => setMfSchemeCode(e.target.value)}
+              placeholder="e.g., 125497 (from mfapi.in)"
+            />
+            <p className="text-xs text-muted-foreground">
+              Enter the scheme code from mfapi.in to enable automatic NAV tracking
+            </p>
           </div>
 
           <div className="flex justify-end gap-3">

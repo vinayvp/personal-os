@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { financeDb } from "@/integrations/supabase/financeClient";
 import { useToast } from "@/hooks/use-toast";
 import { Investment, AssetType } from "./types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -63,7 +63,7 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments, asset
       const amountValue = parseFloat(amount);
       const finalAmount = transactionType === "buy" ? amountValue : -amountValue;
       
-      const { error } = await supabase.from("investment_transactions").insert({
+      const { error } = await financeDb.from("investment_transactions").insert({
         investment_id: investmentId,
         transaction_date: format(date, "yyyy-MM-dd"),
         amount_invested: finalAmount,

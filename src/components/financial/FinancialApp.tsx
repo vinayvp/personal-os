@@ -3,12 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Wallet, Receipt, Briefcase, PieChart, TrendingUp } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { financeDb } from "@/integrations/supabase/financeClient";
 import { useToast } from "@/hooks/use-toast";
 import HeroMetrics from "@/components/financial/HeroMetrics";
 import AssetAllocationChart from "@/components/financial/AssetAllocationChart";
 import PerformanceLeaderboard from "@/components/financial/PerformanceLeaderboard";
 import InvestmentsList from "@/components/financial/InvestmentsList";
+import MutualFundsList from "@/components/financial/MutualFundsList";
 import HistoricalChart from "@/components/financial/HistoricalChart";
 import FixedIncomeDetails from "@/components/financial/FixedIncomeDetails";
 import AddInvestmentModal from "@/components/financial/AddInvestmentModal";
@@ -41,9 +42,9 @@ const FinancialApp = () => {
     setLoading(true);
     try {
       const [investmentsRes, transactionsRes, assetTypesRes] = await Promise.all([
-        supabase.from("investments").select("*, asset_type:asset_types(*)").order("created_at", { ascending: false }),
-        supabase.from("investment_transactions").select("*").order("transaction_date", { ascending: true }),
-        supabase.from("asset_types").select("*").order("name", { ascending: true }),
+        financeDb.from("investments").select("*, asset_type:asset_types(*)").order("created_at", { ascending: false }),
+        financeDb.from("investment_transactions").select("*").order("transaction_date", { ascending: true }),
+        financeDb.from("asset_types").select("*").order("name", { ascending: true }),
       ]);
 
       if (investmentsRes.error) throw investmentsRes.error;
@@ -215,6 +216,13 @@ const FinancialApp = () => {
 
                 {/* All Investments List */}
                 <InvestmentsList investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)} />
+
+                {/* Mutual Funds Section */}
+                <MutualFundsList 
+                  investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)} 
+                  transactions={transactions}
+                  onRefreshComplete={fetchData}
+                />
 
                 {/* Fixed Income Details Section */}
                 <FixedIncomeDetails investments={investmentsWithMetrics} transactions={transactions} />

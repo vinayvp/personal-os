@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { financeDb } from "@/integrations/supabase/financeClient";
 import { useToast } from "@/hooks/use-toast";
 import { Investment } from "./types";
 
@@ -43,7 +43,7 @@ const RecordValueModal = ({ open, onOpenChange, onSuccess, investments }: Record
     setLoading(true);
     try {
       // Record a value snapshot (amount_invested = 0 for pure value recording)
-      const { error } = await supabase.from("investment_transactions").insert({
+      const { error } = await financeDb.from("investment_transactions").insert({
         investment_id: investmentId,
         transaction_date: format(date, "yyyy-MM-dd"),
         amount_invested: 0,

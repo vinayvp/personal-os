@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { financeDb } from "@/integrations/supabase/financeClient";
 import { useToast } from "@/hooks/use-toast";
 
 interface AddAssetTypeModalProps {
@@ -43,7 +43,7 @@ const AddAssetTypeModal = ({ open, onOpenChange, onSuccess }: AddAssetTypeModalP
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("asset_types").insert({
+      const { error } = await financeDb.from("asset_types").insert({
         name: name.trim(),
         color,
       });
