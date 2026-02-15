@@ -35,27 +35,6 @@ export type Database = {
         }
         Relationships: []
       }
-      asset_types: {
-        Row: {
-          color: string
-          created_at: string
-          id: string
-          name: string
-        }
-        Insert: {
-          color?: string
-          created_at?: string
-          id?: string
-          name: string
-        }
-        Update: {
-          color?: string
-          created_at?: string
-          id?: string
-          name?: string
-        }
-        Relationships: []
-      }
       contact_messages: {
         Row: {
           created_at: string
@@ -153,85 +132,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      investment_transactions: {
-        Row: {
-          amount_invested: number
-          created_at: string
-          current_value: number
-          id: string
-          interest_rate: number | null
-          investment_id: string
-          maturity_date: string | null
-          tenure_months: number | null
-          transaction_date: string
-        }
-        Insert: {
-          amount_invested: number
-          created_at?: string
-          current_value: number
-          id?: string
-          interest_rate?: number | null
-          investment_id: string
-          maturity_date?: string | null
-          tenure_months?: number | null
-          transaction_date: string
-        }
-        Update: {
-          amount_invested?: number
-          created_at?: string
-          current_value?: number
-          id?: string
-          interest_rate?: number | null
-          investment_id?: string
-          maturity_date?: string | null
-          tenure_months?: number | null
-          transaction_date?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "investment_transactions_investment_id_fkey"
-            columns: ["investment_id"]
-            isOneToOne: false
-            referencedRelation: "investments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      investments: {
-        Row: {
-          asset_type_id: string
-          created_at: string
-          id: string
-          name: string
-          notes: string | null
-          updated_at: string
-        }
-        Insert: {
-          asset_type_id: string
-          created_at?: string
-          id?: string
-          name: string
-          notes?: string | null
-          updated_at?: string
-        }
-        Update: {
-          asset_type_id?: string
-          created_at?: string
-          id?: string
-          name?: string
-          notes?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "investments_asset_type_id_fkey"
-            columns: ["asset_type_id"]
-            isOneToOne: false
-            referencedRelation: "asset_types"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       journal_entries: {
         Row: {
