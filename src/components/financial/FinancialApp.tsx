@@ -16,22 +16,26 @@ import AddInvestmentModal from "@/components/financial/AddInvestmentModal";
 import AddTransactionModal from "@/components/financial/AddTransactionModal";
 import AddAssetTypeModal from "@/components/financial/AddAssetTypeModal";
 import RecordValueModal from "@/components/financial/RecordValueModal";
+import AddSipModal from "@/components/financial/AddSipModal";
 import { 
   Investment, 
   InvestmentTransaction, 
   InvestmentWithLatest, 
-  AssetType 
+  AssetType,
+  SipConfig
 } from "@/components/financial/types";
 
 const FinancialApp = () => {
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
   const [assetTypes, setAssetTypes] = useState<AssetType[]>([]);
+  const [sipConfigs, setSipConfigs] = useState<SipConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddInvestmentOpen, setIsAddInvestmentOpen] = useState(false);
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isAddAssetTypeOpen, setIsAddAssetTypeOpen] = useState(false);
   const [isRecordValueOpen, setIsRecordValueOpen] = useState(false);
+  const [isAddSipOpen, setIsAddSipOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -41,19 +45,22 @@ const FinancialApp = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [investmentsRes, transactionsRes, assetTypesRes] = await Promise.all([
+      const [investmentsRes, transactionsRes, assetTypesRes, sipRes] = await Promise.all([
         financeDb.from("investments").select("*, asset_type:asset_types(*)").order("created_at", { ascending: false }),
         financeDb.from("investment_transactions").select("*").order("transaction_date", { ascending: true }),
         financeDb.from("asset_types").select("*").order("name", { ascending: true }),
+        financeDb.from("sip_configs").select("*").order("created_at", { ascending: false }),
       ]);
 
       if (investmentsRes.error) throw investmentsRes.error;
       if (transactionsRes.error) throw transactionsRes.error;
       if (assetTypesRes.error) throw assetTypesRes.error;
+      if (sipRes.error) throw sipRes.error;
 
       setInvestments((investmentsRes.data || []) as Investment[]);
       setTransactions((transactionsRes.data || []) as InvestmentTransaction[]);
       setAssetTypes((assetTypesRes.data || []) as AssetType[]);
+      setSipConfigs((sipRes.data || []) as SipConfig[]);
     } catch (error: any) {
       toast({
         title: "Error fetching data",
@@ -221,7 +228,9 @@ const FinancialApp = () => {
                 <MutualFundsList 
                   investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)} 
                   transactions={transactions}
+                  sipConfigs={sipConfigs}
                   onRefreshComplete={fetchData}
+                  onAddSip={() => setIsAddSipOpen(true)}
                 />
 
                 {/* Fixed Income Details Section */}
@@ -287,6 +296,12 @@ const FinancialApp = () => {
         <RecordValueModal
           open={isRecordValueOpen}
           onOpenChange={setIsRecordValueOpen}
+          onSuccess={fetchData}
+          investments={investments}
+        />
+        <AddSipModal
+          open={isAddSipOpen}
+          onOpenChange={setIsAddSipOpen}
           onSuccess={fetchData}
           investments={investments}
         />
