@@ -1,45 +1,58 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { TrendingUp, TrendingDown, RefreshCw, BarChart3 } from "lucide-react";
+import { TrendingUp, TrendingDown, RefreshCw, BarChart3, Calendar, Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { financeDb } from "@/integrations/supabase/financeClient";
 import { format } from "date-fns";
-import { InvestmentWithLatest, InvestmentTransaction } from "./types";
+import { InvestmentWithLatest, InvestmentTransaction, SipConfig } from "./types";
 
 interface MutualFundsListProps {
   investments: InvestmentWithLatest[];
   transactions: InvestmentTransaction[];
+  sipConfigs: SipConfig[];
   onRefreshComplete: () => void;
+  onAddSip: () => void;
 }
 
-const MutualFundsList = ({ investments, transactions, onRefreshComplete }: MutualFundsListProps) => {
+const MutualFundsList = ({ investments, transactions, sipConfigs, onRefreshComplete, onAddSip }: MutualFundsListProps) => {
   const [refreshing, setRefreshing] = useState(false);
   const { toast } = useToast();
 
-  // Filter only mutual fund investments (those with mf_scheme_code)
   const mutualFunds = investments.filter((inv) => (inv as any).mf_scheme_code);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value);
 
-  // Count NAV entries (Record Value entries) for a given investment
-  const getNavCount = (investmentId: string) => {
-    return transactions.filter(
-      (t) => t.investment_id === investmentId && Number(t.current_value) > 0 && Number(t.amount_invested) === 0
-    ).length;
+  // Summary metrics
+  const summary = useMemo(() => {
+    const totalInvested = mutualFunds.reduce((s, f) => s + f.total_invested, 0);
+    const totalCurrent = mutualFunds.reduce((s, f) => s + f.current_value, 0);
+    const totalPL = totalCurrent - totalInvested;
+    const totalPLPercent = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
+    return { totalInvested, totalCurrent, totalPL, totalPLPercent };
+  }, [mutualFunds]);
+
+  const getNavCount = (investmentId: string) =>
+    transactions.filter((t) => t.investment_id === investmentId && Number(t.current_value) > 0 && Number(t.amount_invested) === 0).length;
+
+  const getSipForFund = (investmentId: string) =>
+    sipConfigs.find((s) => s.investment_id === investmentId && s.is_active);
+
+  const handleDeleteSip = async (sipId: string) => {
+    try {
+      const { error } = await financeDb.from("sip_configs").delete().eq("id", sipId);
+      if (error) throw error;
+      toast({ title: "SIP removed" });
+      onRefreshComplete();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
   };
 
   const handleRefreshAll = async () => {
     if (mutualFunds.length === 0) return;
-
     setRefreshing(true);
     let successCount = 0;
     let failCount = 0;
@@ -51,107 +64,35 @@ const MutualFundsList = ({ investments, transactions, onRefreshComplete }: Mutua
 
         try {
           const response = await fetch(`https://api.mfapi.in/mf/${schemeCode}/latest`);
-          if (!response.ok) {
-            failCount++;
-            continue;
-          }
+          if (!response.ok) { failCount++; continue; }
 
           const data = await response.json();
-          if (!data?.data?.[0]?.nav) {
-            failCount++;
-            continue;
-          }
+          if (!data?.data?.[0]?.nav) { failCount++; continue; }
 
           const latestNav = parseFloat(data.data[0].nav);
-          const navDate = data.data[0].date; // dd-MM-yyyy format
-
-          // Calculate total units from transactions
-          // total_invested / average_buy_nav gives units, but we need a simpler approach:
-          // For mutual funds, current_value = units * current_nav
-          // We need to figure out units. Let's compute from buy transactions:
-          // Each buy transaction: units_bought = amount / nav_at_that_time
-          // But we don't store nav_at_buy_time. So we use:
-          // current_value = (total_invested / cost_nav) * current_nav
-          // Simpler: just record the latest NAV * total_units as current_value
-          
-          // Get all buy transactions for this fund to calculate total units
           const fundTransactions = transactions.filter((t) => t.investment_id === fund.id);
-          
-          // Find the latest Record Value entry to get the previous current_value
-          // For MFs, we'll calculate: new_value = (previous_value / previous_nav) * new_nav
-          // But since we don't store per-unit data, let's use a simple approach:
-          // total_units = total_invested (sum of buys) - we need units tracking
-          
-          // Actually, for MFs the best approach: 
-          // We know total_invested. We record current_value as the total portfolio value.
-          // On refresh, we need to know how many units the user holds.
-          // Since we don't have units stored, let's derive from the last known NAV and value:
-          // units = last_current_value / last_nav ... but we don't store NAV either.
-          
-          // Simplest correct approach: just use total_invested as base and let user 
-          // manually track OR we can compute units from transaction amounts.
-          // For now: record latest NAV value * estimated units
-          
-          // Let's just record the fetched NAV as a value snapshot
-          // The user's current value = their units * latest NAV
-          // If we don't know units, we use the ratio approach:
-          // If there's a previous value record, new_value = old_value * (new_nav / old_nav)
-          // If no previous value, new_value = total_invested (assuming bought at that NAV)
-
-          // For a clean implementation: just insert a new \"Record Value\" transaction
-          // with the NAV-based current value. We need units info.
-          // Let's store units in the notes or derive from previous records.
-
-          // Best approach without schema change: 
-          // Get the most recent current_value record and its date, 
-          // fetch the NAV on that date, compute units, then compute new value.
-          
-          // Even simpler: fetch ALL NAV history isn't practical.
-          // Let's just use: if previous current_value exists, 
-          // fetch the NAV for the previous date, compute units = prev_value / prev_nav
-          // then new_value = units * latest_nav
-
-          // Actually, the simplest and most correct: 
-          // Store the current portfolio value directly from NAV * units
-          // We need units. Let's compute units from the FIRST buy and subsequent buys.
-          // But we don't have buy NAVs stored.
-
-          // PRAGMATIC APPROACH: Just record the latest NAV as current_value for the total
-          // and let the user know. The user should record units manually or we enhance later.
-          
-          // FINAL APPROACH: Fetch latest NAV, compute current_value from last known state.
-          // If there's a previous \"Record Value\" entry, compute the ratio.
-          // Otherwise, assume current_value = total_invested.
-
           const sortedByDate = [...fundTransactions].sort(
             (a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
           );
           const lastValueRecord = sortedByDate.find((t) => Number(t.current_value) > 0);
-          
+
           let newCurrentValue: number;
-          
+
           if (lastValueRecord) {
-            // We have a previous value. To compute new value, we need the NAV on that date.
-            // Fetch NAV history for that date
             const prevDate = lastValueRecord.transaction_date;
             try {
               const histRes = await fetch(`https://api.mfapi.in/mf/${schemeCode}`);
               if (histRes.ok) {
                 const histData = await histRes.json();
-                // Find NAV closest to prevDate
                 const prevDateObj = new Date(prevDate);
                 let closestNav: number | null = null;
                 let closestDiff = Infinity;
-                
+
                 for (const entry of histData.data || []) {
-                  // date format: dd-MM-yyyy
-                  const parts = entry.date.split('-');
+                  const parts = entry.date.split("-");
                   const entryDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
                   const diff = Math.abs(entryDate.getTime() - prevDateObj.getTime());
-                  if (diff < closestDiff) {
-                    closestDiff = diff;
-                    closestNav = parseFloat(entry.nav);
-                  }
+                  if (diff < closestDiff) { closestDiff = diff; closestNav = parseFloat(entry.nav); }
                 }
 
                 if (closestNav && closestNav > 0) {
@@ -167,11 +108,9 @@ const MutualFundsList = ({ investments, transactions, onRefreshComplete }: Mutua
               newCurrentValue = Number(lastValueRecord.current_value);
             }
           } else {
-            // No previous value record - assume invested at current NAV (fallback)
             newCurrentValue = fund.total_invested;
           }
 
-          // Insert new Record Value transaction
           const today = format(new Date(), "yyyy-MM-dd");
           const { error } = await financeDb.from("investment_transactions").insert({
             investment_id: fund.id,
@@ -180,135 +119,191 @@ const MutualFundsList = ({ investments, transactions, onRefreshComplete }: Mutua
             current_value: Math.round(newCurrentValue * 100) / 100,
           });
 
-          if (error) {
-            console.error(`Error recording value for ${fund.name}:`, error);
-            failCount++;
-          } else {
-            successCount++;
-          }
-        } catch (err) {
-          console.error(`Error fetching NAV for ${fund.name}:`, err);
+          if (error) { failCount++; } else { successCount++; }
+        } catch {
           failCount++;
         }
       }
 
       toast({
         title: "NAV Refresh Complete",
-        description: `Updated ${successCount} fund(s)${failCount > 0 ? `, ${failCount} failed` : ''}`,
+        description: `Updated ${successCount} fund(s)${failCount > 0 ? `, ${failCount} failed` : ""}`,
         variant: failCount > 0 && successCount === 0 ? "destructive" : "default",
       });
 
-      if (successCount > 0) {
-        onRefreshComplete();
-      }
+      if (successCount > 0) onRefreshComplete();
     } catch (error: any) {
-      toast({
-        title: "Error refreshing NAVs",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error refreshing NAVs", description: error.message, variant: "destructive" });
     } finally {
       setRefreshing(false);
     }
   };
 
-  if (mutualFunds.length === 0) {
-    return null;
-  }
+  if (mutualFunds.length === 0) return null;
+
+  const isPositiveTotal = summary.totalPL >= 0;
 
   return (
-    <Card className="bg-card border-border">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <BarChart3 className="h-5 w-5" />
-            Mutual Funds ({mutualFunds.length})
-          </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefreshAll}
-            disabled={refreshing}
-            className="h-8"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Mutual Fund Investments</h2>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={onAddSip}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add SIP
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleRefreshAll} disabled={refreshing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
             {refreshing ? "Refreshing..." : "Refresh NAVs"}
           </Button>
         </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <ScrollArea className="h-[350px] pr-4">
-          <div className="space-y-2">
-            {mutualFunds.map((fund) => {
-              const isPositive = fund.gain_loss_percent >= 0;
-              const assetColor = fund.asset_type?.color || 'hsl(var(--muted-foreground))';
-              const navCount = getNavCount(fund.id);
+      </div>
 
-              return (
-                <div
-                  key={fund.id}
-                  className={`p-3 rounded-lg border ${
-                    isPositive
-                      ? 'border-green-500/20 bg-green-500/5'
-                      : 'border-destructive/20 bg-destructive/5'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <p className="font-medium truncate">{fund.name}</p>
-                      <Badge
-                        variant="secondary"
-                        className="text-xs shrink-0"
-                        style={{
-                          backgroundColor: `${assetColor}20`,
-                          color: assetColor,
-                        }}
-                      >
-                        {(fund as any).mf_scheme_code}
-                      </Badge>
-                    </div>
-                    <div className="text-right shrink-0 ml-3">
-                      <div
-                        className={`flex items-center gap-1 justify-end font-semibold text-sm ${
-                          isPositive ? 'text-green-500' : 'text-destructive'
-                        }`}
-                      >
-                        {isPositive ? (
-                          <TrendingUp className="h-3 w-3" />
-                        ) : (
-                          <TrendingDown className="h-3 w-3" />
-                        )}
-                        {isPositive ? '+' : ''}{fund.gain_loss_percent.toFixed(2)}%
-                      </div>
-                    </div>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-card border-border">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <BarChart3 className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Invested</p>
+                <p className="text-xl font-bold">{formatCurrency(summary.totalInvested)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-500/10">
+                <TrendingUp className="w-5 h-5 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Current Value</p>
+                <p className="text-xl font-bold">{formatCurrency(summary.totalCurrent)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${isPositiveTotal ? "bg-green-500/10" : "bg-destructive/10"}`}>
+                {isPositiveTotal ? <TrendingUp className="w-5 h-5 text-green-500" /> : <TrendingDown className="w-5 h-5 text-destructive" />}
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total P/L</p>
+                <p className={`text-xl font-bold ${isPositiveTotal ? "text-green-500" : "text-destructive"}`}>
+                  {isPositiveTotal ? "+" : ""}{formatCurrency(summary.totalPL)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${isPositiveTotal ? "bg-green-500/10" : "bg-destructive/10"}`}>
+                {isPositiveTotal ? <TrendingUp className="w-5 h-5 text-green-500" /> : <TrendingDown className="w-5 h-5 text-destructive" />}
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">P/L %</p>
+                <p className={`text-xl font-bold ${isPositiveTotal ? "text-green-500" : "text-destructive"}`}>
+                  {isPositiveTotal ? "+" : ""}{summary.totalPLPercent.toFixed(2)}%
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Individual Fund Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {mutualFunds.map((fund) => {
+          const isPositive = fund.gain_loss_percent >= 0;
+          const navCount = getNavCount(fund.id);
+          const sip = getSipForFund(fund.id);
+
+          return (
+            <Card key={fund.id} className="bg-card border-border">
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-base font-semibold">{fund.name}</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Scheme: {(fund as any).mf_scheme_code} • {navCount} NAV records
+                    </p>
                   </div>
-                  <div className="grid grid-cols-4 gap-3 text-sm">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Invested</p>
-                      <p className="font-medium">{formatCurrency(fund.total_invested)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Current</p>
-                      <p className="font-medium">{formatCurrency(fund.current_value)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">P/L</p>
-                      <p className={`font-medium ${isPositive ? 'text-green-500' : 'text-destructive'}`}>
-                        {isPositive ? '+' : ''}{formatCurrency(fund.gain_loss)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">NAV Records</p>
-                      <p className="font-medium">{navCount}</p>
-                    </div>
+                  <Badge
+                    variant="secondary"
+                    className={`shrink-0 ${isPositive ? "bg-green-500/10 text-green-500" : "bg-destructive/10 text-destructive"}`}
+                  >
+                    {isPositive ? "+" : ""}{fund.gain_loss_percent.toFixed(2)}%
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Invested</p>
+                    <p className="font-semibold">{formatCurrency(fund.total_invested)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Current Value</p>
+                    <p className="font-semibold">{formatCurrency(fund.current_value)}</p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </ScrollArea>
-      </CardContent>
-    </Card>
+
+                <div className="pt-2 border-t border-border grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Profit / Loss</p>
+                    <p className={`font-semibold ${isPositive ? "text-green-500" : "text-destructive"}`}>
+                      {isPositive ? "+" : ""}{formatCurrency(fund.gain_loss)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Returns</p>
+                    <p className={`font-semibold ${isPositive ? "text-green-500" : "text-destructive"}`}>
+                      {isPositive ? "+" : ""}{fund.gain_loss_percent.toFixed(2)}%
+                    </p>
+                  </div>
+                </div>
+
+                {/* SIP Info */}
+                {sip && (
+                  <div className="pt-2 border-t border-border">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Active SIP</p>
+                          <p className="font-semibold text-sm">
+                            {formatCurrency(sip.amount)} on day {sip.sip_day}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDeleteSip(sip.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
   );
 };
 
