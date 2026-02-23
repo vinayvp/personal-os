@@ -192,14 +192,41 @@ const MutualFundsList = ({ investments, transactions, sipConfigs, onRefreshCompl
           const newCurrentValue = Math.round(totalUnits * latestNav * 100) / 100;
 
           const today = format(new Date(), "yyyy-MM-dd");
-          const { error } = await financeDb.from("investment_transactions").insert({
-            investment_id: fund.id,
-            transaction_date: today,
-            amount_invested: 0,
-            current_value: newCurrentValue,
-          });
 
-          if (error) { failCount++; } else { successCount++; }
+          // Check if a value record already exists for today
+          const { data: existingRecords } = await financeDb
+            .from("investment_transactions")
+            .select("id")
+            .eq("investment_id", fund.id)
+            .eq("transaction_date", today)
+            .eq("amount_invested", 0);
+
+          if (existingRecords && existingRecords.length > 0) {
+            // Update the first existing record and delete any extra duplicates
+            const [keepRecord, ...extraRecords] = existingRecords;
+            const { error } = await financeDb
+              .from("investment_transactions")
+              .update({ current_value: newCurrentValue })
+              .eq("id", keepRecord.id);
+            if (error) { failCount++; continue; }
+
+            // Clean up duplicates
+            for (const extra of extraRecords) {
+              await financeDb.from("investment_transactions").delete().eq("id", extra.id);
+            }
+            successCount++;
+          } else {
+            // Insert new record for a new day
+            const { error } = await financeDb.from("investment_transactions").insert({
+              investment_id: fund.id,
+              transaction_date: today,
+              amount_invested: 0,
+              current_value: newCurrentValue,
+            });
+            if (error) { failCount++; } else { successCount++; }
+          }
+
+
         } catch {
           failCount++;
         }
