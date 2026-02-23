@@ -233,8 +233,11 @@ const FinancialApp = () => {
                   onAddSip={() => setIsAddSipOpen(true)}
                 />
 
-                {/* Fixed Income Details Section */}
-                <FixedIncomeDetails investments={investmentsWithMetrics} transactions={transactions} />
+                {/* Fixed Deposits Section */}
+                <FixedIncomeDetails investments={investmentsWithMetrics} transactions={transactions} title="Fixed Deposits" assetTypeFilter="fixed deposit" />
+
+                {/* Bonds Section */}
+                <FixedIncomeDetails investments={investmentsWithMetrics} transactions={transactions} title="Bonds" assetTypeFilter="bond" />
 
                 {/* Historical Performance Charts */}
                 {activeAssetTypes.length > 0 && (

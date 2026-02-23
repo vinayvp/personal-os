@@ -8,6 +8,8 @@ import { InvestmentTransaction, InvestmentWithLatest } from "./types";
 interface FixedIncomeDetailsProps {
   investments: InvestmentWithLatest[];
   transactions: InvestmentTransaction[];
+  title?: string;
+  assetTypeFilter?: string;
 }
 
 interface TransactionWithDetails extends InvestmentTransaction {
@@ -15,7 +17,7 @@ interface TransactionWithDetails extends InvestmentTransaction {
   asset_type_name: string;
 }
 
-const FixedIncomeDetails = ({ investments, transactions }: FixedIncomeDetailsProps) => {
+const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income Investments", assetTypeFilter }: FixedIncomeDetailsProps) => {
   // Filter only transactions with fixed income details (those with maturity date or interest rate)
   const fixedIncomeTransactions: TransactionWithDetails[] = transactions
     .filter((t) => t.maturity_date || t.interest_rate || t.tenure_months)
@@ -26,7 +28,8 @@ const FixedIncomeDetails = ({ investments, transactions }: FixedIncomeDetailsPro
         investment_name: inv?.name || "Unknown",
         asset_type_name: inv?.asset_type?.name || "Unknown",
       };
-    });
+    })
+    .filter((t) => !assetTypeFilter || t.asset_type_name.toLowerCase().includes(assetTypeFilter.toLowerCase()));
 
   if (fixedIncomeTransactions.length === 0) {
     return null;
@@ -81,7 +84,7 @@ const FixedIncomeDetails = ({ investments, transactions }: FixedIncomeDetailsPro
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Fixed Income Investments</h2>
+      <h2 className="text-xl font-semibold">{title}</h2>
       
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
