@@ -14,6 +14,7 @@ import {
 import { financeDb } from "@/integrations/supabase/financeClient";
 import { useToast } from "@/hooks/use-toast";
 import { AssetType } from "./types";
+import { set } from "date-fns";
 
 interface AddInvestmentModalProps {
   open: boolean;
@@ -27,6 +28,7 @@ const AddInvestmentModal = ({ open, onOpenChange, onSuccess, assetTypes }: AddIn
   const [assetTypeId, setAssetTypeId] = useState("");
   const [notes, setNotes] = useState("");
   const [mfSchemeCode, setMfSchemeCode] = useState("");
+  const [coinId, setCoinId] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -53,11 +55,16 @@ const AddInvestmentModal = ({ open, onOpenChange, onSuccess, assetTypes }: AddIn
 
     setLoading(true);
     try {
+      const extraConfig = {
+        mf_scheme_code: mfSchemeCode.trim() || null,
+        coin_id: coinId.trim() || null,
+      };
+
       const { error } = await financeDb.from("investments").insert({
         name: name.trim(),
         asset_type_id: assetTypeId,
         notes: notes.trim() || null,
-        mf_scheme_code: mfSchemeCode.trim() || null,
+        extra_configuration: extraConfig,
       });
 
       if (error) throw error;
@@ -71,6 +78,7 @@ const AddInvestmentModal = ({ open, onOpenChange, onSuccess, assetTypes }: AddIn
       setAssetTypeId("");
       setNotes("");
       setMfSchemeCode("");
+      setCoinId("");
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {

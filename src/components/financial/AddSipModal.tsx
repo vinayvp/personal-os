@@ -29,7 +29,10 @@ const AddSipModal = ({ open, onOpenChange, onSuccess, investments }: AddSipModal
   const { toast } = useToast();
 
   // Only show MF investments
-  const mfInvestments = investments.filter((inv) => (inv as any).mf_scheme_code);
+  const mfInvestments = investments.filter((inv) => {
+    const assetTypeName = (inv as any).asset_types?.name || (inv as any).asset_type?.name;
+    return assetTypeName?.toLowerCase() === "Mutual Funds".toLowerCase();
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

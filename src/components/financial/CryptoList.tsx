@@ -54,9 +54,9 @@ const CryptoList = ({ investments, transactions, onRefreshComplete }: CryptoList
     let failCount = 0;
 
     try {
-      // Collect all coin IDs (stored in mf_scheme_code)
+      // Collect all coin IDs (stored in extra_configuration.coin_id) for crypto investments
       const coinIds = cryptoInvestments
-        .map((inv) => (inv as any).mf_scheme_code)
+        .map((inv) => (inv as any).extra_configuration?.coin_id)
         .filter(Boolean) as string[];
 
       if (coinIds.length === 0) {
@@ -75,7 +75,7 @@ const CryptoList = ({ investments, transactions, onRefreshComplete }: CryptoList
       const today = format(new Date(), "yyyy-MM-dd");
 
       for (const crypto of cryptoInvestments) {
-        const coinId = (crypto as any).mf_scheme_code;
+        const coinId = (crypto as any).extra_configuration?.coin_id;
         if (!coinId) { failCount++; continue; }
 
         const priceInr = priceData?.[coinId]?.inr;

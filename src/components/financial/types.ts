@@ -10,10 +10,13 @@ export interface Investment {
   name: string;
   asset_type_id: string;
   notes: string | null;
-  mf_scheme_code: string | null;
+  extra_configuration: {
+    mf_scheme_code?: string | null;
+    coin_id?: string | null;
+  } | null;
   created_at: string;
   updated_at: string;
-  asset_type?: AssetType;
+  asset_type?: AssetType; 
 }
 
 export interface InvestmentTransaction {

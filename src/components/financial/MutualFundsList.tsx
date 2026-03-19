@@ -26,7 +26,10 @@ const MutualFundsList = ({ investments, transactions, sipConfigs, onRefreshCompl
   const [navData, setNavData] = useState<Record<string, FundNavData>>({});
   const { toast } = useToast();
 
-  const mutualFunds = investments.filter((inv) => (inv as any).mf_scheme_code);
+  const mutualFunds =  investments.filter((inv) => {
+    const assetTypeName = (inv as any).asset_types?.name || (inv as any).asset_type?.name;
+    return assetTypeName?.toLowerCase() === "mutual fund";
+  });
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value);
@@ -36,7 +39,7 @@ const MutualFundsList = ({ investments, transactions, sipConfigs, onRefreshCompl
     const fetchNavs = async () => {
       const data: Record<string, FundNavData> = {};
       for (const fund of mutualFunds) {
-        const schemeCode = (fund as any).mf_scheme_code;
+        const schemeCode = (fund as any).extra_configuration?.mf_scheme_code;
         if (!schemeCode || fund.current_value <= 0) continue;
         try {
           const res = await fetch(`https://api.mfapi.in/mf/${schemeCode}/latest`);
@@ -105,7 +108,7 @@ const MutualFundsList = ({ investments, transactions, sipConfigs, onRefreshCompl
 
     try {
       for (const fund of mutualFunds) {
-        const schemeCode = (fund as any).mf_scheme_code;
+        const schemeCode = (fund as any).extra_configuration?.mf_scheme_code;
         if (!schemeCode) continue;
 
         try {
