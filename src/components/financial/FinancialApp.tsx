@@ -235,7 +235,7 @@ const FinancialApp = () => {
                           <TabsTrigger value="bonds">Bonds</TabsTrigger>
                         </TabsList>
                       </div>
-                      <TabsContent value="mutual-funds" className="m-0">
+                      <TabsContent value="mutual-funds" className="m-0 p-4">
                         <MutualFundsList 
                           investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)} 
                           transactions={transactions}
@@ -244,10 +244,10 @@ const FinancialApp = () => {
                           onAddSip={() => setIsAddSipOpen(true)}
                         />
                       </TabsContent>
-                      <TabsContent value="fixed-deposits" className="m-0">
+                      <TabsContent value="fixed-deposits" className="m-0 p-4">
                         <FixedIncomeDetails investments={investmentsWithMetrics} transactions={transactions} title="Fixed Deposits" assetTypeFilter="fixed deposit" />
                       </TabsContent>
-                      <TabsContent value="bonds" className="m-0">
+                      <TabsContent value="bonds" className="m-0 p-4">
                         <FixedIncomeDetails investments={investmentsWithMetrics} transactions={transactions} title="Bonds" assetTypeFilter="bond" />
                       </TabsContent>
                     </Tabs>
