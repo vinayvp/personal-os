@@ -65,7 +65,8 @@ const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
 
   const getWatchNowUrl = (title: string) => {
     const formattedTitle = title.toLowerCase().replace(/\s+/g, '+');
-    return `https://tmovie.tv/search?query=${formattedTitle}`;
+    //return `https://tmovie.tv/search?query=${formattedTitle}`;
+    return `https://watch-v2.autoembed.cc/search?q=${formattedTitle}`;
   };
 
   return (
