@@ -229,7 +229,7 @@ const FinancialApp = () => {
                 <Card className="bg-card border-border">
                   <CardContent className="p-0">
                     <Tabs defaultValue="mutual-funds" className="w-full">
-                      <div className="border-b border-border px-4 pt-4">
+                      <div className="border-b border-border px-4 pt-4 pb-4">
                         <TabsList className="w-full max-w-lg grid grid-cols-4">
                           <TabsTrigger value="mutual-funds">Mutual Funds</TabsTrigger>
                           <TabsTrigger value="crypto">Crypto</TabsTrigger>
