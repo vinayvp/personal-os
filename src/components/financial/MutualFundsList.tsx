@@ -28,7 +28,7 @@ const MutualFundsList = ({ investments, transactions, sipConfigs, onRefreshCompl
 
   const mutualFunds =  investments.filter((inv) => {
     const assetTypeName = (inv as any).asset_types?.name || (inv as any).asset_type?.name;
-    return assetTypeName?.toLowerCase() === "mutual fund";
+    return assetTypeName?.toLowerCase() === "Mutual Funds".toLowerCase();
   });
 
   const formatCurrency = (value: number) =>
