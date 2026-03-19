@@ -12,6 +12,7 @@ import InvestmentsList from "@/components/financial/InvestmentsList";
 import MutualFundsList from "@/components/financial/MutualFundsList";
 import HistoricalChart from "@/components/financial/HistoricalChart";
 import FixedIncomeDetails from "@/components/financial/FixedIncomeDetails";
+import CryptoList from "@/components/financial/CryptoList";
 import AddInvestmentModal from "@/components/financial/AddInvestmentModal";
 import AddTransactionModal from "@/components/financial/AddTransactionModal";
 import AddAssetTypeModal from "@/components/financial/AddAssetTypeModal";
