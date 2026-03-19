@@ -224,20 +224,35 @@ const FinancialApp = () => {
                 {/* All Investments List */}
                 <InvestmentsList investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)} />
 
-                {/* Mutual Funds Section */}
-                <MutualFundsList 
-                  investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)} 
-                  transactions={transactions}
-                  sipConfigs={sipConfigs}
-                  onRefreshComplete={fetchData}
-                  onAddSip={() => setIsAddSipOpen(true)}
-                />
-
-                {/* Fixed Deposits Section */}
-                <FixedIncomeDetails investments={investmentsWithMetrics} transactions={transactions} title="Fixed Deposits" assetTypeFilter="fixed deposit" />
-
-                {/* Bonds Section */}
-                <FixedIncomeDetails investments={investmentsWithMetrics} transactions={transactions} title="Bonds" assetTypeFilter="bond" />
+                {/* Asset Type Details Section */}
+                <Card className="bg-card border-border">
+                  <CardContent className="p-0">
+                    <Tabs defaultValue="mutual-funds" className="w-full">
+                      <div className="border-b border-border px-4 pt-4">
+                        <TabsList className="w-full max-w-md grid grid-cols-3">
+                          <TabsTrigger value="mutual-funds">Mutual Funds</TabsTrigger>
+                          <TabsTrigger value="fixed-deposits">Fixed Deposits</TabsTrigger>
+                          <TabsTrigger value="bonds">Bonds</TabsTrigger>
+                        </TabsList>
+                      </div>
+                      <TabsContent value="mutual-funds" className="m-0">
+                        <MutualFundsList 
+                          investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)} 
+                          transactions={transactions}
+                          sipConfigs={sipConfigs}
+                          onRefreshComplete={fetchData}
+                          onAddSip={() => setIsAddSipOpen(true)}
+                        />
+                      </TabsContent>
+                      <TabsContent value="fixed-deposits" className="m-0">
+                        <FixedIncomeDetails investments={investmentsWithMetrics} transactions={transactions} title="Fixed Deposits" assetTypeFilter="fixed deposit" />
+                      </TabsContent>
+                      <TabsContent value="bonds" className="m-0">
+                        <FixedIncomeDetails investments={investmentsWithMetrics} transactions={transactions} title="Bonds" assetTypeFilter="bond" />
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
 
                 {/* Historical Performance Charts */}
                 {activeAssetTypes.length > 0 && (
