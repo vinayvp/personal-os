@@ -230,8 +230,9 @@ const FinancialApp = () => {
                   <CardContent className="p-0">
                     <Tabs defaultValue="mutual-funds" className="w-full">
                       <div className="border-b border-border px-4 pt-4">
-                        <TabsList className="w-full max-w-md grid grid-cols-3">
+                        <TabsList className="w-full max-w-lg grid grid-cols-4">
                           <TabsTrigger value="mutual-funds">Mutual Funds</TabsTrigger>
+                          <TabsTrigger value="crypto">Crypto</TabsTrigger>
                           <TabsTrigger value="fixed-deposits">Fixed Deposits</TabsTrigger>
                           <TabsTrigger value="bonds">Bonds</TabsTrigger>
                         </TabsList>
@@ -243,6 +244,13 @@ const FinancialApp = () => {
                           sipConfigs={sipConfigs}
                           onRefreshComplete={fetchData}
                           onAddSip={() => setIsAddSipOpen(true)}
+                        />
+                      </TabsContent>
+                      <TabsContent value="crypto" className="m-0 p-4">
+                        <CryptoList
+                          investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)}
+                          transactions={transactions}
+                          onRefreshComplete={fetchData}
                         />
                       </TabsContent>
                       <TabsContent value="fixed-deposits" className="m-0 p-4">
