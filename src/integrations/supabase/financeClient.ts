@@ -6,7 +6,7 @@ import { supabase } from './client';
  * we cast through any to use .schema('finance').
  */
 export const financeDb = {
-  from: (table: 'investments' | 'investment_transactions' | 'asset_types' | 'sip_configs') => {
+  from: (table: 'investments' | 'investment_transactions' | 'asset_types' | 'sip_configs' | 'investment_valuations') => {
     return (supabase as any).schema('finance').from(table);
   },
 };

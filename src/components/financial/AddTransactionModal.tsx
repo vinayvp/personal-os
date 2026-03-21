@@ -67,7 +67,6 @@ const AddTransactionModal = ({ open, onOpenChange, onSuccess, investments, asset
         investment_id: investmentId,
         transaction_date: format(date, "yyyy-MM-dd"),
         amount_invested: finalAmount,
-        current_value: 0, // Will be updated via Record Value
         tenure_months: tenureMonths ? parseInt(tenureMonths) : null,
         interest_rate: interestRate ? parseFloat(interestRate) : null,
         maturity_date: maturityDate ? format(maturityDate, "yyyy-MM-dd") : null,

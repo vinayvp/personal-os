@@ -56,7 +56,6 @@ Deno.serve(async (req) => {
           investment_id: sip.investment_id,
           transaction_date: todayStr,
           amount_invested: sip.amount,
-          current_value: 0,
         });
 
       if (txError) {
