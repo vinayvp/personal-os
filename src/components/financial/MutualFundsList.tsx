@@ -184,7 +184,8 @@ const MutualFundsList = ({ investments, transactions, sipConfigs, onRefreshCompl
               if (Number(tx.amount_invested) > 0) {
                 const txNav = findClosestNav(tx.transaction_date);
                 if (txNav && txNav > 0) {
-                  totalUnits += Number(tx.amount_invested) / txNav;
+                  let units = (Number(tx.amount_invested) / txNav).toFixed(3);
+                  totalUnits += Number(units);
                 } else {
                   totalUnits += Number(tx.amount_invested) / latestNav;
                 }
@@ -192,8 +193,8 @@ const MutualFundsList = ({ investments, transactions, sipConfigs, onRefreshCompl
             }
           }
 
-          const newCurrentValue = Math.round(totalUnits * latestNav * 100) / 100;
-
+          const roundedUnits = Number(totalUnits.toFixed(3));
+          const newCurrentValue = Number((roundedUnits * latestNav).toFixed(3));
           const today = format(new Date(), "yyyy-MM-dd");
 
           // Check if a value record already exists for today
@@ -228,7 +229,6 @@ const MutualFundsList = ({ investments, transactions, sipConfigs, onRefreshCompl
             });
             if (error) { failCount++; } else { successCount++; }
           }
-
 
         } catch {
           failCount++;
