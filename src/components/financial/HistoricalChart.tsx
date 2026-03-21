@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { TrendingUp, Maximize2 } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO, subMonths, isAfter } from "date-fns";
 import { AssetType, Investment, InvestmentTransaction, InvestmentValuation } from "./types";
 import HistoricalChartModal from "./HistoricalChartModal";
 
@@ -27,57 +27,47 @@ const HistoricalChart = ({ assetType, investments, transactions, valuations }: H
     return null;
   }
 
-  // Build chart data: combine transactions (invested) and valuations (current value)
-  const sortedTransactions = [...assetTransactions].sort(
-    (a, b) => new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime()
-  );
-
-  let cumulativeInvested = 0;
-  const dateMap = new Map<string, { invested: number; current: number }>();
-  
-  // Process transactions for invested line
-  sortedTransactions.forEach((t) => {
-    const amountInvested = Number(t.amount_invested);
-    if (amountInvested !== 0) {
-      cumulativeInvested += amountInvested;
-    }
-    dateMap.set(t.transaction_date, {
-      invested: cumulativeInvested,
-      current: dateMap.get(t.transaction_date)?.current || 0,
-    });
+  // 1. Group transactions by date
+  const txByDate = new Map<string, number>();
+  assetTransactions.forEach((t) => {
+    txByDate.set(t.transaction_date, (txByDate.get(t.transaction_date) || 0) + Number(t.amount_invested));
   });
 
-  // Process valuations for current value line
-  // Sum valuations per date across all investments in this asset type
+  // 2. Group valuations by date
   const valByDate = new Map<string, number>();
   assetValuations.forEach((v) => {
     valByDate.set(v.valuation_date, (valByDate.get(v.valuation_date) || 0) + Number(v.current_value));
   });
 
-  // Merge valuation data into dateMap
-  valByDate.forEach((currentVal, date) => {
-    const existing = dateMap.get(date);
-    if (existing) {
-      existing.current = currentVal;
-    } else {
-      // Find the last known invested value
-      let lastInvested = 0;
-      for (const [d, v] of dateMap.entries()) {
-        if (d <= date) lastInvested = v.invested;
-      }
-      dateMap.set(date, { invested: lastInvested, current: currentVal });
+  // 3. Get all unique dates and sort them
+  const allDates = Array.from(new Set([...txByDate.keys(), ...valByDate.keys()]))
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
+  // 4. Build the FULL continuous timeline first (to ensure cumulative values are correct)
+  let runningInvested = 0;
+  let runningCurrent = 0;
+  const sixMonthsAgo = subMonths(new Date(), 6);
+
+  const fullChartData = allDates.map((date) => {
+    const txImpact = txByDate.get(date) || 0;
+    runningInvested += txImpact;
+
+    const newValuation = valByDate.get(date);
+    if (newValuation !== undefined) {
+      runningCurrent = newValuation;
     }
+
+    return {
+      date,
+      dateObj: parseISO(date),
+      dateFormatted: format(parseISO(date), 'MMM dd'),
+      invested: runningInvested,
+      current: runningCurrent > 0 ? runningCurrent : undefined,
+    };
   });
 
-  const chartData = Array.from(dateMap.entries())
-    .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
-    .filter(([, values]) => values.invested > 0 || values.current > 0)
-    .map(([date, values]) => ({
-      date,
-      dateFormatted: format(new Date(date), 'MMM dd'),
-      invested: values.invested,
-      current: values.current || undefined,
-    }));
+  // 5. Filter for only the last 6 months for the display
+  const chartData = fullChartData.filter(item => isAfter(item.dateObj, sixMonthsAgo));
 
   const formatCurrency = (value: number) => {
     if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`;
@@ -89,28 +79,74 @@ const HistoricalChart = ({ assetType, investments, transactions, valuations }: H
   return (
     <>
       <Card className="bg-card border-border">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="flex items-center gap-2 text-lg">
             <TrendingUp className="h-5 w-5" style={{ color: assetType.color }} />
             {assetType.name} Performance
           </CardTitle>
-          <Button variant="ghost" size="icon" onClick={() => setModalOpen(true)} className="h-8 w-8">
-            <Maximize2 className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">Last 6 Months</span>
+            <Button variant="ghost" size="icon" onClick={() => setModalOpen(true)} className="h-8 w-8">
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="dateFormatted" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <YAxis tickFormatter={formatCurrency} stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <Tooltip
-                contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
-                formatter={(value: number) => [new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)]}
+            <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} opacity={0.5} />
+              <XAxis 
+                dataKey="dateFormatted" 
+                stroke="hsl(var(--muted-foreground))" 
+                fontSize={11} 
+                tickLine={false}
+                axisLine={false}
+                minTickGap={30}
               />
-              <Legend />
-              <Line type="monotone" dataKey="invested" name="Invested Value" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="current" name="Current Value" stroke={assetType.color} strokeWidth={2} dot={false} connectNulls />
+              <YAxis 
+                tickFormatter={formatCurrency} 
+                stroke="hsl(var(--muted-foreground))" 
+                fontSize={11} 
+                tickLine={false}
+                axisLine={false}
+                width={45}
+              />
+              <Tooltip
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))', 
+                  border: '1px solid hsl(var(--border))', 
+                  borderRadius: '8px',
+                  fontSize: '12px'
+                }}
+                formatter={(value: number) => [
+                  new Intl.NumberFormat('en-IN', { 
+                    style: 'currency', 
+                    currency: 'INR', 
+                    maximumFractionDigits: 0 
+                  }).format(value)
+                ]}
+              />
+              <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '12px', paddingBottom: '20px' }} />
+              <Line 
+                type="monotone" 
+                dataKey="invested" 
+                name="Invested" 
+                stroke="hsl(var(--muted-foreground))" 
+                strokeWidth={2} 
+                dot={false} 
+                activeDot={{ r: 4 }}
+                strokeDasharray="5 5" // Makes invested line slightly distinct
+              />
+              <Line 
+                type="monotone" 
+                dataKey="current" 
+                name="Current" 
+                stroke={assetType.color} 
+                strokeWidth={2.5} 
+                dot={false} 
+                connectNulls
+                activeDot={{ r: 6 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>

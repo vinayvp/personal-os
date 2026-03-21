@@ -5,8 +5,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { CalendarIcon, TrendingUp } from "lucide-react";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, eachYearOfInterval, isWithinInterval, isSameDay, isSameWeek, isSameMonth, isSameYear } from "date-fns";
+import { CalendarIcon, TrendingUp, CircleDot, LineChart as LineIcon } from "lucide-react";
+import { 
+  format, 
+  parseISO, 
+  endOfWeek, 
+  endOfMonth, 
+  endOfYear, 
+  eachDayOfInterval, 
+  eachWeekOfInterval, 
+  eachMonthOfInterval, 
+  eachYearOfInterval,
+  isAfter
+} from "date-fns";
 import { cn } from "@/lib/utils";
 import { AssetType, Investment, InvestmentTransaction, InvestmentValuation } from "./types";
 
@@ -23,6 +34,7 @@ interface HistoricalChartModalProps {
 
 const HistoricalChartModal = ({ open, onOpenChange, assetType, investments, transactions, valuations }: HistoricalChartModalProps) => {
   const [granularity, setGranularity] = useState<Granularity>("monthly");
+  const [showDots, setShowDots] = useState(false);
   const [fromDate, setFromDate] = useState<Date | undefined>(() => {
     const date = new Date();
     date.setFullYear(date.getFullYear() - 1);
@@ -37,123 +49,85 @@ const HistoricalChartModal = ({ open, onOpenChange, assetType, investments, tran
   const assetValuations = valuations.filter((v) => investmentIds.has(v.investment_id));
 
   const chartData = useMemo(() => {
-    if ((assetTransactions.length === 0 && assetValuations.length === 0) || !fromDate || !toDate) return [];
+    if (!fromDate || !toDate) return [];
 
-    const sortedTransactions = [...assetTransactions].sort(
-      (a, b) => new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime()
-    );
-
-    // Build cumulative invested
-    let cumulativeInvested = 0;
-    const dateMap = new Map<string, { invested: number; current: number }>();
-
-    // Pre-calculate cumulative invested before fromDate
-    sortedTransactions.forEach((t) => {
-      const transactionDate = new Date(t.transaction_date);
-      if (transactionDate < fromDate) {
-        if (Number(t.amount_invested) !== 0) {
-          cumulativeInvested += Number(t.amount_invested);
-        }
-      }
-    });
-
-    // Process transactions in range
-    const filteredTransactions = sortedTransactions.filter((t) => {
-      const date = new Date(t.transaction_date);
-      return isWithinInterval(date, { start: fromDate, end: toDate });
-    });
-
-    filteredTransactions.forEach((t) => {
-      const amountInvested = Number(t.amount_invested);
-      if (amountInvested !== 0) {
-        cumulativeInvested += amountInvested;
-      }
-      dateMap.set(t.transaction_date, {
-        invested: cumulativeInvested,
-        current: dateMap.get(t.transaction_date)?.current || 0,
-      });
-    });
-
-    // Process valuations in range
-    const filteredValuations = assetValuations.filter((v) => {
-      const date = new Date(v.valuation_date);
-      return isWithinInterval(date, { start: fromDate, end: toDate });
+    // 1. Group ALL data by date (Full history for cumulative accuracy)
+    const txByDate = new Map<string, number>();
+    assetTransactions.forEach((t) => {
+      txByDate.set(t.transaction_date, (txByDate.get(t.transaction_date) || 0) + Number(t.amount_invested));
     });
 
     const valByDate = new Map<string, number>();
-    filteredValuations.forEach((v) => {
+    assetValuations.forEach((v) => {
       valByDate.set(v.valuation_date, (valByDate.get(v.valuation_date) || 0) + Number(v.current_value));
     });
 
-    valByDate.forEach((currentVal, date) => {
-      const existing = dateMap.get(date);
-      if (existing) {
-        existing.current = currentVal;
-      } else {
-        let lastInvested = cumulativeInvested;
-        for (const [d, v] of dateMap.entries()) {
-          if (d <= date) lastInvested = v.invested;
-        }
-        dateMap.set(date, { invested: lastInvested, current: currentVal });
-      }
+    const allDates = Array.from(new Set([...txByDate.keys(), ...valByDate.keys()]))
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
+    // 2. Build Daily Timeline (Memory)
+    let runningInvested = 0;
+    let runningCurrent = 0;
+    const dailyTimeline = new Map<string, { invested: number; current: number }>();
+
+    allDates.forEach((date) => {
+      runningInvested += txByDate.get(date) || 0;
+      const newValuation = valByDate.get(date);
+      if (newValuation !== undefined) runningCurrent = newValuation;
+      dailyTimeline.set(date, { invested: runningInvested, current: runningCurrent });
     });
 
-    // Aggregate based on granularity
-    const aggregatedData: { date: string; dateFormatted: string; invested: number; current: number }[] = [];
-
-    const getIntervalEnd = (date: Date): Date => {
-      switch (granularity) {
-        case "daily": return date;
-        case "weekly": return endOfWeek(date, { weekStartsOn: 1 });
-        case "monthly": return endOfMonth(date);
-        case "yearly": return endOfYear(date);
-      }
-    };
-
-    const formatDate = (date: Date): string => {
-      switch (granularity) {
-        case "daily": return format(date, "MMM dd");
-        case "weekly": return format(date, "MMM dd");
-        case "monthly": return format(date, "MMM yyyy");
-        case "yearly": return format(date, "yyyy");
-      }
-    };
-
+    // 3. Define reporting periods
     let periods: Date[];
+    const interval = { start: fromDate, end: toDate };
+    
     switch (granularity) {
-      case "daily": periods = eachDayOfInterval({ start: fromDate, end: toDate }); break;
-      case "weekly": periods = eachWeekOfInterval({ start: fromDate, end: toDate }, { weekStartsOn: 1 }); break;
-      case "monthly": periods = eachMonthOfInterval({ start: fromDate, end: toDate }); break;
-      case "yearly": periods = eachYearOfInterval({ start: fromDate, end: toDate }); break;
+      case "daily": periods = eachDayOfInterval(interval); break;
+      case "weekly": periods = eachWeekOfInterval(interval, { weekStartsOn: 1 }); break;
+      case "monthly": periods = eachMonthOfInterval(interval); break;
+      case "yearly": periods = eachYearOfInterval(interval); break;
+      default: periods = [];
     }
 
-    periods.forEach((period) => {
-      const periodEnd = getIntervalEnd(period);
-      const periodEndStr = format(periodEnd > toDate ? toDate : periodEnd, "yyyy-MM-dd");
+    // 4. Map periods to last known data point
+    return periods.map((periodStart) => {
+      let periodEnd: Date;
+      let dateLabel: string;
 
-      let lastInvested = 0;
-      let lastCurrent = 0;
-
-      Array.from(dateMap.entries())
-        .filter(([dateStr]) => new Date(dateStr) <= new Date(periodEndStr))
-        .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
-        .slice(0, 1)
-        .forEach(([, values]) => {
-          lastInvested = values.invested;
-          lastCurrent = values.current;
-        });
-
-      if (lastInvested > 0 || lastCurrent > 0) {
-        aggregatedData.push({
-          date: periodEndStr,
-          dateFormatted: formatDate(periodEnd > toDate ? toDate : periodEnd),
-          invested: lastInvested,
-          current: lastCurrent,
-        });
+      switch (granularity) {
+        case "daily":
+          periodEnd = periodStart;
+          dateLabel = format(periodStart, "MMM dd");
+          break;
+        case "weekly":
+          periodEnd = endOfWeek(periodStart, { weekStartsOn: 1 });
+          dateLabel = `Week of ${format(periodStart, "MMM dd")}`;
+          break;
+        case "monthly":
+          periodEnd = endOfMonth(periodStart);
+          dateLabel = format(periodStart, "MMM yyyy");
+          break;
+        case "yearly":
+          periodEnd = endOfYear(periodStart);
+          dateLabel = format(periodStart, "yyyy");
+          break;
+        default: periodEnd = periodStart; dateLabel = "";
       }
-    });
 
-    return aggregatedData;
+      const searchDate = periodEnd > toDate ? toDate : periodEnd;
+      const searchStr = format(searchDate, "yyyy-MM-dd");
+
+      // Find last known date <= searchStr
+      const lastKnownDate = allDates.filter((d) => d <= searchStr).reverse()[0];
+      const values = lastKnownDate ? dailyTimeline.get(lastKnownDate) : { invested: 0, current: 0 };
+
+      return {
+        date: searchStr,
+        dateFormatted: dateLabel,
+        invested: values?.invested || 0,
+        current: values?.current && values.current > 0 ? values.current : undefined,
+      };
+    }).filter(d => d.invested > 0 || d.current);
   }, [assetTransactions, assetValuations, fromDate, toDate, granularity]);
 
   const formatCurrency = (value: number) => {
@@ -165,19 +139,20 @@ const HistoricalChartModal = ({ open, onOpenChange, assetType, investments, tran
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" style={{ color: assetType.color }} />
-            {assetType.name} Performance - Detailed View
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto bg-card border-border">
+        <DialogHeader className="flex flex-row items-center justify-between">
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <TrendingUp className="h-6 w-6" style={{ color: assetType.color }} />
+            {assetType.name} Detailed Performance
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-wrap gap-4 mb-4">
+        <div className="flex flex-wrap items-center gap-4 py-4 border-b border-border mb-6">
+          {/* Granularity Select */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">View:</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Interval</span>
             <Select value={granularity} onValueChange={(v) => setGranularity(v as Granularity)}>
-              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-32 h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="daily">Daily</SelectItem>
                 <SelectItem value="weekly">Weekly</SelectItem>
@@ -187,56 +162,96 @@ const HistoricalChartModal = ({ open, onOpenChange, assetType, investments, tran
             </Select>
           </div>
 
+          {/* Date Pickers */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">From:</span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("w-36 justify-start text-left font-normal", !fromDate && "text-muted-foreground")}>
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {fromDate ? format(fromDate, "MMM dd, yyyy") : "Pick date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={fromDate} onSelect={setFromDate} initialFocus className="p-3 pointer-events-auto" />
-              </PopoverContent>
-            </Popover>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Range</span>
+            <div className="flex items-center bg-background border rounded-md px-2 h-9">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" className="h-7 px-2 text-xs font-normal">
+                    {fromDate ? format(fromDate, "dd MMM yyyy") : "Start"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={fromDate} onSelect={setFromDate} /></PopoverContent>
+              </Popover>
+              <span className="text-muted-foreground text-xs mx-1">→</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" className="h-7 px-2 text-xs font-normal">
+                    {toDate ? format(toDate, "dd MMM yyyy") : "End"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={toDate} onSelect={setToDate} /></PopoverContent>
+              </Popover>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">To:</span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("w-36 justify-start text-left font-normal", !toDate && "text-muted-foreground")}>
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {toDate ? format(toDate, "MMM dd, yyyy") : "Pick date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={toDate} onSelect={setToDate} initialFocus className="p-3 pointer-events-auto" />
-              </PopoverContent>
-            </Popover>
+          {/* DOTS TOGGLE */}
+          <div className="ml-auto flex items-center gap-2">
+            <Button 
+              variant={showDots ? "secondary" : "outline"} 
+              size="sm" 
+              onClick={() => setShowDots(!showDots)}
+              className="h-9 gap-2"
+            >
+              {showDots ? <CircleDot className="h-4 w-4" /> : <LineIcon className="h-4 w-4" />}
+              <span className="text-xs">{showDots ? "Hide Dots" : "Show Dots"}</span>
+            </Button>
           </div>
         </div>
 
         {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="dateFormatted" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <YAxis tickFormatter={formatCurrency} stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <Tooltip
-                contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--card-foreground))' }}
-                itemStyle={{ color: 'hsl(var(--card-foreground))' }}
-                formatter={(value: number) => [new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)]}
-              />
-              <Legend />
-              <Line type="monotone" dataKey="invested" name="Invested Value" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={{ fill: 'hsl(var(--muted-foreground))', strokeWidth: 2, r: 4 }} />
-              <Line type="monotone" dataKey="current" name="Current Value" stroke={assetType.color} strokeWidth={2} dot={{ fill: assetType.color, strokeWidth: 2, r: 4 }} connectNulls />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="h-[450px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 20, right: 20, left: 10, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} opacity={0.4} />
+                <XAxis 
+                  dataKey="dateFormatted" 
+                  stroke="hsl(var(--muted-foreground))" 
+                  fontSize={11} 
+                  tickLine={false} 
+                  axisLine={false}
+                  minTickGap={40}
+                />
+                <YAxis 
+                  tickFormatter={formatCurrency} 
+                  stroke="hsl(var(--muted-foreground))" 
+                  fontSize={11} 
+                  tickLine={false} 
+                  axisLine={false}
+                  width={60}
+                />
+                <Tooltip
+                  contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '12px' }}
+                  formatter={(value: number) => [new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)]}
+                />
+                <Legend verticalAlign="top" align="right" height={40}/>
+                <Line 
+                  type="monotone" 
+                  dataKey="invested" 
+                  name="Invested Value" 
+                  stroke="hsl(var(--muted-foreground))" 
+                  strokeWidth={2} 
+                  strokeDasharray="4 4"
+                  dot={showDots ? { r: 3, fill: 'hsl(var(--muted-foreground))' } : false} 
+                  activeDot={{ r: 5 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="current" 
+                  name="Current Value" 
+                  stroke={assetType.color} 
+                  strokeWidth={3} 
+                  dot={showDots ? { r: 4, fill: assetType.color, strokeWidth: 2, stroke: 'white' } : false} 
+                  connectNulls 
+                  activeDot={{ r: 7 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         ) : (
-          <div className="flex items-center justify-center h-64 text-muted-foreground">
-            No data available for the selected date range
+          <div className="h-[400px] flex items-center justify-center text-muted-foreground italic border border-dashed rounded-lg">
+            No data records found for the selected interval.
           </div>
         )}
       </DialogContent>
