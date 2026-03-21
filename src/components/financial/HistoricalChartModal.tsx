@@ -8,7 +8,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { CalendarIcon, TrendingUp } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, eachYearOfInterval, isWithinInterval, isSameDay, isSameWeek, isSameMonth, isSameYear } from "date-fns";
 import { cn } from "@/lib/utils";
-import { AssetType, Investment, InvestmentTransaction } from "./types";
+import { AssetType, Investment, InvestmentTransaction, InvestmentValuation } from "./types";
 
 type Granularity = "daily" | "weekly" | "monthly" | "yearly";
 
@@ -18,9 +18,10 @@ interface HistoricalChartModalProps {
   assetType: AssetType;
   investments: Investment[];
   transactions: InvestmentTransaction[];
+  valuations: InvestmentValuation[];
 }
 
-const HistoricalChartModal = ({ open, onOpenChange, assetType, investments, transactions }: HistoricalChartModalProps) => {
+const HistoricalChartModal = ({ open, onOpenChange, assetType, investments, transactions, valuations }: HistoricalChartModalProps) => {
   const [granularity, setGranularity] = useState<Granularity>("monthly");
   const [fromDate, setFromDate] = useState<Date | undefined>(() => {
     const date = new Date();
@@ -29,133 +30,110 @@ const HistoricalChartModal = ({ open, onOpenChange, assetType, investments, tran
   });
   const [toDate, setToDate] = useState<Date | undefined>(new Date());
 
-  // Filter investments by asset type
   const assetInvestments = investments.filter((inv) => inv.asset_type_id === assetType.id);
   const investmentIds = new Set(assetInvestments.map((inv) => inv.id));
   
-  // Get transactions for these investments
   const assetTransactions = transactions.filter((t) => investmentIds.has(t.investment_id));
+  const assetValuations = valuations.filter((v) => investmentIds.has(v.investment_id));
 
   const chartData = useMemo(() => {
-    if (assetTransactions.length === 0 || !fromDate || !toDate) return [];
+    if ((assetTransactions.length === 0 && assetValuations.length === 0) || !fromDate || !toDate) return [];
 
-    // Sort transactions by date
     const sortedTransactions = [...assetTransactions].sort(
       (a, b) => new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime()
     );
 
-    // Filter by date range
+    // Build cumulative invested
+    let cumulativeInvested = 0;
+    const dateMap = new Map<string, { invested: number; current: number }>();
+
+    // Pre-calculate cumulative invested before fromDate
+    sortedTransactions.forEach((t) => {
+      const transactionDate = new Date(t.transaction_date);
+      if (transactionDate < fromDate) {
+        if (Number(t.amount_invested) !== 0) {
+          cumulativeInvested += Number(t.amount_invested);
+        }
+      }
+    });
+
+    // Process transactions in range
     const filteredTransactions = sortedTransactions.filter((t) => {
       const date = new Date(t.transaction_date);
       return isWithinInterval(date, { start: fromDate, end: toDate });
     });
 
-    if (filteredTransactions.length === 0) return [];
-
-    // Build cumulative data
-    let cumulativeInvested = 0;
-    const dateMap = new Map<string, { invested: number; current: number }>();
-    
-    // First, calculate cumulative invested up to fromDate
-    sortedTransactions.forEach((t) => {
-      const transactionDate = new Date(t.transaction_date);
-      if (transactionDate < fromDate) {
-        const amountInvested = Number(t.amount_invested);
-        if (amountInvested !== 0) {
-          cumulativeInvested += amountInvested;
-        }
-      }
-    });
-
     filteredTransactions.forEach((t) => {
       const amountInvested = Number(t.amount_invested);
-      const currentValue = Number(t.current_value);
-      
       if (amountInvested !== 0) {
         cumulativeInvested += amountInvested;
       }
-      
-      const existing = dateMap.get(t.transaction_date);
+      dateMap.set(t.transaction_date, {
+        invested: cumulativeInvested,
+        current: dateMap.get(t.transaction_date)?.current || 0,
+      });
+    });
+
+    // Process valuations in range
+    const filteredValuations = assetValuations.filter((v) => {
+      const date = new Date(v.valuation_date);
+      return isWithinInterval(date, { start: fromDate, end: toDate });
+    });
+
+    const valByDate = new Map<string, number>();
+    filteredValuations.forEach((v) => {
+      valByDate.set(v.valuation_date, (valByDate.get(v.valuation_date) || 0) + Number(v.current_value));
+    });
+
+    valByDate.forEach((currentVal, date) => {
+      const existing = dateMap.get(date);
       if (existing) {
-        dateMap.set(t.transaction_date, {
-          invested: cumulativeInvested,
-          current: existing.current + currentValue,
-        });
+        existing.current = currentVal;
       } else {
-        dateMap.set(t.transaction_date, {
-          invested: cumulativeInvested,
-          current: currentValue,
-        });
+        let lastInvested = cumulativeInvested;
+        for (const [d, v] of dateMap.entries()) {
+          if (d <= date) lastInvested = v.invested;
+        }
+        dateMap.set(date, { invested: lastInvested, current: currentVal });
       }
     });
 
     // Aggregate based on granularity
     const aggregatedData: { date: string; dateFormatted: string; invested: number; current: number }[] = [];
-    
+
     const getIntervalEnd = (date: Date): Date => {
       switch (granularity) {
-        case "daily":
-          return date;
-        case "weekly":
-          return endOfWeek(date, { weekStartsOn: 1 });
-        case "monthly":
-          return endOfMonth(date);
-        case "yearly":
-          return endOfYear(date);
+        case "daily": return date;
+        case "weekly": return endOfWeek(date, { weekStartsOn: 1 });
+        case "monthly": return endOfMonth(date);
+        case "yearly": return endOfYear(date);
       }
     };
 
     const formatDate = (date: Date): string => {
       switch (granularity) {
-        case "daily":
-          return format(date, "MMM dd");
-        case "weekly":
-          return format(date, "MMM dd");
-        case "monthly":
-          return format(date, "MMM yyyy");
-        case "yearly":
-          return format(date, "yyyy");
+        case "daily": return format(date, "MMM dd");
+        case "weekly": return format(date, "MMM dd");
+        case "monthly": return format(date, "MMM yyyy");
+        case "yearly": return format(date, "yyyy");
       }
     };
 
-    const isSamePeriod = (date1: Date, date2: Date): boolean => {
-      switch (granularity) {
-        case "daily":
-          return isSameDay(date1, date2);
-        case "weekly":
-          return isSameWeek(date1, date2, { weekStartsOn: 1 });
-        case "monthly":
-          return isSameMonth(date1, date2);
-        case "yearly":
-          return isSameYear(date1, date2);
-      }
-    };
-
-    // Generate periods
     let periods: Date[];
     switch (granularity) {
-      case "daily":
-        periods = eachDayOfInterval({ start: fromDate, end: toDate });
-        break;
-      case "weekly":
-        periods = eachWeekOfInterval({ start: fromDate, end: toDate }, { weekStartsOn: 1 });
-        break;
-      case "monthly":
-        periods = eachMonthOfInterval({ start: fromDate, end: toDate });
-        break;
-      case "yearly":
-        periods = eachYearOfInterval({ start: fromDate, end: toDate });
-        break;
+      case "daily": periods = eachDayOfInterval({ start: fromDate, end: toDate }); break;
+      case "weekly": periods = eachWeekOfInterval({ start: fromDate, end: toDate }, { weekStartsOn: 1 }); break;
+      case "monthly": periods = eachMonthOfInterval({ start: fromDate, end: toDate }); break;
+      case "yearly": periods = eachYearOfInterval({ start: fromDate, end: toDate }); break;
     }
 
     periods.forEach((period) => {
       const periodEnd = getIntervalEnd(period);
       const periodEndStr = format(periodEnd > toDate ? toDate : periodEnd, "yyyy-MM-dd");
-      
-      // Find the last transaction in or before this period
+
       let lastInvested = 0;
       let lastCurrent = 0;
-      
+
       Array.from(dateMap.entries())
         .filter(([dateStr]) => new Date(dateStr) <= new Date(periodEndStr))
         .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
@@ -176,18 +154,12 @@ const HistoricalChartModal = ({ open, onOpenChange, assetType, investments, tran
     });
 
     return aggregatedData;
-  }, [assetTransactions, fromDate, toDate, granularity]);
+  }, [assetTransactions, assetValuations, fromDate, toDate, granularity]);
 
   const formatCurrency = (value: number) => {
-    if (value >= 10000000) {
-      return `₹${(value / 10000000).toFixed(1)}Cr`;
-    }
-    if (value >= 100000) {
-      return `₹${(value / 100000).toFixed(1)}L`;
-    }
-    if (value >= 1000) {
-      return `₹${(value / 1000).toFixed(0)}K`;
-    }
+    if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`;
+    if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`;
+    if (value >= 1000) return `₹${(value / 1000).toFixed(0)}K`;
     return `₹${value}`;
   };
 
@@ -202,13 +174,10 @@ const HistoricalChartModal = ({ open, onOpenChange, assetType, investments, tran
         </DialogHeader>
 
         <div className="flex flex-wrap gap-4 mb-4">
-          {/* Granularity Select */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">View:</span>
             <Select value={granularity} onValueChange={(v) => setGranularity(v as Granularity)}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="daily">Daily</SelectItem>
                 <SelectItem value="weekly">Weekly</SelectItem>
@@ -218,7 +187,6 @@ const HistoricalChartModal = ({ open, onOpenChange, assetType, investments, tran
             </Select>
           </div>
 
-          {/* From Date */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">From:</span>
             <Popover>
@@ -229,18 +197,11 @@ const HistoricalChartModal = ({ open, onOpenChange, assetType, investments, tran
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={fromDate}
-                  onSelect={setFromDate}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
+                <Calendar mode="single" selected={fromDate} onSelect={setFromDate} initialFocus className="p-3 pointer-events-auto" />
               </PopoverContent>
             </Popover>
           </div>
 
-          {/* To Date */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">To:</span>
             <Popover>
@@ -251,13 +212,7 @@ const HistoricalChartModal = ({ open, onOpenChange, assetType, investments, tran
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={toDate}
-                  onSelect={setToDate}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
+                <Calendar mode="single" selected={toDate} onSelect={setToDate} initialFocus className="p-3 pointer-events-auto" />
               </PopoverContent>
             </Popover>
           </div>
@@ -267,51 +222,16 @@ const HistoricalChartModal = ({ open, onOpenChange, assetType, investments, tran
           <ResponsiveContainer width="100%" height={400}>
             <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis
-                dataKey="dateFormatted"
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-              />
-              <YAxis
-                tickFormatter={formatCurrency}
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-              />
+              <XAxis dataKey="dateFormatted" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+              <YAxis tickFormatter={formatCurrency} stroke="hsl(var(--muted-foreground))" fontSize={12} />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  color: 'hsl(var(--card-foreground))',
-                }}
-                itemStyle={{
-                  color: 'hsl(var(--card-foreground))',
-                }}
-                formatter={(value: number) => [
-                  new Intl.NumberFormat('en-IN', {
-                    style: 'currency',
-                    currency: 'INR',
-                    maximumFractionDigits: 0,
-                  }).format(value),
-                ]}
+                contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--card-foreground))' }}
+                itemStyle={{ color: 'hsl(var(--card-foreground))' }}
+                formatter={(value: number) => [new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value)]}
               />
               <Legend />
-              <Line
-                type="monotone"
-                dataKey="invested"
-                name="Invested Value"
-                stroke="hsl(var(--muted-foreground))"
-                strokeWidth={2}
-                dot={{ fill: 'hsl(var(--muted-foreground))', strokeWidth: 2, r: 4 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="current"
-                name="Current Value"
-                stroke={assetType.color}
-                strokeWidth={2}
-                dot={{ fill: assetType.color, strokeWidth: 2, r: 4 }}
-              />
+              <Line type="monotone" dataKey="invested" name="Invested Value" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={{ fill: 'hsl(var(--muted-foreground))', strokeWidth: 2, r: 4 }} />
+              <Line type="monotone" dataKey="current" name="Current Value" stroke={assetType.color} strokeWidth={2} dot={{ fill: assetType.color, strokeWidth: 2, r: 4 }} connectNulls />
             </LineChart>
           </ResponsiveContainer>
         ) : (

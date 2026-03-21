@@ -42,22 +42,37 @@ const RecordValueModal = ({ open, onOpenChange, onSuccess, investments }: Record
 
     setLoading(true);
     try {
-      // Record a value snapshot (amount_invested = 0 for pure value recording)
-      const { error } = await financeDb.from("investment_transactions").insert({
-        investment_id: investmentId,
-        transaction_date: format(date, "yyyy-MM-dd"),
-        amount_invested: 0,
-        current_value: parseFloat(currentValue),
-      });
+      const valuationDate = format(date, "yyyy-MM-dd");
+      const value = parseFloat(currentValue);
 
-      if (error) throw error;
+      // Upsert into investment_valuations (unique on investment_id + valuation_date)
+      const { data: existing } = await financeDb
+        .from("investment_valuations")
+        .select("id")
+        .eq("investment_id", investmentId)
+        .eq("valuation_date", valuationDate);
+
+      if (existing && existing.length > 0) {
+        const { error } = await financeDb
+          .from("investment_valuations")
+          .update({ current_value: value })
+          .eq("id", existing[0].id);
+        if (error) throw error;
+      } else {
+        const { error } = await financeDb.from("investment_valuations").insert({
+          investment_id: investmentId,
+          valuation_date: valuationDate,
+          current_value: value,
+        });
+        if (error) throw error;
+      }
 
       const selectedInvestment = investments.find((inv) => inv.id === investmentId);
       const formattedValue = new Intl.NumberFormat('en-IN', {
         style: 'currency',
         currency: 'INR',
         maximumFractionDigits: 0,
-      }).format(parseFloat(currentValue));
+      }).format(value);
       
       toast({
         title: "Value Recorded",

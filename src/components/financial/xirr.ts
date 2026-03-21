@@ -70,7 +70,7 @@ export function calculateXIRR(cashFlows: CashFlow[], guess = 0.1, maxIterations 
  * Buy transactions are negative, current value today is positive
  */
 export function buildCashFlows(
-  transactions: { transaction_date: string; amount_invested: number; current_value: number }[],
+  transactions: { transaction_date: string; amount_invested: number }[],
   currentValue: number
 ): CashFlow[] {
   const flows: CashFlow[] = [];

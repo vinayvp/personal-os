@@ -23,12 +23,14 @@ import {
   InvestmentTransaction, 
   InvestmentWithLatest, 
   AssetType,
-  SipConfig
+  SipConfig,
+  InvestmentValuation
 } from "@/components/financial/types";
 
 const FinancialApp = () => {
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [transactions, setTransactions] = useState<InvestmentTransaction[]>([]);
+  const [valuations, setValuations] = useState<InvestmentValuation[]>([]);
   const [assetTypes, setAssetTypes] = useState<AssetType[]>([]);
   const [sipConfigs, setSipConfigs] = useState<SipConfig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,22 +48,25 @@ const FinancialApp = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [investmentsRes, transactionsRes, assetTypesRes, sipRes] = await Promise.all([
+      const [investmentsRes, transactionsRes, assetTypesRes, sipRes, valuationsRes] = await Promise.all([
         financeDb.from("investments").select("*, asset_type:asset_types(*)").order("created_at", { ascending: false }),
         financeDb.from("investment_transactions").select("*").order("transaction_date", { ascending: true }),
         financeDb.from("asset_types").select("*").order("name", { ascending: true }),
         financeDb.from("sip_configs").select("*").order("created_at", { ascending: false }),
+        financeDb.from("investment_valuations").select("*").order("valuation_date", { ascending: true }),
       ]);
 
       if (investmentsRes.error) throw investmentsRes.error;
       if (transactionsRes.error) throw transactionsRes.error;
       if (assetTypesRes.error) throw assetTypesRes.error;
       if (sipRes.error) throw sipRes.error;
+      if (valuationsRes.error) throw valuationsRes.error;
 
       setInvestments((investmentsRes.data || []) as Investment[]);
       setTransactions((transactionsRes.data || []) as InvestmentTransaction[]);
       setAssetTypes((assetTypesRes.data || []) as AssetType[]);
       setSipConfigs((sipRes.data || []) as SipConfig[]);
+      setValuations((valuationsRes.data || []) as InvestmentValuation[]);
     } catch (error: any) {
       toast({
         title: "Error fetching data",
@@ -73,10 +78,11 @@ const FinancialApp = () => {
     }
   };
 
-  // Calculate investment metrics with latest transaction values
+  // Calculate investment metrics using valuations for current value
   const investmentsWithMetrics = useMemo((): InvestmentWithLatest[] => {
     return investments.map((inv) => {
       const invTransactions = transactions.filter((t) => t.investment_id === inv.id);
+      const invValuations = valuations.filter((v) => v.investment_id === inv.id);
       
       if (invTransactions.length === 0) {
         return {
@@ -88,16 +94,14 @@ const FinancialApp = () => {
         };
       }
 
-      // Sum all amount_invested values (buy = positive, withdraw = negative)
       const totalInvested = invTransactions.reduce((sum, t) => sum + Number(t.amount_invested), 0);
       
-      // Get the latest current_value that is not zero (from Record Value entries)
-      // Sort by date descending to find the most recent value record
-      const sortedByDate = [...invTransactions].sort(
-        (a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
+      // Get the latest valuation
+      const sortedValuations = [...invValuations].sort(
+        (a, b) => new Date(b.valuation_date).getTime() - new Date(a.valuation_date).getTime()
       );
-      const latestValueRecord = sortedByDate.find((t) => Number(t.current_value) > 0);
-      const currentValue = latestValueRecord ? Number(latestValueRecord.current_value) : totalInvested;
+      const latestValuation = sortedValuations[0];
+      const currentValue = latestValuation ? Number(latestValuation.current_value) : totalInvested;
       
       const gainLoss = currentValue - totalInvested;
       const gainLossPercent = totalInvested > 0 ? (gainLoss / totalInvested) * 100 : 0;
@@ -110,7 +114,7 @@ const FinancialApp = () => {
         gain_loss_percent: gainLossPercent,
       };
     });
-  }, [investments, transactions]);
+  }, [investments, transactions, valuations]);
 
   // Calculate portfolio totals
   const portfolioMetrics = useMemo(() => {
@@ -241,6 +245,7 @@ const FinancialApp = () => {
                         <MutualFundsList 
                           investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)} 
                           transactions={transactions}
+                          valuations={valuations}
                           sipConfigs={sipConfigs}
                           onRefreshComplete={fetchData}
                           onAddSip={() => setIsAddSipOpen(true)}
@@ -250,6 +255,7 @@ const FinancialApp = () => {
                         <CryptoList
                           investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)}
                           transactions={transactions}
+                          valuations={valuations}
                           onRefreshComplete={fetchData}
                         />
                       </TabsContent>
@@ -274,6 +280,7 @@ const FinancialApp = () => {
                           assetType={assetType}
                           investments={investments}
                           transactions={transactions}
+                          valuations={valuations}
                         />
                       ))}
                     </div>

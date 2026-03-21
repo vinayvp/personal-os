@@ -5,12 +5,13 @@ import { TrendingUp, TrendingDown, RefreshCw, BarChart3, Calendar, Trash2, Plus,
 import { useToast } from "@/hooks/use-toast";
 import { financeDb } from "@/integrations/supabase/financeClient";
 import { format } from "date-fns";
-import { InvestmentWithLatest, InvestmentTransaction, SipConfig } from "./types";
+import { InvestmentWithLatest, InvestmentTransaction, InvestmentValuation, SipConfig } from "./types";
 import { calculateXIRR, buildCashFlows } from "./xirr";
 
 interface MutualFundsListProps {
   investments: InvestmentWithLatest[];
   transactions: InvestmentTransaction[];
+  valuations: InvestmentValuation[];
   sipConfigs: SipConfig[];
   onRefreshComplete: () => void;
   onAddSip: () => void;
@@ -21,7 +22,7 @@ interface FundNavData {
   units: number;
 }
 
-const MutualFundsList = ({ investments, transactions, sipConfigs, onRefreshComplete, onAddSip }: MutualFundsListProps) => {
+const MutualFundsList = ({ investments, transactions, valuations, sipConfigs, onRefreshComplete, onAddSip }: MutualFundsListProps) => {
   const [refreshing, setRefreshing] = useState(false);
   const [navData, setNavData] = useState<Record<string, FundNavData>>({});
   const { toast } = useToast();
@@ -119,12 +120,13 @@ const MutualFundsList = ({ investments, transactions, sipConfigs, onRefreshCompl
           if (!data?.data?.[0]?.nav) { failCount++; continue; }
           const latestNav = parseFloat(data.data[0].nav);
 
-          // Get all transactions for this fund
+          // Get all transactions and valuations for this fund
           const fundTransactions = transactions.filter((t) => t.investment_id === fund.id);
-          const sortedByDate = [...fundTransactions].sort(
-            (a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
+          const fundValuations = valuations.filter((v) => v.investment_id === fund.id);
+          const sortedValuations = [...fundValuations].sort(
+            (a, b) => new Date(b.valuation_date).getTime() - new Date(a.valuation_date).getTime()
           );
-          const lastValueRecord = sortedByDate.find((t) => Number(t.current_value) > 0);
+          const lastValuation = sortedValuations[0];
 
           let totalUnits = 0;
 
@@ -154,19 +156,19 @@ const MutualFundsList = ({ investments, transactions, sipConfigs, onRefreshCompl
             return closest;
           };
 
-          if (lastValueRecord) {
-            // Compute units from last value record
-            const prevNav = findClosestNav(lastValueRecord.transaction_date);
+          if (lastValuation) {
+            // Compute units from last valuation
+            const prevNav = findClosestNav(lastValuation.valuation_date);
             if (prevNav && prevNav > 0) {
-              totalUnits = Number(lastValueRecord.current_value) / prevNav;
+              totalUnits = Number(lastValuation.current_value) / prevNav;
             } else {
-              totalUnits = Number(lastValueRecord.current_value) / latestNav;
+              totalUnits = Number(lastValuation.current_value) / latestNav;
             }
 
-            // Account for buys AFTER the last value record
-            const lastValueDate = new Date(lastValueRecord.transaction_date);
+            // Account for buys AFTER the last valuation
+            const lastValDate = new Date(lastValuation.valuation_date);
             const buysAfterLastValue = fundTransactions.filter((t) => {
-              return Number(t.amount_invested) > 0 && new Date(t.transaction_date) > lastValueDate;
+              return Number(t.amount_invested) > 0 && new Date(t.transaction_date) > lastValDate;
             });
 
             for (const buy of buysAfterLastValue) {
@@ -174,12 +176,11 @@ const MutualFundsList = ({ investments, transactions, sipConfigs, onRefreshCompl
               if (buyNav && buyNav > 0) {
                 totalUnits += Number(buy.amount_invested) / buyNav;
               } else {
-                // Fallback: use latest NAV
                 totalUnits += Number(buy.amount_invested) / latestNav;
               }
             }
           } else {
-            // No value records, compute units from all buys
+            // No valuations, compute units from all buys
             for (const tx of fundTransactions) {
               if (Number(tx.amount_invested) > 0) {
                 const txNav = findClosestNav(tx.transaction_date);
@@ -197,34 +198,24 @@ const MutualFundsList = ({ investments, transactions, sipConfigs, onRefreshCompl
           const newCurrentValue = Number((roundedUnits * latestNav).toFixed(3));
           const today = format(new Date(), "yyyy-MM-dd");
 
-          // Check if a value record already exists for today
-          const { data: existingRecords } = await financeDb
-            .from("investment_transactions")
+          // Upsert into investment_valuations
+          const { data: existingVal } = await financeDb
+            .from("investment_valuations")
             .select("id")
             .eq("investment_id", fund.id)
-            .eq("transaction_date", today)
-            .eq("amount_invested", 0);
+            .eq("valuation_date", today);
 
-          if (existingRecords && existingRecords.length > 0) {
-            // Update the first existing record and delete any extra duplicates
-            const [keepRecord, ...extraRecords] = existingRecords;
+          if (existingVal && existingVal.length > 0) {
             const { error } = await financeDb
-              .from("investment_transactions")
+              .from("investment_valuations")
               .update({ current_value: newCurrentValue })
-              .eq("id", keepRecord.id);
+              .eq("id", existingVal[0].id);
             if (error) { failCount++; continue; }
-
-            // Clean up duplicates
-            for (const extra of extraRecords) {
-              await financeDb.from("investment_transactions").delete().eq("id", extra.id);
-            }
             successCount++;
           } else {
-            // Insert new record for a new day
-            const { error } = await financeDb.from("investment_transactions").insert({
+            const { error } = await financeDb.from("investment_valuations").insert({
               investment_id: fund.id,
-              transaction_date: today,
-              amount_invested: 0,
+              valuation_date: today,
               current_value: newCurrentValue,
             });
             if (error) { failCount++; } else { successCount++; }
