@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, Percent, Clock, TrendingUp, AlertCircle } from "lucide-react";
+import { Calendar, Percent, Clock, TrendingUp, AlertCircle, Smartphone } from "lucide-react";
 import { format, differenceInDays, isPast, isFuture } from "date-fns";
 import { InvestmentTransaction, InvestmentWithLatest } from "./types";
 
@@ -15,6 +15,7 @@ interface FixedIncomeDetailsProps {
 interface TransactionWithDetails extends InvestmentTransaction {
   investment_name: string;
   asset_type_name: string;
+  platform_name: string;
 }
 
 const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income Investments", assetTypeFilter }: FixedIncomeDetailsProps) => {
@@ -27,6 +28,7 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
         ...t,
         investment_name: inv?.name || "Unknown",
         asset_type_name: inv?.asset_type?.name || "Unknown",
+        platform_name: (inv as any)?.investment_platforms?.name || "Manual Entry",
       };
     })
     .filter((t) => !assetTypeFilter || t.asset_type_name.toLowerCase().includes(assetTypeFilter.toLowerCase()));
@@ -89,43 +91,37 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <TrendingUp className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Fixed Income</p>
-                <p className="text-xl font-bold">{formatCurrency(totalFixedIncomeValue)}</p>
-              </div>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <TrendingUp className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Fixed Income</p>
+              <p className="text-xl font-bold">{formatCurrency(totalFixedIncomeValue)}</p>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10">
-                <Clock className="w-5 h-5 text-amber-500" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Maturing in 90 days</p>
-                <p className="text-xl font-bold">{upcomingMaturities.length} transactions</p>
-              </div>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/10">
+              <Clock className="w-5 h-5 text-amber-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Maturing in 90 days</p>
+              <p className="text-xl font-bold">{upcomingMaturities.length} transactions</p>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-500/10">
-                <AlertCircle className="w-5 h-5 text-green-500" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Matured</p>
-                <p className="text-xl font-bold">{maturedTransactions.length} transactions</p>
-              </div>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-green-500/10">
+              <AlertCircle className="w-5 h-5 text-green-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Matured</p>
+              <p className="text-xl font-bold">{maturedTransactions.length} transactions</p>
             </div>
           </CardContent>
         </Card>
@@ -142,15 +138,25 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
           const principal = Math.abs(Number(transaction.amount_invested));
 
           return (
-            <Card key={transaction.id} className="bg-card border-border">
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
+            <Card key={transaction.id} className="bg-card border-border relative overflow-hidden">
+              
+              {/* PLATFORM BADGE ADDED HERE */}
+              <div className="absolute top-0 right-0 px-3 py-1 bg-muted text-[10px] font-bold uppercase tracking-wider text-muted-foreground rounded-bl-lg flex items-center gap-1 z-10">
+                <Smartphone className="w-3 h-3" />
+                {transaction.platform_name}
+              </div>
+
+              <CardHeader className="pb-2 pt-5">
+                <div className="flex items-start justify-between pr-20">
                   <div>
                     <CardTitle className="text-base font-semibold">{transaction.investment_name}</CardTitle>
                     <p className="text-sm text-muted-foreground">
                       {transaction.asset_type_name} • {format(new Date(transaction.transaction_date), "PP")}
                     </p>
                   </div>
+                </div>
+                {/* Status Badges moved slightly below title for better layout with platform badge */}
+                <div className="flex gap-2 mt-2">
                   {isMatured && (
                     <Badge variant="default" className="bg-green-500">Matured</Badge>
                   )}
