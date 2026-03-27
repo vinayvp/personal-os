@@ -49,7 +49,15 @@ const FinancialApp = () => {
     setLoading(true);
     try {
       const [investmentsRes, transactionsRes, assetTypesRes, sipRes, valuationsRes] = await Promise.all([
-        financeDb.from("investments").select("*, asset_type:asset_types(*)").order("created_at", { ascending: false }),
+        financeDb
+          .from("investments")
+          .select(`
+            *, 
+            asset_type:asset_types(*),
+            investment_platforms(*) 
+          `)
+          .order("created_at", { ascending: false }),
+        
         financeDb.from("investment_transactions").select("*").order("transaction_date", { ascending: true }),
         financeDb.from("asset_types").select("*").order("name", { ascending: true }),
         financeDb.from("sip_configs").select("*").order("created_at", { ascending: false }),

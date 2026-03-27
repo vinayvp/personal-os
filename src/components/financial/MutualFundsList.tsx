@@ -1,7 +1,17 @@
 import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, TrendingDown, RefreshCw, BarChart3, Calendar, Trash2, Plus, Percent } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  RefreshCw, 
+  Calendar, 
+  Trash2, 
+  Plus, 
+  LayoutGrid, 
+  Smartphone 
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { financeDb } from "@/integrations/supabase/financeClient";
 import { format } from "date-fns";
@@ -25,21 +35,49 @@ interface FundNavData {
 const MutualFundsList = ({ investments, transactions, valuations, sipConfigs, onRefreshComplete, onAddSip }: MutualFundsListProps) => {
   const [refreshing, setRefreshing] = useState(false);
   const [navData, setNavData] = useState<Record<string, FundNavData>>({});
+  const [selectedPlatform, setSelectedPlatform] = useState<string>("all");
   const { toast } = useToast();
 
-  const mutualFunds =  investments.filter((inv) => {
-    const assetTypeName = (inv as any).asset_types?.name || (inv as any).asset_type?.name;
-    return assetTypeName?.toLowerCase() === "Mutual Funds".toLowerCase();
-  });
+  // 1. Filter for Mutual Funds first
+  const allMutualFunds = useMemo(() => {
+    return investments.filter((inv) => {
+      const assetTypeName = (inv as any).asset_types?.name || (inv as any).asset_type?.name;
+      return assetTypeName?.toLowerCase() === "Mutual Funds".toLowerCase();
+    });
+  }, [investments]);
+
+  // NEW: Per-fund XIRR Calculation
+  const fundXirr = useMemo(() => {
+    const result: Record<string, number | null> = {};
+    allMutualFunds.forEach((fund) => {
+      const fundTx = transactions.filter((t) => t.investment_id === fund.id);
+      const cashFlows = buildCashFlows(fundTx, fund.current_value);
+      result[fund.id] = calculateXIRR(cashFlows);
+    });
+    return result;
+  }, [allMutualFunds, transactions]);
+
+  // 2. Get unique platforms for the filter dropdown
+  const platforms = useMemo(() => {
+    console.log("Calculating platforms from mutual funds:", allMutualFunds);
+    const names = allMutualFunds.map(f => (f as any).investment_platforms?.name || "Unknown");
+    return Array.from(new Set(names)).sort();
+  }, [allMutualFunds]);
+
+  // 3. Apply platform filter
+  const filteredFunds = useMemo(() => {
+    if (selectedPlatform === "all") return allMutualFunds;
+    return allMutualFunds.filter(f => ((f as any).investment_platforms?.name || "Unknown") === selectedPlatform);
+  }, [allMutualFunds, selectedPlatform]);
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value);
 
-  // Fetch current NAVs on mount to compute units
+  // Fetch current NAVs
   useEffect(() => {
     const fetchNavs = async () => {
       const data: Record<string, FundNavData> = {};
-      for (const fund of mutualFunds) {
+      for (const fund of allMutualFunds) {
         const schemeCode = (fund as any).extra_configuration?.mf_scheme_code;
         if (!schemeCode || fund.current_value <= 0) continue;
         try {
@@ -54,38 +92,24 @@ const MutualFundsList = ({ investments, transactions, valuations, sipConfigs, on
       }
       setNavData(data);
     };
-    if (mutualFunds.length > 0) fetchNavs();
-  }, [mutualFunds.length]);
+    if (allMutualFunds.length > 0) fetchNavs();
+  }, [allMutualFunds]);
 
-  // Per-fund XIRR
-  const fundXirr = useMemo(() => {
-    const result: Record<string, number | null> = {};
-    for (const fund of mutualFunds) {
-      const fundTx = transactions.filter((t) => t.investment_id === fund.id);
-      const cashFlows = buildCashFlows(fundTx, fund.current_value);
-      result[fund.id] = calculateXIRR(cashFlows);
-    }
-    return result;
-  }, [mutualFunds, transactions]);
-
-  // Overall XIRR
-  const overallXirr = useMemo(() => {
-    const allTx = mutualFunds.flatMap((fund) =>
-      transactions.filter((t) => t.investment_id === fund.id)
-    );
-    const totalCurrentValue = mutualFunds.reduce((s, f) => s + f.current_value, 0);
-    const cashFlows = buildCashFlows(allTx, totalCurrentValue);
-    return calculateXIRR(cashFlows);
-  }, [mutualFunds, transactions]);
-
-  // Summary metrics
+  // Summary metrics (calculated based on FILTERED funds)
   const summary = useMemo(() => {
-    const totalInvested = mutualFunds.reduce((s, f) => s + f.total_invested, 0);
-    const totalCurrent = mutualFunds.reduce((s, f) => s + f.current_value, 0);
+    const totalInvested = filteredFunds.reduce((s, f) => s + f.total_invested, 0);
+    const totalCurrent = filteredFunds.reduce((s, f) => s + f.current_value, 0);
     const totalPL = totalCurrent - totalInvested;
     const totalPLPercent = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
-    return { totalInvested, totalCurrent, totalPL, totalPLPercent };
-  }, [mutualFunds]);
+    
+    // Overall XIRR for filtered view
+    const filteredTx = filteredFunds.flatMap((fund) =>
+      transactions.filter((t) => t.investment_id === fund.id)
+    );
+    const overallXirr = calculateXIRR(buildCashFlows(filteredTx, totalCurrent));
+
+    return { totalInvested, totalCurrent, totalPL, totalPLPercent, overallXirr };
+  }, [filteredFunds, transactions]);
 
   const getSipForFund = (investmentId: string) =>
     sipConfigs.find((s) => s.investment_id === investmentId && s.is_active);
@@ -102,13 +126,13 @@ const MutualFundsList = ({ investments, transactions, valuations, sipConfigs, on
   };
 
   const handleRefreshAll = async () => {
-    if (mutualFunds.length === 0) return;
+    if (allMutualFunds.length === 0) return;
     setRefreshing(true);
     let successCount = 0;
     let failCount = 0;
 
     try {
-      for (const fund of mutualFunds) {
+      for (const fund of allMutualFunds) {
         const schemeCode = (fund as any).extra_configuration?.mf_scheme_code;
         if (!schemeCode) continue;
 
@@ -240,15 +264,31 @@ const MutualFundsList = ({ investments, transactions, valuations, sipConfigs, on
     }
   };
 
-  if (mutualFunds.length === 0) return null;
-
-  const isPositiveTotal = summary.totalPL >= 0;
+  if (allMutualFunds.length === 0) return null;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Mutual Funds</h2>
-        <div className="flex gap-2">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold">Mutual Funds</h2>
+          <p className="text-sm text-muted-foreground">Managing {filteredFunds.length} investments</p>
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-2">
+          {/* PLATFORM FILTER */}
+          <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+            <SelectTrigger className="w-[180px] bg-background">
+              <LayoutGrid className="w-4 h-4 mr-2 text-muted-foreground" />
+              <SelectValue placeholder="All Platforms" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Platforms</SelectItem>
+              {platforms.map(p => (
+                <SelectItem key={p} value={p}>{p}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Button variant="outline" size="sm" onClick={onAddSip}>
             <Plus className="h-4 w-4 mr-2" />
             Add SIP
@@ -260,58 +300,34 @@ const MutualFundsList = ({ investments, transactions, valuations, sipConfigs, on
         </div>
       </div>
 
-      {/* Summary Cards */}
+      {/* Summary Cards (Updates based on filter) */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Total Invested</p>
-            <p className="text-lg font-bold mt-1">{formatCurrency(summary.totalInvested)}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Current Value</p>
-            <p className="text-lg font-bold mt-1">{formatCurrency(summary.totalCurrent)}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Total P/L</p>
-            <p className={`text-lg font-bold mt-1 ${isPositiveTotal ? "text-green-500" : "text-destructive"}`}>
-              {isPositiveTotal ? "+" : ""}{formatCurrency(summary.totalPL)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">P/L %</p>
-            <p className={`text-lg font-bold mt-1 ${isPositiveTotal ? "text-green-500" : "text-destructive"}`}>
-              {isPositiveTotal ? "+" : ""}{summary.totalPLPercent.toFixed(2)}%
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Overall XIRR</p>
-            <p className={`text-lg font-bold mt-1 ${overallXirr !== null && overallXirr >= 0 ? "text-green-500" : "text-destructive"}`}>
-              {overallXirr !== null ? `${(overallXirr * 100).toFixed(2)}%` : "—"}
-            </p>
-          </CardContent>
-        </Card>
+        <Card className="bg-card border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Invested</p><p className="text-lg font-bold mt-1">{formatCurrency(summary.totalInvested)}</p></CardContent></Card>
+        <Card className="bg-card border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Current Value</p><p className="text-lg font-bold mt-1">{formatCurrency(summary.totalCurrent)}</p></CardContent></Card>
+        <Card className="bg-card border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">P/L</p><p className={`text-lg font-bold mt-1 ${summary.totalPL >= 0 ? "text-green-500" : "text-destructive"}`}>{formatCurrency(summary.totalPL)}</p></CardContent></Card>
+        <Card className="bg-card border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">P/L %</p><p className={`text-lg font-bold mt-1 ${summary.totalPL >= 0 ? "text-green-500" : "text-destructive"}`}>{summary.totalPLPercent.toFixed(2)}%</p></CardContent></Card>
+        <Card className="bg-card border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Overall XIRR</p><p className={`text-lg font-bold mt-1 ${summary.overallXirr && summary.overallXirr >= 0 ? "text-green-500" : "text-destructive"}`}>{summary.overallXirr ? `${(summary.overallXirr * 100).toFixed(2)}%` : "—"}</p></CardContent></Card>
       </div>
 
       {/* Individual Fund Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {mutualFunds.map((fund) => {
+        {filteredFunds.map((fund) => {
           const isPositive = fund.gain_loss >= 0;
           const sip = getSipForFund(fund.id);
-          const xirr = fundXirr[fund.id];
+          const platformName = (fund as any).investment_platforms?.name || "Manual Entry";
           const nav = navData[fund.id];
+          const xirr = fundXirr[fund.id];
 
           return (
-            <Card key={fund.id} className="bg-card border-border">
+            <Card key={fund.id} className="bg-card border-border relative overflow-hidden">
+              {/* Platform Ribbon/Badge */}
+              <div className="absolute top-0 right-0 px-3 py-1 bg-muted text-[10px] font-bold uppercase tracking-wider text-muted-foreground rounded-bl-lg flex items-center gap-1">
+                <Smartphone className="w-3 h-3" />
+                {platformName}
+              </div>
+
               <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold leading-tight">{fund.name}</CardTitle>
+                <CardTitle className="text-base font-semibold leading-tight pr-20">{fund.name}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 pt-0">
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
@@ -336,16 +352,10 @@ const MutualFundsList = ({ investments, transactions, valuations, sipConfigs, on
                     </p>
                   </div>
                   {nav && (
-                    <>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Units</p>
-                        <p className="font-semibold">{nav.units.toFixed(3)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">NAV</p>
-                        <p className="font-semibold">₹{nav.nav.toFixed(2)}</p>
-                      </div>
-                    </>
+                    <div className="col-span-2">
+                      <p className="text-xs text-muted-foreground">NAV (Units)</p>
+                      <p className="font-semibold">₹{nav.nav.toFixed(2)} ({nav.units.toFixed(3)})</p>
+                    </div>
                   )}
                 </div>
 
@@ -357,12 +367,7 @@ const MutualFundsList = ({ investments, transactions, valuations, sipConfigs, on
                       <span className="text-muted-foreground">SIP:</span>
                       <span className="font-medium">{formatCurrency(sip.amount)} on day {sip.sip_day}</span>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                      onClick={() => handleDeleteSip(sip.id)}
-                    >
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:text-destructive" onClick={() => handleDeleteSip(sip.id)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
