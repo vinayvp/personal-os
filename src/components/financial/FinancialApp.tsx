@@ -86,12 +86,14 @@ const FinancialApp = () => {
     }
   };
 
-  // Calculate investment metrics using valuations for current value
+  // Calculate investment metrics using the new transaction-level valuation logic
   const investmentsWithMetrics = useMemo((): InvestmentWithLatest[] => {
     return investments.map((inv) => {
       const invTransactions = transactions.filter((t) => t.investment_id === inv.id);
       const invValuations = valuations.filter((v) => v.investment_id === inv.id);
       
+      const totalInvested = invTransactions.reduce((sum, t) => sum + Number(t.amount_invested), 0);
+
       if (invTransactions.length === 0) {
         return {
           ...inv,
@@ -101,15 +103,30 @@ const FinancialApp = () => {
           gain_loss_percent: 0,
         };
       }
-
-      const totalInvested = invTransactions.reduce((sum, t) => sum + Number(t.amount_invested), 0);
       
-      // Get the latest valuation
-      const sortedValuations = [...invValuations].sort(
-        (a, b) => new Date(b.valuation_date).getTime() - new Date(a.valuation_date).getTime()
+      // Sort chronologically (oldest to newest)
+      const chronologicalValuations = [...invValuations].sort(
+        (a, b) => new Date(a.valuation_date).getTime() - new Date(b.valuation_date).getTime()
       );
-      const latestValuation = sortedValuations[0];
-      const currentValue = latestValuation ? Number(latestValuation.current_value) : totalInvested;
+
+      // Track the latest known valuation for each entity (transaction or pooled investment)
+      const latestValuationsMap = new Map<string, number>();
+
+      let currentValue = totalInvested; // Fallback to invested amount if no valuations exist
+
+      if (chronologicalValuations.length > 0) {
+        chronologicalValuations.forEach((v) => {
+          // If transaction_id exists (FDs/Bonds), map by transaction. Otherwise, map by investment_id (Mutual Funds)
+          const key = v.transaction_id || v.investment_id;
+          latestValuationsMap.set(key, Number(v.current_value));
+        });
+
+        // Sum up the latest snapshots
+        currentValue = 0;
+        latestValuationsMap.forEach((value) => {
+          currentValue += value;
+        });
+      }
       
       const gainLoss = currentValue - totalInvested;
       const gainLossPercent = totalInvested > 0 ? (gainLoss / totalInvested) * 100 : 0;
@@ -145,6 +162,7 @@ const FinancialApp = () => {
     return assetTypes.filter((at) => activeIds.includes(at.id));
   }, [investments, assetTypes]);
 
+  // ... Rest of the component remains exactly the same
   if (loading) {
     return (
       <div className="min-h-screen bg-background p-8">
