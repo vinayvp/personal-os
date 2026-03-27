@@ -3,9 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Percent, Clock, TrendingUp, AlertCircle, Smartphone, Coins, LayoutGrid } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, Percent, Clock, TrendingUp, AlertCircle, Smartphone, Coins, LayoutGrid, RefreshCw } from "lucide-react";
 import { format, differenceInDays, isPast, isFuture } from "date-fns";
 import { InvestmentTransaction, InvestmentWithLatest } from "./types";
+import { financeDb } from "@/integrations/supabase/financeClient";
+import { useToast } from "@/hooks/use-toast"; // or "@/components/ui/use-toast"
 
 interface FixedIncomeDetailsProps {
   investments: InvestmentWithLatest[];
@@ -22,6 +25,8 @@ interface TransactionWithDetails extends InvestmentTransaction {
 
 const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income Investments", assetTypeFilter }: FixedIncomeDetailsProps) => {
   const [selectedPlatform, setSelectedPlatform] = useState<string>("all");
+  const [isSyncing, setIsSyncing] = useState(false);
+  const { toast } = useToast();
 
   const baseTransactions = useMemo(() => {
     return transactions
@@ -76,7 +81,6 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
     return differenceInDays(maturity, today);
   };
 
-  // Calculates both Current and Expected returns using Quarterly Compound Interest
   const calculateReturns = (transaction: TransactionWithDetails) => {
     if (!transaction.interest_rate || !transaction.tenure_months || !transaction.transaction_date) return null;
     
@@ -120,6 +124,64 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
     };
   };
 
+  const handleSyncToDB = async () => {
+    setIsSyncing(true);
+    try {
+      const today = new Date().toISOString();
+
+      // Prepare the array of valuations
+      const valuationsToInsert = filteredTransactions.map((t) => {
+        const returns = calculateReturns(t);
+        return {
+          investment_id: t.investment_id,
+          transaction_id: t.id,
+          valuation_date: today,
+          current_value: returns?.currentValue || Math.abs(Number(t.amount_invested)),
+        };
+      });
+
+      if (valuationsToInsert.length === 0) {
+        toast({
+          title: "No Data to Sync",
+          description: "There are no fixed income investments to update.",
+          variant: "default", // Or "destructive" depending on how you want to show it
+        });
+        setIsSyncing(false);
+        return;
+      }
+
+      //console.log("Batch inserting into investment_valuations:", valuationsToInsert);
+
+      // Perform a single batch insert
+      const { error } = await financeDb
+        .from("investment_valuations")
+        .insert(valuationsToInsert);
+
+      if (error) {
+        throw error;
+      }
+      
+      // Success Toast!
+      toast({
+        title: "Valuations Synced",
+        description: `Successfully updated ${valuationsToInsert.length} fixed income investment(s).`,
+        variant: "default",
+      });
+
+    } catch (error: any) {
+      console.error("Error syncing valuations:", error);
+      
+      // Error Toast!
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Could not update the database. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   if (baseTransactions.length === 0) {
     return null;
   }
@@ -127,7 +189,6 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
   // Summary stats calculations
   const totalFixedIncomeValue = filteredTransactions.reduce((sum, t) => sum + Math.abs(Number(t.amount_invested)), 0);
   
-  // Calculate Weighted Average ROI
   const averageROI = totalFixedIncomeValue > 0 
     ? filteredTransactions.reduce((sum, t) => sum + (Math.abs(Number(t.amount_invested)) * (Number(t.interest_rate) || 0)), 0) / totalFixedIncomeValue 
     : 0;
@@ -144,11 +205,11 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
   const upcomingMaturities = filteredTransactions.filter(
     (t) => t.maturity_date && isFuture(new Date(t.maturity_date)) && getDaysUntilMaturity(t.maturity_date) <= 90
   );
+  
   const maturedTransactions = filteredTransactions.filter(
     (t) => t.maturity_date && isPast(new Date(t.maturity_date))
   );
 
-  // Calculate Tenure Stats
   const validTenures = filteredTransactions
     .map(t => Number(t.tenure_months))
     .filter(t => !isNaN(t) && t > 0);
@@ -164,21 +225,34 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h2 className="text-xl font-semibold">{title}</h2>
         
-        <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
-          <SelectTrigger className="w-[180px] bg-background">
-            <LayoutGrid className="w-4 h-4 mr-2 text-muted-foreground" />
-            <SelectValue placeholder="All Platforms" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Platforms</SelectItem>
-            {platforms.map(p => (
-              <SelectItem key={p} value={p}>{p}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSyncToDB} 
+            disabled={isSyncing}
+            className="bg-background"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
+            {isSyncing ? "Syncing..." : "Sync Valuations"}
+          </Button>
+
+          <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+            <SelectTrigger className="w-[180px] bg-background">
+              <LayoutGrid className="w-4 h-4 mr-2 text-muted-foreground" />
+              <SelectValue placeholder="All Platforms" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Platforms</SelectItem>
+              {platforms.map(p => (
+                <SelectItem key={p} value={p}>{p}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       
-      {/* Summary Cards - Updated to 6 columns on large screens */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex flex-col justify-center gap-2">
@@ -187,19 +261,6 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
               <p className="text-xs">Total Principal</p>
             </div>
             <p className="text-lg font-bold">{formatCurrency(totalFixedIncomeValue)}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border">
-          <CardContent className="p-4 flex flex-col justify-center gap-2">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Coins className="w-4 h-4 text-green-500" />
-              <p className="text-xs">Gains (Current/Exp)</p>
-            </div>
-            <div className="flex items-baseline gap-1 flex-wrap">
-              <p className="text-lg font-bold text-green-500">+{formatCurrency(totalCurrentGains)}</p>
-              <p className="text-[10px] font-medium text-muted-foreground">/ +{formatCurrency(totalExpectedGains)}</p>
-            </div>
           </CardContent>
         </Card>
 
@@ -216,11 +277,11 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex flex-col justify-center gap-2">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Calendar className="w-4 h-4 text-orange-500" />
+              <Calendar className="w-4 h-4 text-purple-500" />
               <p className="text-xs">Avg. Tenure</p>
             </div>
             <div className="flex items-baseline gap-1 flex-wrap">
-              <p className="text-lg font-bold text-orange-500">
+              <p className="text-lg font-bold text-purple-500">
                 {averageTenure > 0 ? `${averageTenure.toFixed(1)} mo` : 'N/A'}
               </p>
               {validTenures.length > 0 && (
@@ -228,6 +289,19 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
                   (Min: {minTenure} / Max: {maxTenure})
                 </p>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardContent className="p-4 flex flex-col justify-center gap-2">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Coins className="w-4 h-4 text-green-500" />
+              <p className="text-xs">Gains (Current/Exp)</p>
+            </div>
+            <div className="flex items-baseline gap-1 flex-wrap">
+              <p className="text-lg font-bold text-green-500">+{formatCurrency(totalCurrentGains)}</p>
+              <p className="text-[10px] font-medium text-muted-foreground">/ +{formatCurrency(totalExpectedGains)}</p>
             </div>
           </CardContent>
         </Card>
