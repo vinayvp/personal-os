@@ -76,7 +76,7 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
     return differenceInDays(maturity, today);
   };
 
-  // UPDATED: Calculates both Current and Expected returns based on time elapsed
+  // Calculates both Current and Expected returns using Quarterly Compound Interest
   const calculateReturns = (transaction: TransactionWithDetails) => {
     if (!transaction.interest_rate || !transaction.tenure_months || !transaction.transaction_date) return null;
     
@@ -87,7 +87,6 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
     // Standard FD Compounding frequency is Quarterly (4 times a year)
     const compoundingFrequency = 4;
     
-    // Compound Interest Formula: A = P(1 + r/n)^(nt)
     const maturityValue = principal * Math.pow((1 + rate / compoundingFrequency), compoundingFrequency * years);
     const expectedInterest = maturityValue - principal;
     
@@ -96,7 +95,6 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
     const startDate = new Date(transaction.transaction_date);
     const today = new Date();
     
-    // Determine total duration
     let totalDays = years * 365.25;
     if (transaction.maturity_date) {
       const maturityDate = new Date(transaction.maturity_date);
@@ -106,11 +104,9 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
     const elapsedDays = Math.max(0, differenceInDays(today, startDate));
     
     if (elapsedDays >= totalDays && totalDays > 0) {
-      // Reached or passed maturity
       currentInterest = expectedInterest;
       currentValue = maturityValue;
     } else if (totalDays > 0) {
-      // Calculate compound interest exactly up to the current elapsed time
       const elapsedYears = elapsedDays / 365.25;
       currentValue = principal * Math.pow((1 + rate / compoundingFrequency), compoundingFrequency * elapsedYears);
       currentInterest = currentValue - principal;
@@ -131,7 +127,11 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
   // Summary stats calculations
   const totalFixedIncomeValue = filteredTransactions.reduce((sum, t) => sum + Math.abs(Number(t.amount_invested)), 0);
   
-  // NEW: Summing up Current vs Expected
+  // Calculate Weighted Average ROI
+  const averageROI = totalFixedIncomeValue > 0 
+    ? filteredTransactions.reduce((sum, t) => sum + (Math.abs(Number(t.amount_invested)) * (Number(t.interest_rate) || 0)), 0) / totalFixedIncomeValue 
+    : 0;
+
   const { totalExpectedGains, totalCurrentGains } = filteredTransactions.reduce((acc, t) => {
     const returns = calculateReturns(t);
     if (returns) {
@@ -167,8 +167,8 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
         </Select>
       </div>
       
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Summary Cards - Updated to 5 columns on large screens */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex flex-col justify-center gap-2">
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -179,16 +179,26 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
           </CardContent>
         </Card>
 
-        {/* UPDATED: Combined Current / Expected Card */}
+        {/* NEW: Avg ROI Card */}
+        <Card className="bg-card border-border">
+          <CardContent className="p-4 flex flex-col justify-center gap-2">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Percent className="w-4 h-4 text-blue-500" />
+              <p className="text-xs">Avg. Interest Rate</p>
+            </div>
+            <p className="text-lg font-bold text-blue-500">{averageROI.toFixed(2)}%</p>
+          </CardContent>
+        </Card>
+
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex flex-col justify-center gap-2">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Coins className="w-4 h-4 text-green-500" />
-              <p className="text-xs">Gains (Current / Expected)</p>
+              <p className="text-xs">Gains (Current/Exp)</p>
             </div>
             <div className="flex items-baseline gap-1 flex-wrap">
               <p className="text-lg font-bold text-green-500">+{formatCurrency(totalCurrentGains)}</p>
-              <p className="text-xs font-medium text-muted-foreground">/ +{formatCurrency(totalExpectedGains)}</p>
+              <p className="text-[10px] font-medium text-muted-foreground">/ +{formatCurrency(totalExpectedGains)}</p>
             </div>
           </CardContent>
         </Card>
@@ -280,7 +290,6 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
                     <p className="font-semibold">{formatCurrency(principal)}</p>
                   </div>
 
-                  {/* UPDATED: 2x2 Grid for Current vs Expected Returns */}
                   {returns && (
                     <div className="grid grid-cols-2 gap-y-3 gap-x-4 pt-2 border-t border-border">
                       <div>
