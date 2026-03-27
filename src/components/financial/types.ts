@@ -33,6 +33,7 @@ export interface InvestmentTransaction {
 export interface InvestmentValuation {
   id: string;
   investment_id: string;
+  transaction_id: string | null;
   valuation_date: string;
   current_value: number;
   metadata: { price?: number } | null;
