@@ -148,6 +148,17 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
     (t) => t.maturity_date && isPast(new Date(t.maturity_date))
   );
 
+  // Calculate Tenure Stats
+  const validTenures = filteredTransactions
+    .map(t => Number(t.tenure_months))
+    .filter(t => !isNaN(t) && t > 0);
+
+  const averageTenure = validTenures.length > 0 
+    ? validTenures.reduce((sum, val) => sum + val, 0) / validTenures.length 
+    : 0;
+  const minTenure = validTenures.length > 0 ? Math.min(...validTenures) : 0;
+  const maxTenure = validTenures.length > 0 ? Math.max(...validTenures) : 0;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -167,8 +178,8 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
         </Select>
       </div>
       
-      {/* Summary Cards - Updated to 5 columns on large screens */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* Summary Cards - Updated to 6 columns on large screens */}
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex flex-col justify-center gap-2">
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -179,7 +190,19 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
           </CardContent>
         </Card>
 
-        {/* NEW: Avg ROI Card */}
+        <Card className="bg-card border-border">
+          <CardContent className="p-4 flex flex-col justify-center gap-2">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Coins className="w-4 h-4 text-green-500" />
+              <p className="text-xs">Gains (Current/Exp)</p>
+            </div>
+            <div className="flex items-baseline gap-1 flex-wrap">
+              <p className="text-lg font-bold text-green-500">+{formatCurrency(totalCurrentGains)}</p>
+              <p className="text-[10px] font-medium text-muted-foreground">/ +{formatCurrency(totalExpectedGains)}</p>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex flex-col justify-center gap-2">
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -193,12 +216,18 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex flex-col justify-center gap-2">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Coins className="w-4 h-4 text-green-500" />
-              <p className="text-xs">Gains (Current/Exp)</p>
+              <Calendar className="w-4 h-4 text-orange-500" />
+              <p className="text-xs">Avg. Tenure</p>
             </div>
             <div className="flex items-baseline gap-1 flex-wrap">
-              <p className="text-lg font-bold text-green-500">+{formatCurrency(totalCurrentGains)}</p>
-              <p className="text-[10px] font-medium text-muted-foreground">/ +{formatCurrency(totalExpectedGains)}</p>
+              <p className="text-lg font-bold text-orange-500">
+                {averageTenure > 0 ? `${averageTenure.toFixed(1)} mo` : 'N/A'}
+              </p>
+              {validTenures.length > 0 && (
+                <p className="text-[10px] font-medium text-muted-foreground">
+                  (Min: {minTenure} / Max: {maxTenure})
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
