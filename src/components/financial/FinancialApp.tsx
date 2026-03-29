@@ -7,7 +7,7 @@ import { financeDb } from "@/integrations/supabase/financeClient";
 import { useToast } from "@/hooks/use-toast";
 import HeroMetrics from "@/components/financial/HeroMetrics";
 import AssetAllocationChart from "@/components/financial/AssetAllocationChart";
-import PerformanceLeaderboard from "@/components/financial/PerformanceLeaderboard";
+import PortfolioHistoricalChart from "@/components/financial/PortfolioHistoricalChart";
 import InvestmentsList from "@/components/financial/InvestmentsList";
 import MutualFundsList from "@/components/financial/MutualFundsList";
 import HistoricalChart from "@/components/financial/HistoricalChart";
@@ -249,7 +249,8 @@ const FinancialApp = () => {
                 {/* Charts Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <AssetAllocationChart investments={investmentsWithMetrics} assetTypes={assetTypes} />
-                  <PerformanceLeaderboard investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)} />
+                  {/* <PerformanceLeaderboard investments={investmentsWithMetrics.filter((i) => i.total_invested > 0)} /> */}
+                  <PortfolioHistoricalChart investments={investments} transactions={transactions} valuations={valuations} />
                 </div>
 
                 {/* All Investments List */}
