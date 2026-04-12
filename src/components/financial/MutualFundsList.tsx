@@ -10,7 +10,8 @@ import {
   Trash2, 
   Plus, 
   LayoutGrid, 
-  Smartphone 
+  Smartphone,
+  AlertTriangle // <-- Added AlertTriangle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { financeDb } from "@/integrations/supabase/financeClient";
@@ -57,9 +58,24 @@ const MutualFundsList = ({ investments, transactions, valuations, sipConfigs, on
     return result;
   }, [allMutualFunds, transactions]);
 
+  // Calculate the most recent sync date for mutual funds globally
+  const lastSyncDate = useMemo(() => {
+    if (!valuations || valuations.length === 0 || allMutualFunds.length === 0) return null;
+    
+    const mfIds = new Set(allMutualFunds.map(f => f.id));
+    const relevantVals = valuations.filter(v => mfIds.has(v.investment_id));
+    
+    if (relevantVals.length === 0) return null;
+
+    const latest = relevantVals.reduce((max, current) => 
+      new Date(current.valuation_date) > new Date(max.valuation_date) ? current : max
+    );
+
+    return new Date(latest.valuation_date);
+  }, [valuations, allMutualFunds]);
+
   // 2. Get unique platforms for the filter dropdown
   const platforms = useMemo(() => {
-    console.log("Calculating platforms from mutual funds:", allMutualFunds);
     const names = allMutualFunds.map(f => (f as any).investment_platforms?.name || "Unknown");
     return Array.from(new Set(names)).sort();
   }, [allMutualFunds]);
@@ -274,7 +290,14 @@ const MutualFundsList = ({ investments, transactions, valuations, sipConfigs, on
           <p className="text-sm text-muted-foreground">Managing {filteredFunds.length} investments</p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Last Sync Timestamp */}
+          {lastSyncDate && (
+            <div className="text-xs text-muted-foreground bg-muted/50 px-2.5 py-1.5 rounded-md border border-border/50">
+              Last sync: <span className="font-medium text-foreground">{format(lastSyncDate, 'dd MMM yyyy')}</span>
+            </div>
+          )}
+
           {/* PLATFORM FILTER */}
           <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
             <SelectTrigger className="w-[180px] bg-background">
@@ -300,7 +323,7 @@ const MutualFundsList = ({ investments, transactions, valuations, sipConfigs, on
         </div>
       </div>
 
-      {/* Summary Cards (Updates based on filter) */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card className="bg-card border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Invested</p><p className="text-lg font-bold mt-1">{formatCurrency(summary.totalInvested)}</p></CardContent></Card>
         <Card className="bg-card border-border"><CardContent className="p-4"><p className="text-xs text-muted-foreground">Current Value</p><p className="text-lg font-bold mt-1">{formatCurrency(summary.totalCurrent)}</p></CardContent></Card>
@@ -318,6 +341,23 @@ const MutualFundsList = ({ investments, transactions, valuations, sipConfigs, on
           const nav = navData[fund.id];
           const xirr = fundXirr[fund.id];
 
+          // Find the latest transaction date for this specific fund
+          const fundTransactions = transactions.filter(t => t.investment_id === fund.id);
+          const latestTx = fundTransactions.length > 0 
+            ? fundTransactions.reduce((latest, current) => new Date(current.transaction_date) > new Date(latest.transaction_date) ? current : latest)
+            : null;
+          const latestTxDate = latestTx ? new Date(latestTx.transaction_date) : null;
+
+          // Find the latest valuation date for this specific fund
+          const fundVals = valuations.filter(v => v.investment_id === fund.id);
+          const latestVal = fundVals.length > 0
+            ? fundVals.reduce((latest, current) => new Date(current.valuation_date) > new Date(latest.valuation_date) ? current : latest)
+            : null;
+          const latestValDate = latestVal ? new Date(latestVal.valuation_date) : null;
+
+          // Check if there's a transaction AFTER the last valuation
+          const needsUpdateWarning = latestTxDate && latestValDate && latestTxDate > latestValDate;
+
           return (
             <Card key={fund.id} className="bg-card border-border relative overflow-hidden">
               {/* Platform Ribbon/Badge */}
@@ -330,15 +370,38 @@ const MutualFundsList = ({ investments, transactions, valuations, sipConfigs, on
                 <CardTitle className="text-base font-semibold leading-tight pr-20">{fund.name}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 pt-0">
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                  
+                  {/* Invested Section with Last Investment Date */}
                   <div>
                     <p className="text-xs text-muted-foreground">Invested</p>
                     <p className="font-semibold">{formatCurrency(fund.total_invested)}</p>
+                    {latestTxDate && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5 tracking-wide">
+                        Last Tx: {format(latestTxDate, 'dd MMM yyyy')}
+                      </p>
+                    )}
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Current Value</p>
+
+                  {/* Current Value Section with WARNING and As Of Date */}
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <p className="text-xs text-muted-foreground">Current Value</p>
+                      {/* NEW: WARNING BADGE */}
+                      {needsUpdateWarning && (
+                        <span className="flex items-center gap-1 text-[9px] uppercase tracking-wider font-semibold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20" title="A transaction was added after your last valuation. Click Refresh NAVs to update.">
+                          <AlertTriangle className="w-3 h-3" /> Outdated
+                        </span>
+                      )}
+                    </div>
                     <p className="font-semibold">{formatCurrency(fund.current_value)}</p>
+                    {latestValDate && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5 tracking-wide">
+                        As of: {format(latestValDate, 'dd MMM')}
+                      </p>
+                    )}
                   </div>
+
                   <div>
                     <p className="text-xs text-muted-foreground">P/L</p>
                     <p className={`font-semibold ${isPositive ? "text-green-500" : "text-destructive"}`}>

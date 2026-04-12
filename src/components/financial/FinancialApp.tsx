@@ -13,6 +13,7 @@ import MutualFundsList from "@/components/financial/MutualFundsList";
 import HistoricalChart from "@/components/financial/HistoricalChart";
 import FixedIncomeDetails from "@/components/financial/FixedIncomeDetails";
 import CryptoList from "@/components/financial/CryptoList";
+import P2PList from "@/components/financial/P2PList";
 import AddInvestmentModal from "@/components/financial/AddInvestmentModal";
 import AddTransactionModal from "@/components/financial/AddTransactionModal";
 import AddAssetTypeModal from "@/components/financial/AddAssetTypeModal";
@@ -260,12 +261,13 @@ const FinancialApp = () => {
                 <Card className="bg-card border-border">
                   <CardContent className="p-0">
                     <Tabs defaultValue="mutual-funds" className="w-full">
-                      <div className="border-b border-border px-4 pt-4 pb-4">
-                        <TabsList className="w-full max-w-lg grid grid-cols-4">
+                      <div className="border-b border-border px-5 pt-4 pb-4 overflow-x-auto">
+                        <TabsList className="w-full max-w-3xl grid grid-cols-5 min-w-[600px]">
                           <TabsTrigger value="mutual-funds">Mutual Funds</TabsTrigger>
                           <TabsTrigger value="crypto">Crypto</TabsTrigger>
                           <TabsTrigger value="fixed-deposits">Fixed Deposits</TabsTrigger>
                           <TabsTrigger value="bonds">Bonds</TabsTrigger>
+                          <TabsTrigger value="p2p">P2P</TabsTrigger>
                         </TabsList>
                       </div>
                       <TabsContent value="mutual-funds" className="m-0 p-4">
@@ -287,10 +289,28 @@ const FinancialApp = () => {
                         />
                       </TabsContent>
                       <TabsContent value="fixed-deposits" className="m-0 p-4">
-                        <FixedIncomeDetails investments={investmentsWithMetrics} transactions={transactions} title="Fixed Deposits" assetTypeFilter="fixed deposit" />
+                        <FixedIncomeDetails 
+                          investments={investmentsWithMetrics} 
+                          transactions={transactions} 
+                          valuations={valuations}
+                          title="Fixed Deposits" assetTypeFilter="fixed deposit"
+                          onRefreshComplete={fetchData} />
                       </TabsContent>
                       <TabsContent value="bonds" className="m-0 p-4">
-                        <FixedIncomeDetails investments={investmentsWithMetrics} transactions={transactions} title="Bonds" assetTypeFilter="bond" />
+                        <FixedIncomeDetails 
+                          investments={investmentsWithMetrics} 
+                          transactions={transactions} 
+                          valuations={valuations}
+                          title="Bonds" assetTypeFilter="bond"
+                          onRefreshComplete={fetchData} />
+                      </TabsContent>
+                      <TabsContent value="p2p" className="m-0 p-4">
+                        <P2PList 
+                          investments={investmentsWithMetrics.filter((i) => i.asset_type?.name.toLowerCase().includes("p2p"))}
+                          transactions={transactions}
+                          valuations={valuations}
+                          onRefreshComplete={fetchData}
+                        />
                       </TabsContent>
                     </Tabs>
                   </CardContent>

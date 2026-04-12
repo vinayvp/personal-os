@@ -6,15 +6,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Calendar, Percent, Clock, TrendingUp, AlertCircle, Smartphone, Coins, LayoutGrid, RefreshCw } from "lucide-react";
 import { format, differenceInDays, isPast, isFuture } from "date-fns";
-import { InvestmentTransaction, InvestmentWithLatest } from "./types";
+import { InvestmentTransaction, InvestmentWithLatest, InvestmentValuation } from "./types";
 import { financeDb } from "@/integrations/supabase/financeClient";
-import { useToast } from "@/hooks/use-toast"; // or "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast";
 
 interface FixedIncomeDetailsProps {
   investments: InvestmentWithLatest[];
   transactions: InvestmentTransaction[];
+  valuations: InvestmentValuation[]; // Added valuations prop
   title?: string;
   assetTypeFilter?: string;
+  onRefreshComplete: () => void;
 }
 
 interface TransactionWithDetails extends InvestmentTransaction {
@@ -23,7 +25,7 @@ interface TransactionWithDetails extends InvestmentTransaction {
   platform_name: string;
 }
 
-const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income Investments", assetTypeFilter }: FixedIncomeDetailsProps) => {
+const FixedIncomeDetails = ({ investments, transactions, valuations, title = "Fixed Income Investments", assetTypeFilter, onRefreshComplete }: FixedIncomeDetailsProps) => {
   const [selectedPlatform, setSelectedPlatform] = useState<string>("all");
   const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
@@ -52,6 +54,22 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
     if (selectedPlatform === "all") return baseTransactions;
     return baseTransactions.filter(t => t.platform_name === selectedPlatform);
   }, [baseTransactions, selectedPlatform]);
+
+  // Calculate the most recent sync date for the currently displayed fixed income investments
+  const lastSyncDate = useMemo(() => {
+    if (!valuations || valuations.length === 0 || baseTransactions.length === 0) return null;
+    
+    const fixedIncomeIds = new Set(baseTransactions.map(t => t.investment_id));
+    const relevantValuations = valuations.filter(v => fixedIncomeIds.has(v.investment_id));
+    
+    if (relevantValuations.length === 0) return null;
+
+    const latest = relevantValuations.reduce((max, current) => 
+      new Date(current.valuation_date) > new Date(max.valuation_date) ? current : max
+    );
+
+    return new Date(latest.valuation_date);
+  }, [valuations, baseTransactions]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -88,7 +106,6 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
     const rate = Number(transaction.interest_rate) / 100;
     const years = Number(transaction.tenure_months) / 12;
     
-    // Standard FD Compounding frequency is Quarterly (4 times a year)
     const compoundingFrequency = 4;
     
     const maturityValue = principal * Math.pow((1 + rate / compoundingFrequency), compoundingFrequency * years);
@@ -129,7 +146,6 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
     try {
       const today = new Date().toISOString();
 
-      // Prepare the array of valuations
       const valuationsToInsert = filteredTransactions.map((t) => {
         const returns = calculateReturns(t);
         return {
@@ -144,34 +160,28 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
         toast({
           title: "No Data to Sync",
           description: "There are no fixed income investments to update.",
-          variant: "default", // Or "destructive" depending on how you want to show it
+          variant: "default",
         });
         setIsSyncing(false);
         return;
       }
 
-      //console.log("Batch inserting into investment_valuations:", valuationsToInsert);
-
-      // Perform a single batch insert
       const { error } = await financeDb
         .from("investment_valuations")
         .insert(valuationsToInsert);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       
-      // Success Toast!
       toast({
         title: "Valuations Synced",
         description: `Successfully updated ${valuationsToInsert.length} fixed income investment(s).`,
         variant: "default",
       });
 
+      onRefreshComplete();
+
     } catch (error: any) {
       console.error("Error syncing valuations:", error);
-      
-      // Error Toast!
       toast({
         title: "Sync Failed",
         description: error.message || "Could not update the database. Please try again.",
@@ -225,7 +235,14 @@ const FixedIncomeDetails = ({ investments, transactions, title = "Fixed Income I
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h2 className="text-xl font-semibold">{title}</h2>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* NEW: Last Sync Timestamp */}
+          {lastSyncDate && (
+            <div className="text-xs text-muted-foreground bg-muted/50 px-2.5 py-1.5 rounded-md border border-border/50">
+              Last sync: <span className="font-medium text-foreground">{format(lastSyncDate, 'dd MMM yyyy')}</span>
+            </div>
+          )}
+
           <Button 
             variant="outline" 
             size="sm" 

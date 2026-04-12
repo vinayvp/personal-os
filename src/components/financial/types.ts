@@ -5,18 +5,35 @@ export interface AssetType {
   created_at: string;
 }
 
+export interface InvestmentPlatform {
+  id: string;
+  name: string;
+  url?: string | null;
+  created_at?: string;
+}
+
 export interface Investment {
   id: string;
   name: string;
   asset_type_id: string;
   notes: string | null;
   extra_configuration: {
+    // Mutual Fund
     mf_scheme_code?: string | null;
+
+    //Crypto fields
     coin_id?: string | null;
+    
+    // P2P fields
+    loans?: number;
+    active?: number;
+    closed?: number;
+    anr?: number;
   } | null;
   created_at: string;
   updated_at: string;
   asset_type?: AssetType; 
+  investment_platforms?: InvestmentPlatform;
 }
 
 export interface InvestmentTransaction {

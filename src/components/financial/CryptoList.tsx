@@ -152,9 +152,21 @@ const CryptoList = ({ investments, transactions, valuations, onRefreshComplete }
     }
   };
 
-  if (cryptoInvestments.length === 0) return null;
-
   const isPositiveTotal = summary.totalPL >= 0;
+
+  // NEW: Empty State Check
+  if (cryptoInvestments.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Cryptocurrency</h2>
+        </div>
+        <div className="text-center py-8 text-muted-foreground italic border border-dashed border-border rounded-lg bg-card/50">
+          Currently no investments in crypto. Add one to get started!
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
