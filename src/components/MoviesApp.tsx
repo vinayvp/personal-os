@@ -261,6 +261,15 @@ const MoviesApp = () => {
               <FolderPlus className="w-3.5 h-3.5 mr-1.5" />
               Category
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPlatformsModalOpen(true)}
+              className="text-xs px-2.5 py-1.5 h-8"
+            >
+              <Play className="w-3.5 h-3.5 mr-1.5" />
+              Platforms
+            </Button>
             <Button 
               variant="outline"
               size="sm"
