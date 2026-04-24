@@ -97,6 +97,19 @@ const MoviesApp = () => {
     }
   };
 
+  const loadPlatforms = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('movies_platforms')
+        .select('*')
+        .order('name', { ascending: true });
+      if (error) throw error;
+      setPlatforms((data || []) as Platform[]);
+    } catch (error) {
+      console.error('Error loading platforms:', error);
+    }
+  };
+
   const handleMovieAdded = (newMovie: Movie) => {
     setMovies(prev => [newMovie, ...prev]);
     loadCategories(); // Reload categories in case a new one was added
