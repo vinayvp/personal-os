@@ -246,6 +246,36 @@ export type Database = {
         }
         Relationships: []
       }
+      movies_platforms: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          is_default: boolean
+          name: string
+          updated_at: string
+          url_template: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          is_default?: boolean
+          name: string
+          updated_at?: string
+          url_template: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          is_default?: boolean
+          name?: string
+          updated_at?: string
+          url_template?: string
+        }
+        Relationships: []
+      }
       movies_tv: {
         Row: {
           actors: string | null
