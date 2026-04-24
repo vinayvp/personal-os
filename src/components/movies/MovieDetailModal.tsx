@@ -3,6 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import type { Platform } from "@/components/movies/PlatformsModal";
 import { 
   Star, 
   Calendar, 
@@ -13,7 +20,8 @@ import {
   Film,
   Play,
   Users,
-  Clapperboard
+  Clapperboard,
+  ChevronDown
 } from "lucide-react";
 
 interface Movie {
@@ -41,6 +49,7 @@ interface MovieDetailModalProps {
   onClose: () => void;
   onUpdate: (movie: Movie) => void;
   onToggleWatched: (movie: Movie) => void;
+  platforms?: Platform[];
 }
 
 const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
@@ -48,7 +57,8 @@ const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
   isOpen,
   onClose,
   onUpdate,
-  onToggleWatched
+  onToggleWatched,
+  platforms = []
 }) => {
   const formatRating = (rating: string) => {
     if (!rating || rating === 'N/A') return null;
@@ -63,10 +73,16 @@ const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
     });
   };
 
-  const getWatchNowUrl = (title: string) => {
-    const formattedTitle = title.toLowerCase().replace(/\s+/g, '+');
-    //return `https://tmovie.tv/search?query=${formattedTitle}`;
-    return `https://watch-v2.autoembed.cc/search?q=${formattedTitle}`;
+  const buildWatchUrl = (template: string, title: string) => {
+    return template.replace(/\{query\}/g, encodeURIComponent(title));
+  };
+
+  const enabledPlatforms = platforms.filter(p => p.enabled);
+  const defaultPlatform =
+    enabledPlatforms.find(p => p.is_default) || enabledPlatforms[0];
+
+  const openPlatform = (p: Platform) => {
+    window.open(buildWatchUrl(p.url_template, movie.title), '_blank');
   };
 
   return (
@@ -130,13 +146,45 @@ const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                     </>
                   )}
                 </Button>
-                <Button
-                  onClick={() => window.open(getWatchNowUrl(movie.title), '_blank')}
-                  variant="secondary"
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Watch Now
-                </Button>
+                {enabledPlatforms.length === 0 ? (
+                  <Button variant="secondary" disabled title="Add a platform first">
+                    <Play className="w-4 h-4 mr-2" />
+                    Watch Now
+                  </Button>
+                ) : (
+                  <div className="inline-flex">
+                    <Button
+                      variant="secondary"
+                      className="rounded-r-none"
+                      onClick={() => defaultPlatform && openPlatform(defaultPlatform)}
+                    >
+                      <Play className="w-4 h-4 mr-2" />
+                      Watch on {defaultPlatform?.name}
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="secondary"
+                          className="rounded-l-none border-l border-background/30 px-2"
+                          aria-label="Choose platform"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        {enabledPlatforms.map((p) => (
+                          <DropdownMenuItem key={p.id} onClick={() => openPlatform(p)}>
+                            <Play className="w-4 h-4 mr-2" />
+                            <span className="flex-1 truncate">{p.name}</span>
+                            {p.is_default && (
+                              <span className="text-xs text-muted-foreground ml-2">Default</span>
+                            )}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -12,6 +12,7 @@ import MovieCard from "@/components/movies/MovieCard";
 import MovieDetailModal from "@/components/movies/MovieDetailModal";
 import CreateCategoryModal from "@/components/movies/CreateCategoryModal";
 import BulkImportModal from "@/components/movies/BulkImportModal";
+import PlatformsModal, { Platform } from "@/components/movies/PlatformsModal";
 
 interface Movie {
   id: string;
@@ -40,10 +41,12 @@ interface Category {
 const MoviesApp = () => {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false);
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
+  const [isPlatformsModalOpen, setIsPlatformsModalOpen] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -57,6 +60,7 @@ const MoviesApp = () => {
   useEffect(() => {
     loadMovies();
     loadCategories();
+    loadPlatforms();
   }, []);
 
   const loadMovies = async () => {
@@ -90,6 +94,19 @@ const MoviesApp = () => {
       setCategories(data || []);
     } catch (error) {
       console.error('Error loading categories:', error);
+    }
+  };
+
+  const loadPlatforms = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('movies_platforms')
+        .select('*')
+        .order('name', { ascending: true });
+      if (error) throw error;
+      setPlatforms((data || []) as Platform[]);
+    } catch (error) {
+      console.error('Error loading platforms:', error);
     }
   };
 
@@ -244,6 +261,15 @@ const MoviesApp = () => {
               <FolderPlus className="w-3.5 h-3.5 mr-1.5" />
               Category
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPlatformsModalOpen(true)}
+              className="text-xs px-2.5 py-1.5 h-8"
+            >
+              <Play className="w-3.5 h-3.5 mr-1.5" />
+              Platforms
+            </Button>
             <Button 
               variant="outline"
               size="sm"
@@ -387,6 +413,7 @@ const MoviesApp = () => {
             }}
             onUpdate={handleMovieUpdated}
             onToggleWatched={toggleWatched}
+            platforms={platforms}
           />
         )}
 
@@ -400,6 +427,13 @@ const MoviesApp = () => {
           isOpen={isBulkImportModalOpen}
           onClose={() => setIsBulkImportModalOpen(false)}
           onMoviesAdded={handleMoviesAdded}
+        />
+
+        <PlatformsModal
+          isOpen={isPlatformsModalOpen}
+          onClose={() => setIsPlatformsModalOpen(false)}
+          platforms={platforms}
+          onPlatformsChanged={loadPlatforms}
         />
       </div>
     </div>
