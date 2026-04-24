@@ -413,6 +413,7 @@ const MoviesApp = () => {
             }}
             onUpdate={handleMovieUpdated}
             onToggleWatched={toggleWatched}
+            platforms={platforms}
           />
         )}
 
@@ -426,6 +427,13 @@ const MoviesApp = () => {
           isOpen={isBulkImportModalOpen}
           onClose={() => setIsBulkImportModalOpen(false)}
           onMoviesAdded={handleMoviesAdded}
+        />
+
+        <PlatformsModal
+          isOpen={isPlatformsModalOpen}
+          onClose={() => setIsPlatformsModalOpen(false)}
+          platforms={platforms}
+          onPlatformsChanged={loadPlatforms}
         />
       </div>
     </div>
