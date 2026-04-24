@@ -146,13 +146,45 @@ const MovieDetailModal: React.FC<MovieDetailModalProps> = ({
                     </>
                   )}
                 </Button>
-                <Button
-                  onClick={() => window.open(getWatchNowUrl(movie.title), '_blank')}
-                  variant="secondary"
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Watch Now
-                </Button>
+                {enabledPlatforms.length === 0 ? (
+                  <Button variant="secondary" disabled title="Add a platform first">
+                    <Play className="w-4 h-4 mr-2" />
+                    Watch Now
+                  </Button>
+                ) : (
+                  <div className="inline-flex">
+                    <Button
+                      variant="secondary"
+                      className="rounded-r-none"
+                      onClick={() => defaultPlatform && openPlatform(defaultPlatform)}
+                    >
+                      <Play className="w-4 h-4 mr-2" />
+                      Watch on {defaultPlatform?.name}
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="secondary"
+                          className="rounded-l-none border-l border-background/30 px-2"
+                          aria-label="Choose platform"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        {enabledPlatforms.map((p) => (
+                          <DropdownMenuItem key={p.id} onClick={() => openPlatform(p)}>
+                            <Play className="w-4 h-4 mr-2" />
+                            <span className="flex-1 truncate">{p.name}</span>
+                            {p.is_default && (
+                              <span className="text-xs text-muted-foreground ml-2">Default</span>
+                            )}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
               </div>
             </div>
 
