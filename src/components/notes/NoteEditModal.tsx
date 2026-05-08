@@ -388,6 +388,20 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
         </DialogHeader>
 
         <ScrollArea className="flex-1 p-4 sm:p-6 pt-4" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+          {embedNotion ? (
+            notionUrl.trim() ? (
+              <iframe
+                src={notionUrl}
+                title={title}
+                className="w-full min-h-[400px] sm:min-h-[500px] rounded-md border bg-background"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground p-4 border rounded-md">
+                Enter a published Notion page URL above to preview the embed.
+              </p>
+            )
+          ) : (
           <Tabs value={isEditing ? 'edit' : 'preview'} className="h-full">
             <TabsContent value="edit" className="mt-0">
               <Textarea
@@ -483,6 +497,7 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
               </div>
             </TabsContent>
           </Tabs>
+          )}
         </ScrollArea>
       </DialogContent>
     </Dialog>
