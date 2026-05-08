@@ -5,6 +5,7 @@ export interface Note {
   content: string | null;
   markdown_content: string | null;
   folder: string | null;
+  notion_url: string | null;
   created_at: string;
   updated_at: string;
   tags: Tag[];

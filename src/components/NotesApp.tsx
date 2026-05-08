@@ -277,7 +277,12 @@ const NotesApp = () => {
                           </div>
                         </CardHeader>
                         <CardContent className="pt-0">
-                          {(note.markdown_content || note.content) && (
+                          {note.notion_url && (
+                            <Badge variant="outline" className="text-xs mb-3">
+                              Notion embed
+                            </Badge>
+                          )}
+                          {!note.notion_url && (note.markdown_content || note.content) && (
                             <p className="text-sm text-muted-foreground mb-3 line-clamp-3">
                               {(note.markdown_content || note.content)?.length > 150 
                                 ? (note.markdown_content || note.content)?.substring(0, 150) + '...' 

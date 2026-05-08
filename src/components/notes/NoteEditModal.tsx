@@ -11,6 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Save, Eye, Edit, Upload, HelpCircle, GripVertical } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -32,6 +34,8 @@ const DEFAULT_WIDTH = 900;
 const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClose }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [embedNotion, setEmbedNotion] = useState(false);
+  const [notionUrl, setNotionUrl] = useState('');
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [isEditing, setIsEditing] = useState(true);
   const [isSaving, setSaving] = useState(false);
@@ -44,6 +48,8 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
     if (note) {
       setTitle(note.title);
       setContent(note.markdown_content || note.content || '');
+      setNotionUrl(note.notion_url || '');
+      setEmbedNotion(!!note.notion_url);
       setSelectedTags(note.tags || []);
       setIsEditing(true);
     }
@@ -81,8 +87,9 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
         .from('notes')
         .update({
           title,
-          content,
-          markdown_content: content,
+          content: embedNotion ? null : content,
+          markdown_content: embedNotion ? null : content,
+          notion_url: embedNotion ? notionUrl.trim() || null : null,
           updated_at: new Date().toISOString()
         })
         .eq('id', note.id);
@@ -266,6 +273,28 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
                 className="text-base sm:text-lg font-medium"
               />
 
+              <div className="flex items-center justify-between rounded-md border p-2 sm:p-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="edit-embed-notion" className="text-sm">Embed a Notion page</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Paste a published Notion URL instead of markdown.
+                  </p>
+                </div>
+                <Switch
+                  id="edit-embed-notion"
+                  checked={embedNotion}
+                  onCheckedChange={setEmbedNotion}
+                />
+              </div>
+
+              {embedNotion && (
+                <Input
+                  value={notionUrl}
+                  onChange={(e) => setNotionUrl(e.target.value)}
+                  placeholder="https://your-workspace.notion.site/..."
+                />
+              )}
+
               <div className="flex flex-wrap items-center gap-2">
                 <Select onValueChange={addTag} value="">
                   <SelectTrigger className="w-32 sm:w-40 h-8">
@@ -359,6 +388,20 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
         </DialogHeader>
 
         <ScrollArea className="flex-1 p-4 sm:p-6 pt-4" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+          {embedNotion ? (
+            notionUrl.trim() ? (
+              <iframe
+                src={notionUrl}
+                title={title}
+                className="w-full min-h-[400px] sm:min-h-[500px] rounded-md border bg-background"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground p-4 border rounded-md">
+                Enter a published Notion page URL above to preview the embed.
+              </p>
+            )
+          ) : (
           <Tabs value={isEditing ? 'edit' : 'preview'} className="h-full">
             <TabsContent value="edit" className="mt-0">
               <Textarea
@@ -454,6 +497,7 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
               </div>
             </TabsContent>
           </Tabs>
+          )}
         </ScrollArea>
       </DialogContent>
     </Dialog>

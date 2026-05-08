@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Edit, Trash2, X } from 'lucide-react';
+import { Edit, Trash2, X, ExternalLink } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -133,6 +133,30 @@ const NoteViewModal: React.FC<NoteViewModalProps> = ({ note, onClose, onEdit, on
           )}
           
           <div className="flex-1 overflow-y-auto overflow-x-auto p-6 bg-background prose prose-sm max-w-none dark:prose-invert break-words min-h-0">
+            {note.notion_url ? (
+              <div className="not-prose flex flex-col h-full min-h-[400px]">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs text-muted-foreground">Embedded Notion page</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.open(note.notion_url!, '_blank')}
+                  >
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    Open in Notion
+                  </Button>
+                </div>
+                <iframe
+                  src={note.notion_url}
+                  title={note.title}
+                  className="w-full flex-1 min-h-[500px] rounded-md border bg-background"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Tip: The Notion page must be published to the web (Share → Publish) to embed.
+                </p>
+              </div>
+            ) : (
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeHighlight]}
@@ -211,6 +235,7 @@ const NoteViewModal: React.FC<NoteViewModalProps> = ({ note, onClose, onEdit, on
             >
               {note.markdown_content || note.content || '*No content available.*'}
             </ReactMarkdown>
+            )}
             
             <div className="text-sm text-muted-foreground text-right mt-6 pt-4 border-t">
               Last updated: {new Date(note.updated_at).toLocaleDateString()}
