@@ -273,6 +273,28 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
                 className="text-base sm:text-lg font-medium"
               />
 
+              <div className="flex items-center justify-between rounded-md border p-2 sm:p-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="edit-embed-notion" className="text-sm">Embed a Notion page</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Paste a published Notion URL instead of markdown.
+                  </p>
+                </div>
+                <Switch
+                  id="edit-embed-notion"
+                  checked={embedNotion}
+                  onCheckedChange={setEmbedNotion}
+                />
+              </div>
+
+              {embedNotion && (
+                <Input
+                  value={notionUrl}
+                  onChange={(e) => setNotionUrl(e.target.value)}
+                  placeholder="https://your-workspace.notion.site/..."
+                />
+              )}
+
               <div className="flex flex-wrap items-center gap-2">
                 <Select onValueChange={addTag} value="">
                   <SelectTrigger className="w-32 sm:w-40 h-8">
