@@ -315,6 +315,7 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
             </div>
           </div>
 
+          {!embedNotion && (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-96">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="edit" className="flex items-center gap-2">
@@ -395,6 +396,7 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
               </div>
             </TabsContent>
           </Tabs>
+          )}
 
           <div className="flex gap-2 justify-end pt-12">
             <Button
