@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, X, Save, Eye, Edit, Upload, Image, HelpCircle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -26,6 +28,8 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [embedNotion, setEmbedNotion] = useState(false);
+  const [notionUrl, setNotionUrl] = useState('');
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [activeTab, setActiveTab] = useState('edit');
@@ -36,6 +40,8 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
   const resetForm = () => {
     setTitle('');
     setContent('');
+    setEmbedNotion(false);
+    setNotionUrl('');
     setSelectedTags([]);
     setActiveTab('edit');
   };
@@ -49,8 +55,9 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
         .from('notes')
         .insert({
           title: title || 'New Note',
-          content,
-          markdown_content: content,
+          content: embedNotion ? null : content,
+          markdown_content: embedNotion ? null : content,
+          notion_url: embedNotion ? notionUrl.trim() || null : null,
         })
         .select()
         .single();
@@ -215,6 +222,28 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
             placeholder="Note title..."
             className="text-lg font-medium"
           />
+
+          <div className="flex items-center justify-between rounded-md border p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="embed-notion-toggle">Embed a Notion page</Label>
+              <p className="text-xs text-muted-foreground">
+                Paste a published Notion page URL instead of writing markdown.
+              </p>
+            </div>
+            <Switch
+              id="embed-notion-toggle"
+              checked={embedNotion}
+              onCheckedChange={setEmbedNotion}
+            />
+          </div>
+
+          {embedNotion && (
+            <Input
+              value={notionUrl}
+              onChange={(e) => setNotionUrl(e.target.value)}
+              placeholder="https://your-workspace.notion.site/..."
+            />
+          )}
 
           <div className="space-y-2">
             <div className="flex gap-2">
