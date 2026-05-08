@@ -11,6 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Save, Eye, Edit, Upload, HelpCircle, GripVertical } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -32,6 +34,8 @@ const DEFAULT_WIDTH = 900;
 const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClose }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [embedNotion, setEmbedNotion] = useState(false);
+  const [notionUrl, setNotionUrl] = useState('');
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [isEditing, setIsEditing] = useState(true);
   const [isSaving, setSaving] = useState(false);
@@ -44,6 +48,8 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
     if (note) {
       setTitle(note.title);
       setContent(note.markdown_content || note.content || '');
+      setNotionUrl(note.notion_url || '');
+      setEmbedNotion(!!note.notion_url);
       setSelectedTags(note.tags || []);
       setIsEditing(true);
     }
@@ -81,8 +87,9 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
         .from('notes')
         .update({
           title,
-          content,
-          markdown_content: content,
+          content: embedNotion ? null : content,
+          markdown_content: embedNotion ? null : content,
+          notion_url: embedNotion ? notionUrl.trim() || null : null,
           updated_at: new Date().toISOString()
         })
         .eq('id', note.id);
