@@ -277,7 +277,7 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
                 <div className="space-y-0.5">
                   <Label htmlFor="edit-embed-notion" className="text-sm">Embed a Notion page</Label>
                   <p className="text-xs text-muted-foreground">
-                    Paste a published Notion URL instead of markdown.
+                    Paste a Notion embed/iframe link instead of markdown.
                   </p>
                 </div>
                 <Switch
@@ -291,7 +291,7 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
                 <Input
                   value={notionUrl}
                   onChange={(e) => setNotionUrl(e.target.value)}
-                  placeholder="https://your-workspace.notion.site/..."
+                  placeholder="https://your-workspace.notion.site/ebd/..."
                 />
               )}
 
@@ -398,7 +398,7 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
               />
             ) : (
               <p className="text-sm text-muted-foreground p-4 border rounded-md">
-                Enter a published Notion page URL above to preview the embed.
+                Enter a Notion embed/iframe link above to preview the embed.
               </p>
             )
           ) : (
