@@ -227,7 +227,7 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
             <div className="space-y-0.5">
               <Label htmlFor="embed-notion-toggle">Embed a Notion page</Label>
               <p className="text-xs text-muted-foreground">
-                Paste a published Notion page URL instead of writing markdown.
+                Paste a Notion embed/iframe link instead of writing markdown.
               </p>
             </div>
             <Switch
@@ -241,7 +241,7 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
             <Input
               value={notionUrl}
               onChange={(e) => setNotionUrl(e.target.value)}
-              placeholder="https://your-workspace.notion.site/..."
+              placeholder="https://your-workspace.notion.site/ebd/..."
             />
           )}
 

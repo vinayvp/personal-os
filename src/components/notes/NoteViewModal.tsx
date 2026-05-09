@@ -153,7 +153,7 @@ const NoteViewModal: React.FC<NoteViewModalProps> = ({ note, onClose, onEdit, on
                   sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
                 />
                 <p className="text-xs text-muted-foreground mt-2">
-                  Tip: The Notion page must be published to the web (Share → Publish) to embed.
+                  Tip: Use Notion's "Copy embed link" (contains /ebd/) for embedding.
                 </p>
               </div>
             ) : (
