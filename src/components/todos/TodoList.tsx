@@ -155,14 +155,27 @@ const TodoList = ({ todos, onToggleComplete, onDeleteTodo, onEditTodo, hideCompl
       ) : (
         <div className="space-y-3">
           {filteredTodos.map(todo => (
-            <Card key={todo.id} className={`transition-colors ${todo.completed ? 'opacity-60' : ''}`}>
+            <Card 
+              key={todo.id} 
+              className={`transition-all duration-300 ${
+                todo.completed ? 'opacity-60' : ''
+              } ${exitingId === todo.id ? 'animate-slide-out-right' : ''}`}
+            >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <Checkbox
-                    checked={todo.completed}
-                    onCheckedChange={() => onToggleComplete(todo.id)}
-                    className="mt-1"
-                  />
+                  <div className="relative mt-1">
+                    <Checkbox
+                      checked={todo.completed}
+                      onCheckedChange={() => handleCompleteWithReward(todo.id, !todo.completed)}
+                      className={`relative z-10 ${celebratingId === todo.id ? 'animate-check-pop' : ''}`}
+                    />
+                    {celebratingId === todo.id && (
+                      <span className="absolute inset-0 rounded-full border-2 border-primary animate-ring-burst pointer-events-none" />
+                    )}
+                    {justCompletedId === todo.id && (
+                      <Sparkles className="absolute -top-3 -right-3 w-4 h-4 text-yellow-500 animate-star-bounce pointer-events-none" />
+                    )}
+                  </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
