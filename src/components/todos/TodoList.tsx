@@ -67,6 +67,24 @@ const TodoList = ({ todos, onToggleComplete, onDeleteTodo, onEditTodo, hideCompl
     return new Date(dueDateString) < new Date() && !todos.find(t => t.due_date === dueDateString)?.completed;
   };
 
+  const handleCompleteWithReward = (todoId: string, completed: boolean) => {
+    if (completed) {
+      setCelebratingId(todoId);
+      setJustCompletedId(todoId);
+      setTimeout(() => setCelebratingId(null), 600);
+      setTimeout(() => setJustCompletedId(null), 1400);
+      if (hideCompleted) {
+        setTimeout(() => setExitingId(todoId), 600);
+        setTimeout(() => {
+          onToggleComplete(todoId);
+          setExitingId(null);
+        }, 1000);
+        return;
+      }
+    }
+    onToggleComplete(todoId);
+  };
+
   return (
     <div className="space-y-6">
       {/* Filters */}
