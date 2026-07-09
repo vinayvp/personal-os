@@ -22,6 +22,9 @@ const TodoList = ({ todos, onToggleComplete, onDeleteTodo, onEditTodo, hideCompl
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterTag, setFilterTag] = useState<string>('all');
+  const [justCompletedId, setJustCompletedId] = useState<string | null>(null);
+  const [celebratingId, setCelebratingId] = useState<string | null>(null);
+  const [exitingId, setExitingId] = useState<string | null>(null);
 
   // Get all unique tags from todos
   const allTags = Array.from(new Set(todos.flatMap(todo => todo.tags || [])));
