@@ -1,12 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Calendar, Search, Filter, CheckSquare, Edit } from 'lucide-react';
+import { Trash2, Calendar, Search, Filter, CheckSquare, Edit, Star, Sparkles } from 'lucide-react';
 import { Todo } from '../TodoApp';
 
 interface TodoListProps {
@@ -22,6 +22,9 @@ const TodoList = ({ todos, onToggleComplete, onDeleteTodo, onEditTodo, hideCompl
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterTag, setFilterTag] = useState<string>('all');
+  const [justCompletedId, setJustCompletedId] = useState<string | null>(null);
+  const [celebratingId, setCelebratingId] = useState<string | null>(null);
+  const [exitingId, setExitingId] = useState<string | null>(null);
 
   // Get all unique tags from todos
   const allTags = Array.from(new Set(todos.flatMap(todo => todo.tags || [])));
@@ -62,6 +65,24 @@ const TodoList = ({ todos, onToggleComplete, onDeleteTodo, onEditTodo, hideCompl
   const isOverdue = (dueDateString?: string) => {
     if (!dueDateString) return false;
     return new Date(dueDateString) < new Date() && !todos.find(t => t.due_date === dueDateString)?.completed;
+  };
+
+  const handleCompleteWithReward = (todoId: string, completed: boolean) => {
+    if (completed) {
+      setCelebratingId(todoId);
+      setJustCompletedId(todoId);
+      setTimeout(() => setCelebratingId(null), 600);
+      setTimeout(() => setJustCompletedId(null), 1400);
+      if (hideCompleted) {
+        setTimeout(() => setExitingId(todoId), 600);
+        setTimeout(() => {
+          onToggleComplete(todoId);
+          setExitingId(null);
+        }, 1000);
+        return;
+      }
+    }
+    onToggleComplete(todoId);
   };
 
   return (
@@ -134,14 +155,27 @@ const TodoList = ({ todos, onToggleComplete, onDeleteTodo, onEditTodo, hideCompl
       ) : (
         <div className="space-y-3">
           {filteredTodos.map(todo => (
-            <Card key={todo.id} className={`transition-colors ${todo.completed ? 'opacity-60' : ''}`}>
+            <Card 
+              key={todo.id} 
+              className={`transition-all duration-300 ${
+                todo.completed ? 'opacity-60' : ''
+              } ${exitingId === todo.id ? 'animate-slide-out-right' : ''}`}
+            >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <Checkbox
-                    checked={todo.completed}
-                    onCheckedChange={() => onToggleComplete(todo.id)}
-                    className="mt-1"
-                  />
+                  <div className="relative mt-1">
+                    <Checkbox
+                      checked={todo.completed}
+                      onCheckedChange={() => handleCompleteWithReward(todo.id, !todo.completed)}
+                      className={`relative z-10 ${celebratingId === todo.id ? 'animate-check-pop' : ''}`}
+                    />
+                    {celebratingId === todo.id && (
+                      <span className="absolute inset-0 rounded-full border-2 border-primary animate-ring-burst pointer-events-none" />
+                    )}
+                    {justCompletedId === todo.id && (
+                      <Sparkles className="absolute -top-3 -right-3 w-4 h-4 text-yellow-500 animate-star-bounce pointer-events-none" />
+                    )}
+                  </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
