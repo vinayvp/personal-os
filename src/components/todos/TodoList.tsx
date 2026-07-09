@@ -160,6 +160,7 @@ const TodoList = ({ todos, onToggleComplete, onDeleteTodo, onEditTodo, hideCompl
               className={`transition-all duration-300 ${
                 todo.completed ? 'opacity-60' : ''
               } ${exitingId === todo.id ? 'animate-slide-out-right' : ''}`}
+              style={exitingId === todo.id ? { animationFillMode: 'forwards', opacity: 0 } : undefined}
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
