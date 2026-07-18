@@ -202,7 +202,7 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
           New Note
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex flex-row items-center justify-between space-y-0">
           <DialogTitle>Create New Note</DialogTitle>
           <Button
@@ -215,7 +215,7 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
           </Button>
         </DialogHeader>
         
-        <div className="space-y-4 mt-4 flex-1 overflow-hidden">
+        <div className="space-y-4 mt-4 flex-1 overflow-y-auto pr-1">
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -398,7 +398,7 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
           </Tabs>
           )}
 
-          <div className="flex gap-2 justify-end pt-12">
+          <div className="flex gap-2 justify-end pt-4 border-t sticky bottom-0 bg-background">
             <Button
               onClick={handleCreateNote}
               disabled={isCreating}
