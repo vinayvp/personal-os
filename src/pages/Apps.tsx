@@ -1,13 +1,14 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare, BookOpen, Notebook, Film, DollarSign, Github, BarChart3 } from 'lucide-react';
+import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare, BookOpen, Notebook, Film, DollarSign, Github, BarChart3, Repeat } from 'lucide-react';
 import NotesApp from '@/components/NotesApp';
 import TrackingApp from '@/components/TrackingApp';
 import TodoApp from '@/components/TodoApp';
 import LessonsApp from '@/components/LessonsApp';
 import JournalApp from '@/components/JournalApp';
 import MoviesApp from '@/components/MoviesApp';
+import RevisionApp from '@/components/RevisionApp';
 import FinancialApp from '@/components/financial/FinancialApp';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -47,6 +48,8 @@ const Apps = () => {
         return <JournalApp />;
       case 'movies':
         return <MoviesApp />;
+      case 'revision':
+        return <RevisionApp />;
       case 'financial':
         return <FinancialApp />;
       default:
@@ -117,6 +120,14 @@ const Apps = () => {
             >
               <DollarSign className="mr-2 h-4 w-4" />
               Finance
+            </Button>
+            <Button
+              variant={selectedApp === 'revision' ? 'default' : 'outline'}
+              onClick={() => setSelectedApp('revision')}
+              size="sm"
+            >
+              <Repeat className="mr-2 h-4 w-4" />
+              Revision
             </Button>
           </div>
         </div>
@@ -232,6 +243,15 @@ const Apps = () => {
             >
               <DollarSign className="mr-2 h-4 w-4" />
               Finance
+            </Button>
+            <Button
+              variant={selectedApp === 'revision' ? 'default' : 'outline'}
+              onClick={() => handleAppSelect('revision')}
+              size="sm"
+              className="w-full justify-start"
+            >
+              <Repeat className="mr-2 h-4 w-4" />
+              Revision
             </Button>
             <Button variant="outline" size="icon" asChild className="h-8 w-8">
               <a href="https://github.com/vinayvp/portfolio_and_apps" target="_blank" rel="noopener noreferrer" title="GitHub">

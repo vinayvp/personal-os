@@ -431,6 +431,73 @@ export type Database = {
         }
         Relationships: []
       }
+      revision_category: {
+        Row: {
+          color: string
+          count: number
+          created_at: string
+          curr_element_id: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string
+          count?: number
+          created_at?: string
+          curr_element_id?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string
+          count?: number
+          created_at?: string
+          curr_element_id?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revision_category_curr_element_id_fkey"
+            columns: ["curr_element_id"]
+            isOneToOne: false
+            referencedRelation: "revision_element"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      revision_element: {
+        Row: {
+          category_id: string
+          count: number
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          category_id: string
+          count?: number
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          category_id?: string
+          count?: number
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revision_element_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "revision_category"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tags: {
         Row: {
           color: string | null
