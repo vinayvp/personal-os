@@ -203,6 +203,11 @@ const RevisionFocusView = ({ categoryId, onBack }: Props) => {
                 <h2 className="text-2xl md:text-4xl font-semibold text-foreground break-words">
                   {currentElement.name}
                 </h2>
+                {currentElement.description && (
+                  <p className="text-sm md:text-base text-muted-foreground max-w-xl mx-auto whitespace-pre-wrap">
+                    {currentElement.description}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Completed {currentElement.count} time{currentElement.count === 1 ? '' : 's'}
                 </p>
