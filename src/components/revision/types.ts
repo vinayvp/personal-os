@@ -11,6 +11,7 @@ export interface RevisionElement {
   id: string;
   category_id: string;
   name: string;
+  description: string | null;
   count: number;
   created_at: string;
 }
