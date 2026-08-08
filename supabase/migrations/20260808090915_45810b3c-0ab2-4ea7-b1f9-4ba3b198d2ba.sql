@@ -1,0 +1,1 @@
+ALTER TABLE public.revision_element ADD COLUMN IF NOT EXISTS description text;

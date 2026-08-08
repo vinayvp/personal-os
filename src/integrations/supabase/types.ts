@@ -471,6 +471,7 @@ export type Database = {
           category_id: string
           count: number
           created_at: string
+          description: string | null
           id: string
           name: string
         }
@@ -478,6 +479,7 @@ export type Database = {
           category_id: string
           count?: number
           created_at?: string
+          description?: string | null
           id?: string
           name: string
         }
@@ -485,6 +487,7 @@ export type Database = {
           category_id?: string
           count?: number
           created_at?: string
+          description?: string | null
           id?: string
           name?: string
         }
