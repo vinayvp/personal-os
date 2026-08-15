@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Instagram, Play } from 'lucide-react';
+import { Instagram, Play, Quote } from 'lucide-react';
 import { getInstagramShortcode } from './instagram';
 
 interface Lesson {
@@ -13,8 +13,17 @@ interface Lesson {
   lesson_categories?: { name: string; color: string } | null;
 }
 
+const getTextSize = (length: number) => {
+  if (length <= 40) return { size: 'text-lg sm:text-2xl', clamp: 'line-clamp-6' };
+  if (length <= 90) return { size: 'text-base sm:text-xl', clamp: 'line-clamp-[8]' };
+  if (length <= 160) return { size: 'text-sm sm:text-lg', clamp: 'line-clamp-[10]' };
+  if (length <= 280) return { size: 'text-xs sm:text-base', clamp: 'line-clamp-[12]' };
+  return { size: 'text-[11px] sm:text-sm', clamp: 'line-clamp-[14]' };
+};
+
 const LessonCard: React.FC<{ lesson: Lesson; onClick: () => void }> = ({ lesson, onClick }) => {
   const isInstagram = !!getInstagramShortcode(lesson.instagram_url || '');
+  const textSize = getTextSize((lesson.content || '').trim().length);
 
   return (
     <Card
@@ -37,8 +46,11 @@ const LessonCard: React.FC<{ lesson: Lesson; onClick: () => void }> = ({ lesson,
           <Instagram className="h-4 w-4 text-muted-foreground" />
         </div>
       ) : (
-        <div className="absolute inset-0 p-3 overflow-hidden">
-          <p className="text-xs sm:text-sm text-foreground whitespace-pre-wrap line-clamp-[14]">
+        <div className="absolute inset-0 flex items-center justify-center p-4 pb-14 bg-gradient-to-br from-secondary/40 via-background to-accent/20 overflow-hidden">
+          <Quote className="absolute top-3 left-3 h-4 w-4 text-primary/25" />
+          <p
+            className={`text-center font-medium leading-snug text-foreground whitespace-pre-wrap ${textSize.size} ${textSize.clamp}`}
+          >
             {lesson.content}
           </p>
         </div>
