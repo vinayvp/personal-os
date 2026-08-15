@@ -8,12 +8,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import CreateLessonModal from './lessons/CreateLessonModal';
 import CreateCategoryModal from './lessons/CreateCategoryModal';
+import LessonCard from './lessons/LessonCard';
+import LessonViewModal from './lessons/LessonViewModal';
 
 interface Lesson {
   id: string;
   title: string;
   content: string;
   category_id: string | null;
+  instagram_url: string | null;
   created_at: string;
   lesson_categories?: {
     name: string;
@@ -35,6 +38,7 @@ const LessonsApp = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -173,17 +177,9 @@ const LessonsApp = () => {
           </div>
 
           {isLoading ? (
-            <div className="grid gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {[...Array(5)].map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader className="pb-2">
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-3 bg-muted rounded w-full mb-2"></div>
-                    <div className="h-3 bg-muted rounded w-2/3"></div>
-                  </CardContent>
-                </Card>
+                <Card key={i} className="aspect-[9/16] animate-pulse bg-muted" />
               ))}
             </div>
           ) : randomLessons.length === 0 ? (
@@ -194,26 +190,9 @@ const LessonsApp = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {randomLessons.map((lesson) => (
-                <Card key={lesson.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg font-medium">{lesson.title}</CardTitle>
-                      {lesson.lesson_categories && (
-                        <Badge 
-                          variant="secondary" 
-                          style={{ backgroundColor: `${lesson.lesson_categories.color}20`, color: lesson.lesson_categories.color }}
-                        >
-                          {lesson.lesson_categories.name}
-                        </Badge>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-foreground whitespace-pre-wrap">{lesson.content}</p>
-                  </CardContent>
-                </Card>
+                <LessonCard key={lesson.id} lesson={lesson} onClick={() => setActiveLesson(lesson)} />
               ))}
             </div>
           )}
@@ -251,29 +230,9 @@ const LessonsApp = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {filteredLessons.map((lesson) => (
-                <Card key={lesson.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg font-medium">{lesson.title}</CardTitle>
-                      {lesson.lesson_categories && (
-                        <Badge 
-                          variant="secondary"
-                          style={{ backgroundColor: `${lesson.lesson_categories.color}20`, color: lesson.lesson_categories.color }}
-                        >
-                          {lesson.lesson_categories.name}
-                        </Badge>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-foreground whitespace-pre-wrap">{lesson.content}</p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Created {new Date(lesson.created_at).toLocaleDateString()}
-                    </p>
-                  </CardContent>
-                </Card>
+                <LessonCard key={lesson.id} lesson={lesson} onClick={() => setActiveLesson(lesson)} />
               ))}
             </div>
           )}
@@ -285,6 +244,12 @@ const LessonsApp = () => {
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={handleLessonCreated}
         categories={categories}
+      />
+
+      <LessonViewModal
+        lesson={activeLesson}
+        isOpen={!!activeLesson}
+        onClose={() => setActiveLesson(null)}
       />
 
       <CreateCategoryModal
