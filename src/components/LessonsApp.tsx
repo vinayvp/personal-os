@@ -101,7 +101,7 @@ const LessonsApp = () => {
 
   const generateRandomLessons = () => {
     const shuffled = [...lessons].sort(() => 0.5 - Math.random());
-    setRandomLessons(shuffled.slice(0, 5));
+    setRandomLessons(shuffled.slice(0, 6));
   };
 
   const filteredLessons = selectedCategory
@@ -154,7 +154,7 @@ const LessonsApp = () => {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="today" className="gap-2">
             <BookOpen className="h-4 w-4" />
-            Today's 5 Lessons
+            Today's 6 Lessons
           </TabsTrigger>
           <TabsTrigger value="browse" className="gap-2">
             <Filter className="h-4 w-4" />
@@ -177,8 +177,8 @@ const LessonsApp = () => {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              {[...Array(5)].map((_, i) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {[...Array(6)].map((_, i) => (
                 <Card key={i} className="aspect-[9/16] animate-pulse bg-muted" />
               ))}
             </div>
@@ -190,7 +190,7 @@ const LessonsApp = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {randomLessons.map((lesson) => (
                 <LessonCard key={lesson.id} lesson={lesson} onClick={() => setActiveLesson(lesson)} />
               ))}
@@ -230,7 +230,7 @@ const LessonsApp = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {filteredLessons.map((lesson) => (
                 <LessonCard key={lesson.id} lesson={lesson} onClick={() => setActiveLesson(lesson)} />
               ))}
