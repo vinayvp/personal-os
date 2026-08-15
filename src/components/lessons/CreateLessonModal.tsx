@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getInstagramShortcode } from './instagram';
 
 interface Category {
   id: string;
@@ -31,16 +33,36 @@ const CreateLessonModal: React.FC<CreateLessonModalProps> = ({
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [categoryId, setCategoryId] = useState<string>('');
+  const [lessonType, setLessonType] = useState<'text' | 'instagram'>('text');
+  const [instagramUrl, setInstagramUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title.trim() || !content.trim()) {
+    if (!title.trim()) {
       toast({
         title: "Error",
-        description: "Please fill in both title and content",
+        description: "Please enter a title",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (lessonType === 'text' && !content.trim()) {
+      toast({
+        title: "Error",
+        description: "Please write the lesson content",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (lessonType === 'instagram' && !getInstagramShortcode(instagramUrl)) {
+      toast({
+        title: "Error",
+        description: "Please paste a valid Instagram post or reel link",
         variant: "destructive"
       });
       return;
@@ -54,6 +76,7 @@ const CreateLessonModal: React.FC<CreateLessonModalProps> = ({
         .insert({
           title: title.trim(),
           content: content.trim(),
+          instagram_url: lessonType === 'instagram' ? instagramUrl.trim() : null,
           category_id: categoryId || null
         });
 
@@ -61,6 +84,8 @@ const CreateLessonModal: React.FC<CreateLessonModalProps> = ({
 
       setTitle('');
       setContent('');
+      setInstagramUrl('');
+      setLessonType('text');
       setCategoryId('');
       onSuccess();
     } catch (error) {
@@ -79,6 +104,8 @@ const CreateLessonModal: React.FC<CreateLessonModalProps> = ({
     if (!isSubmitting) {
       setTitle('');
       setContent('');
+      setInstagramUrl('');
+      setLessonType('text');
       setCategoryId('');
       onClose();
     }
@@ -92,6 +119,13 @@ const CreateLessonModal: React.FC<CreateLessonModalProps> = ({
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          <Tabs value={lessonType} onValueChange={(v) => setLessonType(v as 'text' | 'instagram')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="text">Text</TabsTrigger>
+              <TabsTrigger value="instagram">Instagram post</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
             <Input
@@ -125,13 +159,28 @@ const CreateLessonModal: React.FC<CreateLessonModalProps> = ({
             </Select>
           </div>
 
+          {lessonType === 'instagram' && (
+            <div className="space-y-2">
+              <Label htmlFor="instagram">Instagram post / reel link</Label>
+              <Input
+                id="instagram"
+                value={instagramUrl}
+                onChange={(e) => setInstagramUrl(e.target.value)}
+                placeholder="https://www.instagram.com/reel/ABC123/"
+                disabled={isSubmitting}
+              />
+            </div>
+          )}
+
           <div className="space-y-2">
-            <Label htmlFor="content">Lesson Content</Label>
+            <Label htmlFor="content">
+              {lessonType === 'instagram' ? 'Notes (Optional)' : 'Lesson Content'}
+            </Label>
             <Textarea
               id="content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Write your lesson here..."
+              placeholder={lessonType === 'instagram' ? 'Why this post matters...' : 'Write your lesson here...'}
               rows={4}
               disabled={isSubmitting}
             />

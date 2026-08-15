@@ -199,14 +199,16 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          instagram_url: string | null
           title: string
           updated_at: string
         }
         Insert: {
           category_id?: string | null
-          content: string
+          content?: string
           created_at?: string
           id?: string
+          instagram_url?: string | null
           title: string
           updated_at?: string
         }
@@ -215,6 +217,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          instagram_url?: string | null
           title?: string
           updated_at?: string
         }
