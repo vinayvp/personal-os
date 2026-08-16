@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { User, MapPin, Calendar, Wrench } from 'lucide-react';
@@ -65,44 +64,43 @@ const About = () => {
           </p>
         </div>
         
-        <div className="grid lg:grid-cols-2 gap-12 items-start">
-          <div>
-            <Card className="p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <User className="w-6 h-6 text-primary" />
-                <h3 className="text-2xl font-semibold">Professional Summary</h3>
-              </div>
-              <div className="space-y-4 text-muted-foreground">
-                <p className="leading-relaxed">
-                  I’m a Software Engineer with 3.5+ years of experience in Data Engineering, building scalable data platforms and distributed systems for high-volume, real-time workloads, with a focus on reliability, performance, and cost efficiency.
-I specialize in real-time CDC, high-throughput data ingestion, ETL/ELT, distributed systems, and data platform architecture. My core stack includes Java, Python, SQL, GCP, BigQuery, Kubernetes, Debezium, Apache NiFi, and Docker.
-                </p>
-                <p className="leading-relaxed">
-                  I’ve built and scaled ingestion platforms supporting 7K+ tables and 10M+ events/day. I redesigned ingestion architecture to reduce infrastructure costs by 69% and built a real-time CDC platform that reduced data freshness from 1–2 hours to ~0.8 seconds. Implemented ingestion pipeine to perform incremental transformations to reduce BigQuery costs by ~83%.
-                </p>
-                <p className="leading-relaxed">
-                  Beyond engineering, I contribute to hiring by conducting technical and behavioral interviews for intern and junior engineering roles and serving as a primary interviewer during campus recruitment drives.
-Open to Relocate. Let’s connect if you’re building scalable data platforms, real-time data infrastructure, or distributed systems.
-                </p>
-              </div>
-            </Card>
-          </div>
+        <div className="flex flex-col gap-8">
+          {/* Professional Summary */}
+          <Card className="p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <User className="w-6 h-6 text-primary" />
+              <h3 className="text-2xl font-semibold">Professional Summary</h3>
+            </div>
+            <div className="space-y-4 text-muted-foreground">
+              <p className="leading-relaxed">
+                I’m a Software Engineer with 3.5+ years of experience in Data Engineering, building scalable data platforms and distributed systems for high-volume, real-time workloads, with a focus on reliability, performance, and cost efficiency. I specialize in real-time CDC, high-throughput data ingestion, ETL/ELT, distributed systems, and data platform architecture. My core stack includes Java, Python, SQL, GCP, BigQuery, Kubernetes, Debezium, Apache NiFi, and Docker.
+              </p>
+              <p className="leading-relaxed">
+                I’ve built and scaled ingestion platforms supporting 7K+ tables and 10M+ events/day. I redesigned ingestion architecture to reduce infrastructure costs by 69% and built a real-time CDC platform that reduced data freshness from 1–2 hours to ~0.8 seconds. Implemented ingestion pipeline to perform incremental transformations to reduce BigQuery costs by ~83%.
+              </p>
+              <p className="leading-relaxed">
+                Beyond engineering, I contribute to hiring by conducting technical and behavioral interviews for intern and junior engineering roles and serving as a primary interviewer during campus recruitment drives. Open to Relocate. Let’s connect if you’re building scalable data platforms, real-time data infrastructure, or distributed systems.
+              </p>
+            </div>
+          </Card>
           
-          <div>
-            <Card className="p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <Wrench className="w-6 h-6 text-primary" />
-                <h3 className="text-2xl font-semibold">Technical Skills</h3>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {skills.map((skill) => (
-                  <div key={skill} className="border px-4 py-2 rounded-lg text-center text-sm font-medium hover:scale-105 transition-transform duration-200">
-                    {skill}
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
+          {/* Technical Skills */}
+          <Card className="p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <Wrench className="w-6 h-6 text-primary" />
+              <h3 className="text-2xl font-semibold">Technical Skills</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              {skills.map((skill) => (
+                <div 
+                  key={skill} 
+                  className="border px-4 py-2 rounded-lg text-center text-sm font-medium hover:scale-105 transition-transform duration-200 flex items-center justify-center"
+                >
+                  {skill}
+                </div>
+              ))}
+            </div>
+          </Card>
         </div>
       </div>
     </section>
