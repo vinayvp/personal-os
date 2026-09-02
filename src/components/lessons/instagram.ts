@@ -7,5 +7,5 @@ export const getInstagramShortcode = (url: string): string | null => {
 
 export const getInstagramEmbedUrl = (url: string): string | null => {
   const code = getInstagramShortcode(url);
-  return code ? `https://www.instagram.com/p/${code}/embed` : null;
+  return code ? `https://www.instagram.com/p/${code}/embed?theme=dark` : null;
 };
