@@ -19,6 +19,8 @@ import AddTransactionModal from "@/components/financial/AddTransactionModal";
 import AddAssetTypeModal from "@/components/financial/AddAssetTypeModal";
 import RecordValueModal from "@/components/financial/RecordValueModal";
 import AddSipModal from "@/components/financial/AddSipModal";
+import PageLoader from "@/components/common/PageLoader";
+import RefreshButton from "@/components/common/RefreshButton";
 import { 
   Investment, 
   InvestmentTransaction, 
@@ -166,11 +168,7 @@ const FinancialApp = () => {
   // ... Rest of the component remains exactly the same
   if (loading) {
     return (
-      <div className="min-h-screen bg-background p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center py-12">Loading...</div>
-        </div>
-      </div>
+      <PageLoader message="Loading your portfolio..." />
     );
   }
 
@@ -183,6 +181,7 @@ const FinancialApp = () => {
             <h1 className="text-3xl font-bold">Financial Dashboard</h1>
             <p className="text-muted-foreground mt-1">Track your investments and portfolio performance</p>
           </div>
+          <RefreshButton onRefresh={fetchData} />
         </div>
 
         {/* Navigation Tabs with Actions */}

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import PageLoader from '@/components/common/PageLoader';
+import RefreshButton from '@/components/common/RefreshButton';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -226,18 +228,7 @@ const MoviesApp = () => {
   const totalCount = movies.length;
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading movies...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <PageLoader message="Loading movies..." />;
   }
 
   return (
@@ -252,6 +243,7 @@ const MoviesApp = () => {
             </p>
           </div>
           <div className="flex gap-1.5 mt-4 md:mt-0">
+            <RefreshButton onRefresh={async () => { await Promise.all([loadMovies(), loadCategories(), loadPlatforms()]); }} />
             <Button 
               variant="outline"
               size="sm"
