@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import PageLoader from '@/components/common/PageLoader';
+import RefreshButton from '@/components/common/RefreshButton';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -120,14 +122,7 @@ const JournalApp = () => {
   });
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading your journal...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader message="Loading your journal..." />;
   }
 
   return (
@@ -136,10 +131,13 @@ const JournalApp = () => {
         <div className="max-w-7xl mx-auto p-4">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold">Personal Journal</h1>
+            <div className="flex items-center gap-2">
+            <RefreshButton onRefresh={fetchEntries} />
             <Button onClick={handleTodayEntry} className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
               Today's Entry
             </Button>
+            </div>
           </div>
 
           <Tabs defaultValue="calendar" className="space-y-6">

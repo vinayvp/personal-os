@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
+import PageLoader from '@/components/common/PageLoader';
+import RefreshButton from '@/components/common/RefreshButton';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -243,14 +245,7 @@ const HabitTracker = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading your habits...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader message="Loading your habits..." />;
   }
 
   return (
@@ -261,6 +256,7 @@ const HabitTracker = () => {
             <h1 className="text-xl md:text-3xl font-bold text-foreground truncate">Habit Tracker</h1>
             <p className="text-xs md:text-sm text-muted-foreground">Build better habits, one day at a time</p>
           </div>
+          <RefreshButton onRefresh={async () => { await Promise.all([fetchHabits(), fetchCompletions()]); }} />
           <Button onClick={() => setIsCreateModalOpen(true)} size="sm" className="flex items-center gap-1.5 text-xs md:text-sm px-2.5 md:px-4 shrink-0">
             <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
             <span className="hidden sm:inline">New Habit</span>

@@ -10,6 +10,8 @@ import { RevisionCategory, RevisionElement } from './revision/types';
 import CreateRevisionCategoryModal from './revision/CreateRevisionCategoryModal';
 import AddRevisionElementsModal from './revision/AddRevisionElementsModal';
 import RevisionFocusView from './revision/RevisionFocusView';
+import PageLoader from '@/components/common/PageLoader';
+import RefreshButton from '@/components/common/RefreshButton';
 
 const RevisionApp = () => {
   const [categories, setCategories] = useState<RevisionCategory[]>([]);
@@ -73,15 +75,16 @@ const RevisionApp = () => {
           <Repeat className="h-5 w-5 text-primary" />
           <h2 className="text-lg md:text-xl font-bold text-foreground">Revision</h2>
         </div>
-        <Button size="sm" onClick={() => setIsCreateOpen(true)}>
-          <FolderPlus className="h-4 w-4 mr-2" /> New Category
-        </Button>
+        <div className="flex items-center gap-2">
+          <RefreshButton onRefresh={fetchData} />
+          <Button size="sm" onClick={() => setIsCreateOpen(true)}>
+            <FolderPlus className="h-4 w-4 mr-2" /> New Category
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-16 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading...
-        </div>
+        <PageLoader fullScreen={false} />
       ) : categories.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">

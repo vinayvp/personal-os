@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
+import PageLoader from '@/components/common/PageLoader';
+import RefreshButton from '@/components/common/RefreshButton';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -143,14 +145,7 @@ const TodoApp = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading your todos...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader message="Loading your todos..." />;
   }
 
   return (
@@ -162,6 +157,7 @@ const TodoApp = () => {
             <p className="text-muted-foreground">Organize your tasks and get things done</p>
           </div>
           <div className="flex items-center gap-2">
+            <RefreshButton onRefresh={fetchTodos} />
             <Button
               variant="outline"
               onClick={() => setHideCompleted(!hideCompleted)}

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import PageLoader from '@/components/common/PageLoader';
+import RefreshButton from '@/components/common/RefreshButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -135,6 +137,7 @@ const LessonsApp = () => {
             <p className="text-muted-foreground">Capture and revisit your most important insights</p>
           </div>
           <div className="flex gap-2 mt-4 md:mt-0">
+            <RefreshButton onRefresh={async () => { await Promise.all([fetchLessons(), fetchCategories()]); }} />
             <Button 
               variant="outline" 
               onClick={() => setIsCreateCategoryModalOpen(true)} 
@@ -177,11 +180,7 @@ const LessonsApp = () => {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {[...Array(6)].map((_, i) => (
-                <Card key={i} className="aspect-[9/16] animate-pulse bg-muted" />
-              ))}
-            </div>
+            <PageLoader fullScreen={false} message="Loading lessons..." />
           ) : randomLessons.length === 0 ? (
             <Card>
               <CardContent className="text-center py-8">
