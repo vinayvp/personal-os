@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Instagram, Play, Quote } from 'lucide-react';
+import { Instagram, Quote, ChevronRight } from 'lucide-react';
 import { getInstagramShortcode } from './instagram';
 
 interface Lesson {
@@ -13,17 +13,8 @@ interface Lesson {
   lesson_categories?: { name: string; color: string } | null;
 }
 
-const getTextSize = (length: number) => {
-  if (length <= 40) return { size: 'text-lg sm:text-2xl', clamp: 'line-clamp-6' };
-  if (length <= 90) return { size: 'text-base sm:text-xl', clamp: 'line-clamp-[8]' };
-  if (length <= 160) return { size: 'text-sm sm:text-lg', clamp: 'line-clamp-[10]' };
-  if (length <= 280) return { size: 'text-xs sm:text-base', clamp: 'line-clamp-[12]' };
-  return { size: 'text-[11px] sm:text-sm', clamp: 'line-clamp-[14]' };
-};
-
 const LessonCard: React.FC<{ lesson: Lesson; onClick: () => void }> = ({ lesson, onClick }) => {
-  const isInstagram = !!getInstagramShortcode(lesson.instagram_url || '');
-  const textSize = getTextSize((lesson.content || '').trim().length);
+  const isInstagram = Boolean(getInstagramShortcode(lesson.instagram_url || ''));
 
   return (
     <Card
@@ -36,40 +27,56 @@ const LessonCard: React.FC<{ lesson: Lesson; onClick: () => void }> = ({ lesson,
           onClick();
         }
       }}
-      className="group relative aspect-[9/16] overflow-hidden cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all"
+      className="group relative overflow-hidden cursor-pointer border border-border/70 hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 p-3.5 sm:p-4 bg-card/80 hover:bg-card flex items-center gap-3 sm:gap-3.5 min-h-[82px]"
     >
+      {/* Background Accent Subtle Glow */}
       {isInstagram ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary/15 via-accent/10 to-secondary/20">
-          <div className="rounded-full bg-background/80 p-3 group-hover:scale-110 transition-transform">
-            <Play className="h-6 w-6 text-primary" />
-          </div>
-          <Instagram className="h-4 w-4 text-muted-foreground" />
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-r from-rose-500/10 via-transparent to-transparent pointer-events-none opacity-60 group-hover:opacity-100 transition-opacity" />
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center p-4 pb-14 bg-gradient-to-br from-secondary/40 via-background to-accent/20 overflow-hidden">
-          <Quote className="absolute top-3 left-3 h-4 w-4 text-primary/25" />
-          <p
-            className={`text-center font-medium leading-snug text-foreground whitespace-pre-wrap ${textSize.size} ${textSize.clamp}`}
-          >
-            {lesson.content}
-          </p>
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-transparent pointer-events-none opacity-50 group-hover:opacity-100 transition-opacity" />
       )}
 
-      <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-background via-background/90 to-transparent">
-        {lesson.lesson_categories && (
-          <Badge
-            variant="secondary"
-            className="mb-1 text-[10px] px-1.5 py-0"
-            style={{
-              backgroundColor: `${lesson.lesson_categories.color}20`,
-              color: lesson.lesson_categories.color,
-            }}
-          >
-            {lesson.lesson_categories.name}
-          </Badge>
+      {/* Left Icon Badge */}
+      <div className="relative z-10 shrink-0">
+        {isInstagram ? (
+          <div className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-tr from-amber-500/15 via-rose-500/15 to-purple-500/15 border border-rose-500/30 text-rose-400 group-hover:scale-105 transition-transform">
+            <Instagram className="h-4 w-4 sm:h-5 sm:w-5" />
+          </div>
+        ) : (
+          <div className="p-2 sm:p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20 group-hover:scale-105 transition-transform">
+            <Quote className="h-4 w-4 sm:h-5 sm:w-5" />
+          </div>
         )}
-        <p className="text-xs sm:text-sm font-medium text-foreground line-clamp-2">{lesson.title}</p>
+      </div>
+
+      {/* Middle: Category & Title */}
+      <div className="relative z-10 flex-1 min-w-0 space-y-1">
+        <div className="flex items-center gap-2">
+          {lesson.lesson_categories && (
+            <Badge
+              variant="secondary"
+              className="text-[10px] px-1.5 py-0 h-4 font-normal"
+              style={{
+                backgroundColor: `${lesson.lesson_categories.color}20`,
+                color: lesson.lesson_categories.color,
+              }}
+            >
+              {lesson.lesson_categories.name}
+            </Badge>
+          )}
+          <span className="text-[11px] text-muted-foreground">
+            {isInstagram ? 'Instagram' : 'Lesson'}
+          </span>
+        </div>
+
+        <h3 className="font-semibold text-sm sm:text-base text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+          {lesson.title}
+        </h3>
+      </div>
+
+      {/* Right Action Chevron */}
+      <div className="relative z-10 shrink-0 pl-1 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all">
+        <ChevronRight className="h-4 w-4" />
       </div>
     </Card>
   );

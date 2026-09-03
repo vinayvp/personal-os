@@ -7,6 +7,7 @@
 @layer base {
   :root {
     /* Dark theme as default - comfortable mid-dark like GitHub */
+    color-scheme: dark;
     --background: 213 27% 8%;
     --foreground: 210 40% 95%;
 
