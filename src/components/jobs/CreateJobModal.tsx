@@ -31,6 +31,7 @@ import {
   UploadCloud,
   X,
   Loader2,
+  ScrollText,
 } from 'lucide-react';
 import {
   JobStatus,
@@ -40,7 +41,7 @@ import {
   FOUND_IN_OPTIONS,
   JOB_TYPE_OPTIONS,
 } from './types';
-import { uploadResume, validateResumeFile, convertSalaryToInr } from '@/integrations/supabase/jobClient';
+import { uploadResume, uploadCoverLetter, validateResumeFile, convertSalaryToInr } from '@/integrations/supabase/jobClient';
 import { useToast } from '@/hooks/use-toast';
 
 interface Props {
@@ -79,6 +80,10 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploadingResume, setIsUploadingResume] = useState(false);
 
+  // Cover letter file state (optional)
+  const [selectedCoverLetter, setSelectedCoverLetter] = useState<File | null>(null);
+  const [isUploadingCoverLetter, setIsUploadingCoverLetter] = useState(false);
+
   const resetForm = () => {
     setAppliedDate(new Date().toISOString().split('T')[0]);
     setCompanyName('');
@@ -101,6 +106,7 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     setRecruiterPhone('');
     setFollowUpNotes('');
     setSelectedFile(null);
+    setSelectedCoverLetter(null);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,6 +124,23 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     }
 
     setSelectedFile(file);
+  };
+
+  const handleCoverLetterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validation = validateResumeFile(file);
+    if (!validation.valid) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid File',
+        description: validation.error,
+      });
+      return;
+    }
+
+    setSelectedCoverLetter(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -142,6 +165,8 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     try {
       let resumeStoragePath: string | null = null;
       let resumeFilename: string | null = null;
+      let coverLetterStoragePath: string | null = null;
+      let coverLetterFilename: string | null = null;
 
       // Upload tailored resume to private bucket if selected
       if (selectedFile) {
@@ -150,6 +175,15 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
         resumeStoragePath = uploadResult.storagePath;
         resumeFilename = uploadResult.filename;
         setIsUploadingResume(false);
+      }
+
+      // Upload optional cover letter to private bucket if selected
+      if (selectedCoverLetter) {
+        setIsUploadingCoverLetter(true);
+        const clUploadResult = await uploadCoverLetter(selectedCoverLetter);
+        coverLetterStoragePath = clUploadResult.storagePath;
+        coverLetterFilename = clUploadResult.filename;
+        setIsUploadingCoverLetter(false);
       }
 
       const numMin = salaryMin ? parseFloat(salaryMin) : null;
@@ -173,6 +207,8 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
         resume_url: null, // Kept private; accessed via signed URLs
         resume_filename: resumeFilename,
         resume_storage_path: resumeStoragePath,
+        cover_letter_filename: coverLetterFilename,
+        cover_letter_storage_path: coverLetterStoragePath,
         application_link: cleanLink,
         found_in: (isCustomFoundIn ? customFoundIn.trim() : foundInPreset) || null,
         job_description: jobDescription.trim() || null,
@@ -198,6 +234,7 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     } finally {
       setIsSubmitting(false);
       setIsUploadingResume(false);
+      setIsUploadingCoverLetter(false);
     }
   };
 
@@ -453,54 +490,111 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
             </div>
           </div>
 
-          {/* Tailored Resume Upload (Private Storage) */}
-          <div className="space-y-1.5 pt-1">
-            <Label className="text-xs font-semibold flex items-center justify-between">
-              <span className="flex items-center gap-1">
-                <FileText className="w-3.5 h-3.5 text-primary" />
-                Tailored Resume Used (Stored Privately)
-              </span>
-              <span className="text-[10px] text-muted-foreground">PDF, DOC, DOCX up to 10MB</span>
-            </Label>
+          {/* Documents Upload (Resume & Optional Cover Letter) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+            {/* Tailored Resume */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <FileText className="w-3.5 h-3.5 text-primary" />
+                  Tailored Resume
+                </span>
+                <span className="text-[10px] text-muted-foreground">PDF/Word ≤10MB</span>
+              </Label>
 
-            {selectedFile ? (
-              <div className="flex items-center justify-between p-2.5 rounded-lg border border-primary/30 bg-primary/5">
-                <div className="flex items-center gap-2 min-w-0">
-                  <FileText className="w-4 h-4 text-primary shrink-0" />
-                  <span className="text-xs font-medium text-foreground truncate">
-                    {selectedFile.name}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground shrink-0">
-                    ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
-                  </span>
+              {selectedFile ? (
+                <div className="flex items-center justify-between p-2.5 rounded-lg border border-primary/30 bg-primary/5 min-h-[72px]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText className="w-4 h-4 text-primary shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-xs font-medium text-foreground truncate block">
+                        {selectedFile.name}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground block">
+                        {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
+                    onClick={() => setSelectedFile(null)}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                  onClick={() => setSelectedFile(null)}
-                >
-                  <X className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            ) : (
-              <label className="border border-dashed border-border/80 hover:border-primary/60 rounded-xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer bg-card/40 hover:bg-card/70 transition-colors">
-                <UploadCloud className="w-6 h-6 text-muted-foreground" />
-                <span className="text-xs font-medium text-foreground">
-                  Click to upload the customized resume used for this application
+              ) : (
+                <label className="border border-dashed border-border/80 hover:border-primary/60 rounded-xl p-3 flex flex-col items-center justify-center gap-1 cursor-pointer bg-card/40 hover:bg-card/70 transition-colors min-h-[72px]">
+                  <UploadCloud className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-xs font-medium text-foreground text-center">
+                    Upload Tailored Resume
+                  </span>
+                  <span className="text-[10px] text-muted-foreground text-center">
+                    Stored securely in private cloud
+                  </span>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+
+            {/* Optional Cover Letter */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <ScrollText className="w-3.5 h-3.5 text-emerald-400" />
+                  Cover Letter <span className="text-[10px] font-normal text-muted-foreground">(Optional)</span>
                 </span>
-                <span className="text-[11px] text-muted-foreground">
-                  Stored securely so you can retrieve or download it anytime
-                </span>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </label>
-            )}
+                <span className="text-[10px] text-muted-foreground">PDF/Word ≤10MB</span>
+              </Label>
+
+              {selectedCoverLetter ? (
+                <div className="flex items-center justify-between p-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 min-h-[72px]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ScrollText className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-xs font-medium text-foreground truncate block">
+                        {selectedCoverLetter.name}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground block">
+                        {(selectedCoverLetter.size / (1024 * 1024)).toFixed(2)} MB
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
+                    onClick={() => setSelectedCoverLetter(null)}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <label className="border border-dashed border-border/80 hover:border-emerald-500/60 rounded-xl p-3 flex flex-col items-center justify-center gap-1 cursor-pointer bg-card/40 hover:bg-card/70 transition-colors min-h-[72px]">
+                  <UploadCloud className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-xs font-medium text-foreground text-center">
+                    Upload Cover Letter
+                  </span>
+                  <span className="text-[10px] text-muted-foreground text-center">
+                    Optional • Stored securely
+                  </span>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={handleCoverLetterChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
           </div>
 
           {/* Application Link */}
@@ -590,7 +684,11 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  {isUploadingResume ? 'Uploading Resume...' : 'Saving...'}
+                  {isUploadingResume
+                    ? 'Uploading Resume...'
+                    : isUploadingCoverLetter
+                    ? 'Uploading Cover Letter...'
+                    : 'Saving...'}
                 </>
               ) : (
                 'Save Application'

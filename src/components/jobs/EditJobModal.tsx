@@ -32,6 +32,7 @@ import {
   X,
   Loader2,
   Download,
+  ScrollText,
 } from 'lucide-react';
 import {
   JobApplication,
@@ -41,7 +42,13 @@ import {
   FOUND_IN_OPTIONS,
   JOB_TYPE_OPTIONS,
 } from './types';
-import { uploadResume, validateResumeFile, downloadResume, convertSalaryToInr } from '@/integrations/supabase/jobClient';
+import {
+  uploadResume,
+  uploadCoverLetter,
+  validateResumeFile,
+  downloadResume,
+  convertSalaryToInr,
+} from '@/integrations/supabase/jobClient';
 import { useToast } from '@/hooks/use-toast';
 
 interface Props {
@@ -82,6 +89,12 @@ const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
   const [existingResumeName, setExistingResumeName] = useState<string | null>(null);
   const [newFile, setNewFile] = useState<File | null>(null);
   const [isUploadingResume, setIsUploadingResume] = useState(false);
+
+  // Cover letter state
+  const [existingCoverLetterPath, setExistingCoverLetterPath] = useState<string | null>(null);
+  const [existingCoverLetterName, setExistingCoverLetterName] = useState<string | null>(null);
+  const [newCoverLetterFile, setNewCoverLetterFile] = useState<File | null>(null);
+  const [isUploadingCoverLetter, setIsUploadingCoverLetter] = useState(false);
 
   useEffect(() => {
     if (job) {
@@ -135,6 +148,9 @@ const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
       setExistingResumePath(job.resume_storage_path || null);
       setExistingResumeName(job.resume_filename || null);
       setNewFile(null);
+      setExistingCoverLetterPath(job.cover_letter_storage_path || null);
+      setExistingCoverLetterName(job.cover_letter_filename || null);
+      setNewCoverLetterFile(null);
     }
   }, [job]);
 
@@ -157,6 +173,23 @@ const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
     setNewFile(file);
   };
 
+  const handleCoverLetterFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validation = validateResumeFile(file);
+    if (!validation.valid) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid File',
+        description: validation.error,
+      });
+      return;
+    }
+
+    setNewCoverLetterFile(file);
+  };
+
   const handleDownloadExisting = async () => {
     if (!existingResumePath) return;
     try {
@@ -166,6 +199,19 @@ const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
         variant: 'destructive',
         title: 'Download failed',
         description: err?.message || 'Could not download resume',
+      });
+    }
+  };
+
+  const handleDownloadExistingCoverLetter = async () => {
+    if (!existingCoverLetterPath) return;
+    try {
+      await downloadResume(existingCoverLetterPath, existingCoverLetterName || 'cover_letter.pdf');
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Download failed',
+        description: err?.message || 'Could not download cover letter',
       });
     }
   };
@@ -191,6 +237,8 @@ const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
     try {
       let resumeStoragePath = existingResumePath;
       let resumeFilename = existingResumeName;
+      let coverLetterStoragePath = existingCoverLetterPath;
+      let coverLetterFilename = existingCoverLetterName;
 
       // If a new resume is provided, upload it
       if (newFile) {
@@ -199,6 +247,15 @@ const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
         resumeStoragePath = uploadResult.storagePath;
         resumeFilename = uploadResult.filename;
         setIsUploadingResume(false);
+      }
+
+      // If a new cover letter is provided, upload it
+      if (newCoverLetterFile) {
+        setIsUploadingCoverLetter(true);
+        const clUploadResult = await uploadCoverLetter(newCoverLetterFile);
+        coverLetterStoragePath = clUploadResult.storagePath;
+        coverLetterFilename = clUploadResult.filename;
+        setIsUploadingCoverLetter(false);
       }
 
       const numMin = salaryMin ? parseFloat(salaryMin) : null;
@@ -221,6 +278,8 @@ const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
         salary_inr_rate: salaryConversion.salary_inr_rate,
         resume_filename: resumeFilename,
         resume_storage_path: resumeStoragePath,
+        cover_letter_filename: coverLetterFilename,
+        cover_letter_storage_path: coverLetterStoragePath,
         application_link: cleanLink,
         found_in: (isCustomFoundIn ? customFoundIn.trim() : foundInPreset) || null,
         job_description: jobDescription.trim() || null,
@@ -245,6 +304,7 @@ const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
     } finally {
       setIsSubmitting(false);
       setIsUploadingResume(false);
+      setIsUploadingCoverLetter(false);
     }
   };
 
@@ -498,86 +558,199 @@ const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
             </div>
           </div>
 
-          {/* Tailored Resume Management */}
-          <div className="space-y-2 pt-1">
-            <Label className="text-xs font-semibold flex items-center justify-between">
-              <span className="flex items-center gap-1">
-                <FileText className="w-3.5 h-3.5 text-primary" />
-                Tailored Resume Used (Stored Privately)
-              </span>
-              <span className="text-[10px] text-muted-foreground">PDF, DOC, DOCX up to 10MB</span>
-            </Label>
+          {/* Documents Management (Resume & Optional Cover Letter) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+            {/* Tailored Resume Management */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <FileText className="w-3.5 h-3.5 text-primary" />
+                  Tailored Resume
+                </span>
+                <span className="text-[10px] text-muted-foreground">PDF/Word ≤10MB</span>
+              </Label>
 
-            {/* Currently attached resume */}
-            {existingResumePath && !newFile && (
-              <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/80 bg-muted/40">
-                <div className="flex items-center gap-2 min-w-0">
-                  <FileText className="w-4 h-4 text-primary shrink-0" />
-                  <span className="text-xs font-medium text-foreground truncate">
-                    {existingResumeName || 'Tailored Resume'}
-                  </span>
+              {/* Currently attached resume */}
+              {existingResumePath && !newFile && (
+                <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/80 bg-muted/40 min-h-[72px]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText className="w-4 h-4 text-primary shrink-0" />
+                    <span className="text-xs font-medium text-foreground truncate">
+                      {existingResumeName || 'Tailored Resume'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs gap-1 text-primary hover:text-primary/90 px-2"
+                      onClick={handleDownloadExisting}
+                    >
+                      <Download className="w-3 h-3" />
+                      Download
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      onClick={() => {
+                        setExistingResumePath(null);
+                        setExistingResumeName(null);
+                      }}
+                      title="Remove attached resume"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs gap-1 text-primary hover:text-primary/90"
-                    onClick={handleDownloadExisting}
-                  >
-                    <Download className="w-3 h-3" />
-                    Download
-                  </Button>
+              )}
+
+              {/* Newly selected file to upload */}
+              {newFile ? (
+                <div className="flex items-center justify-between p-2.5 rounded-lg border border-primary/40 bg-primary/10 min-h-[72px]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText className="w-4 h-4 text-primary shrink-0" />
+                    <span className="text-xs font-medium text-foreground truncate">
+                      Replace with: {newFile.name}
+                    </span>
+                  </div>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                    onClick={() => {
-                      setExistingResumePath(null);
-                      setExistingResumeName(null);
-                    }}
-                    title="Remove attached resume"
+                    className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
+                    onClick={() => setNewFile(null)}
                   >
                     <X className="w-3.5 h-3.5" />
                   </Button>
                 </div>
-              </div>
-            )}
-
-            {/* Newly selected file to upload */}
-            {newFile ? (
-              <div className="flex items-center justify-between p-2.5 rounded-lg border border-primary/40 bg-primary/10">
-                <div className="flex items-center gap-2 min-w-0">
-                  <FileText className="w-4 h-4 text-primary shrink-0" />
-                  <span className="text-xs font-medium text-foreground truncate">
-                    Replace with: {newFile.name}
+              ) : !existingResumePath ? (
+                <label className="border border-dashed border-border/70 hover:border-primary/60 rounded-xl p-3 flex flex-col items-center justify-center gap-1 cursor-pointer bg-card/40 hover:bg-card/70 transition-colors min-h-[72px]">
+                  <UploadCloud className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-xs text-foreground text-center">
+                    Upload Tailored Resume
                   </span>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                  onClick={() => setNewFile(null)}
-                >
-                  <X className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            ) : (
-              <label className="border border-dashed border-border/70 hover:border-primary/60 rounded-xl p-3 flex flex-col items-center justify-center gap-1 cursor-pointer bg-card/40 hover:bg-card/70 transition-colors">
-                <UploadCloud className="w-5 h-5 text-muted-foreground" />
-                <span className="text-xs text-foreground">
-                  {existingResumePath ? 'Click to replace attached resume' : 'Click to upload tailored resume'}
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+              ) : null}
+
+              {/* If existing resume is present, show replace link */}
+              {existingResumePath && !newFile && (
+                <label className="text-[11px] text-primary hover:underline cursor-pointer flex items-center gap-1 justify-end pt-0.5">
+                  <UploadCloud className="w-3 h-3" />
+                  <span>Replace resume</span>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+
+            {/* Cover Letter Management */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <ScrollText className="w-3.5 h-3.5 text-emerald-400" />
+                  Cover Letter <span className="text-[10px] font-normal text-muted-foreground">(Optional)</span>
                 </span>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </label>
-            )}
+                <span className="text-[10px] text-muted-foreground">PDF/Word ≤10MB</span>
+              </Label>
+
+              {/* Currently attached cover letter */}
+              {existingCoverLetterPath && !newCoverLetterFile && (
+                <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/80 bg-muted/40 min-h-[72px]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ScrollText className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="text-xs font-medium text-foreground truncate">
+                      {existingCoverLetterName || 'Cover Letter'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs gap-1 text-emerald-400 hover:text-emerald-300 px-2"
+                      onClick={handleDownloadExistingCoverLetter}
+                    >
+                      <Download className="w-3 h-3" />
+                      Download
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      onClick={() => {
+                        setExistingCoverLetterPath(null);
+                        setExistingCoverLetterName(null);
+                      }}
+                      title="Remove attached cover letter"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Newly selected cover letter to upload */}
+              {newCoverLetterFile ? (
+                <div className="flex items-center justify-between p-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 min-h-[72px]">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ScrollText className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="text-xs font-medium text-foreground truncate">
+                      Replace with: {newCoverLetterFile.name}
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
+                    onClick={() => setNewCoverLetterFile(null)}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ) : !existingCoverLetterPath ? (
+                <label className="border border-dashed border-border/70 hover:border-emerald-500/60 rounded-xl p-3 flex flex-col items-center justify-center gap-1 cursor-pointer bg-card/40 hover:bg-card/70 transition-colors min-h-[72px]">
+                  <UploadCloud className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-xs text-foreground text-center">
+                    Upload Cover Letter
+                  </span>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={handleCoverLetterFileChange}
+                    className="hidden"
+                  />
+                </label>
+              ) : null}
+
+              {/* If existing cover letter is present, show replace link */}
+              {existingCoverLetterPath && !newCoverLetterFile && (
+                <label className="text-[11px] text-emerald-400 hover:underline cursor-pointer flex items-center gap-1 justify-end pt-0.5">
+                  <UploadCloud className="w-3 h-3" />
+                  <span>Replace cover letter</span>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={handleCoverLetterFileChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
           </div>
 
           {/* Application Link */}
@@ -662,7 +835,11 @@ const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  {isUploadingResume ? 'Uploading...' : 'Saving...'}
+                  {isUploadingResume
+                    ? 'Uploading Resume...'
+                    : isUploadingCoverLetter
+                    ? 'Uploading Cover Letter...'
+                    : 'Saving...'}
                 </>
               ) : (
                 'Save Changes'

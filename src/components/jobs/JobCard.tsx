@@ -15,6 +15,7 @@ import {
   Trash2,
   ChevronRight,
   Download,
+  ScrollText,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -68,6 +69,25 @@ const JobCard: React.FC<Props> = ({ job, onViewDetails, onEdit, onDelete }) => {
         variant: 'destructive',
         title: 'Download failed',
         description: err?.message || 'Could not download resume',
+      });
+    }
+  };
+
+  const handleDownloadCoverLetter = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!job.cover_letter_storage_path) return;
+
+    try {
+      await downloadResume(job.cover_letter_storage_path, job.cover_letter_filename || 'cover_letter.pdf');
+      toast({
+        title: 'Downloading cover letter',
+        description: `Starting download for ${job.cover_letter_filename || 'cover_letter.pdf'}`,
+      });
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Download failed',
+        description: err?.message || 'Could not download cover letter',
       });
     }
   };
@@ -154,6 +174,19 @@ const JobCard: React.FC<Props> = ({ job, onViewDetails, onEdit, onDelete }) => {
               </button>
             )}
 
+            {job.cover_letter_storage_path && (
+              <button
+                type="button"
+                onClick={handleDownloadCoverLetter}
+                className="flex items-center gap-1 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded-md transition-colors"
+                title="Download cover letter"
+              >
+                <ScrollText className="w-3 h-3" />
+                <span className="truncate max-w-[120px]">{job.cover_letter_filename || 'Cover Letter'}</span>
+                <Download className="w-2.5 h-2.5 ml-0.5" />
+              </button>
+            )}
+
             {job.application_link && (
               <a
                 href={job.application_link}
@@ -182,7 +215,7 @@ const JobCard: React.FC<Props> = ({ job, onViewDetails, onEdit, onDelete }) => {
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
             <DropdownMenuItem onClick={() => onViewDetails(job)} className="gap-2">
               <FileText className="h-4 w-4" />
               View Details
@@ -195,6 +228,12 @@ const JobCard: React.FC<Props> = ({ job, onViewDetails, onEdit, onDelete }) => {
               <DropdownMenuItem onClick={handleDownloadResume} className="gap-2">
                 <Download className="h-4 w-4" />
                 Download Resume
+              </DropdownMenuItem>
+            )}
+            {job.cover_letter_storage_path && (
+              <DropdownMenuItem onClick={handleDownloadCoverLetter} className="gap-2 text-emerald-400 focus:text-emerald-400">
+                <ScrollText className="h-4 w-4" />
+                Download Cover Letter
               </DropdownMenuItem>
             )}
             {job.application_link && (

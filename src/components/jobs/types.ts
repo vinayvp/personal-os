@@ -27,6 +27,8 @@ export interface JobApplication {
   resume_url?: string | null;
   resume_filename?: string | null;
   resume_storage_path?: string | null;
+  cover_letter_filename?: string | null;
+  cover_letter_storage_path?: string | null;
   application_link?: string | null;
   found_in?: string | null;
   job_description?: string | null;

@@ -26,6 +26,7 @@ import {
   Loader2,
   Globe,
   Share2,
+  ScrollText,
 } from 'lucide-react';
 import { JobApplication, STATUS_CONFIG } from './types';
 import { getResumeSignedUrl, downloadResume, formatSalaryInLakhs } from '@/integrations/supabase/jobClient';
@@ -42,6 +43,7 @@ interface Props {
 const JobDetailModal: React.FC<Props> = ({ job, isOpen, onClose, onEdit, onDelete }) => {
   const { toast } = useToast();
   const [isLoadingResume, setIsLoadingResume] = useState(false);
+  const [isLoadingCoverLetter, setIsLoadingCoverLetter] = useState(false);
 
   if (!job) return null;
 
@@ -103,6 +105,47 @@ const JobDetailModal: React.FC<Props> = ({ job, isOpen, onClose, onEdit, onDelet
       });
     } finally {
       setIsLoadingResume(false);
+    }
+  };
+
+  const handleViewCoverLetter = async () => {
+    if (!job.cover_letter_storage_path) return;
+    setIsLoadingCoverLetter(true);
+    try {
+      const signedUrl = await getResumeSignedUrl(job.cover_letter_storage_path, 900); // 15 mins
+      if (signedUrl) {
+        window.open(signedUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        throw new Error('Unable to generate secure view link');
+      }
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Cannot Open Cover Letter',
+        description: err?.message || 'Error opening cover letter preview',
+      });
+    } finally {
+      setIsLoadingCoverLetter(false);
+    }
+  };
+
+  const handleDownloadCoverLetter = async () => {
+    if (!job.cover_letter_storage_path) return;
+    setIsLoadingCoverLetter(true);
+    try {
+      await downloadResume(job.cover_letter_storage_path, job.cover_letter_filename || 'cover_letter.pdf');
+      toast({
+        title: 'Downloading cover letter',
+        description: `Saved as ${job.cover_letter_filename || 'cover_letter.pdf'}`,
+      });
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Download failed',
+        description: err?.message || 'Could not download cover letter',
+      });
+    } finally {
+      setIsLoadingCoverLetter(false);
     }
   };
 
@@ -207,58 +250,113 @@ const JobDetailModal: React.FC<Props> = ({ job, isOpen, onClose, onEdit, onDelet
             </div>
           )}
 
-          {/* Tailored Resume Section */}
-          {job.resume_storage_path ? (
-            <div className="p-3.5 sm:p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-2">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="p-2 rounded-lg bg-primary/15 text-primary shrink-0">
-                    <FileText className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-xs uppercase tracking-wider font-semibold text-primary block">
-                      Tailored Resume Stored
-                    </span>
-                    <span className="text-sm font-semibold text-foreground truncate block">
-                      {job.resume_filename || 'Custom Tailored Resume'}
-                    </span>
+          {/* Documents Section (Tailored Resume & Cover Letter) */}
+          {job.resume_storage_path || job.cover_letter_storage_path ? (
+            <div className="space-y-3">
+              {/* Tailored Resume */}
+              {job.resume_storage_path && (
+                <div className="p-3.5 sm:p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="p-2 rounded-lg bg-primary/15 text-primary shrink-0">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs uppercase tracking-wider font-semibold text-primary block">
+                          Tailored Resume Stored
+                        </span>
+                        <span className="text-sm font-semibold text-foreground truncate block">
+                          {job.resume_filename || 'Custom Tailored Resume'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-1.5 text-xs"
+                        onClick={handleViewResume}
+                        disabled={isLoadingResume}
+                      >
+                        {isLoadingResume ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Eye className="w-3.5 h-3.5" />
+                        )}
+                        View
+                      </Button>
+
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="h-8 gap-1.5 text-xs"
+                        onClick={handleDownload}
+                        disabled={isLoadingResume}
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Download
+                      </Button>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 gap-1.5 text-xs"
-                    onClick={handleViewResume}
-                    disabled={isLoadingResume}
-                  >
-                    {isLoadingResume ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Eye className="w-3.5 h-3.5" />
-                    )}
-                    View
-                  </Button>
+              {/* Cover Letter */}
+              {job.cover_letter_storage_path && (
+                <div className="p-3.5 sm:p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="p-2 rounded-lg bg-emerald-500/15 text-emerald-400 shrink-0">
+                        <ScrollText className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs uppercase tracking-wider font-semibold text-emerald-400 block">
+                          Cover Letter Stored
+                        </span>
+                        <span className="text-sm font-semibold text-foreground truncate block">
+                          {job.cover_letter_filename || 'Cover Letter'}
+                        </span>
+                      </div>
+                    </div>
 
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="h-8 gap-1.5 text-xs"
-                    onClick={handleDownload}
-                    disabled={isLoadingResume}
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    Download
-                  </Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-1.5 text-xs"
+                        onClick={handleViewCoverLetter}
+                        disabled={isLoadingCoverLetter}
+                      >
+                        {isLoadingCoverLetter ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Eye className="w-3.5 h-3.5" />
+                        )}
+                        View
+                      </Button>
+
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="h-8 gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white"
+                        onClick={handleDownloadCoverLetter}
+                        disabled={isLoadingCoverLetter}
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Download
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           ) : (
             <div className="p-3 rounded-xl border border-dashed border-border/80 text-xs text-muted-foreground flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              <span>No tailored resume attached for this application yet. You can edit to upload one.</span>
+              <span>No documents (resume or cover letter) attached for this application yet. You can edit to upload them.</span>
             </div>
           )}
 

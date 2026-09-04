@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS public.job_applications (
   resume_url TEXT,
   resume_filename TEXT,
   resume_storage_path TEXT,
+  cover_letter_filename TEXT,
+  cover_letter_storage_path TEXT,
   application_link TEXT,
   found_in TEXT,
   job_description TEXT,
@@ -32,8 +34,10 @@ CREATE TABLE IF NOT EXISTS public.job_applications (
   follow_up_notes TEXT
 );
 
--- Ensure job_type column exists if table was already created
+-- Ensure new columns exist if table was already created
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS job_type TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS cover_letter_filename TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS cover_letter_storage_path TEXT;
 
 -- Index for common queries
 CREATE INDEX IF NOT EXISTS idx_job_applications_status ON public.job_applications(status);

@@ -7,6 +7,7 @@ import {
   Download,
   MapPin,
   Calendar,
+  ScrollText,
 } from 'lucide-react';
 import { JobApplication, STATUS_CONFIG } from './types';
 import { downloadResume, formatSalaryInLakhs } from '@/integrations/supabase/jobClient';
@@ -36,6 +37,25 @@ const JobTable: React.FC<Props> = ({ jobs, onViewDetails, onEdit }) => {
         variant: 'destructive',
         title: 'Download failed',
         description: err?.message || 'Could not download resume',
+      });
+    }
+  };
+
+  const handleDownloadCoverLetter = async (e: React.MouseEvent, job: JobApplication) => {
+    e.stopPropagation();
+    if (!job.cover_letter_storage_path) return;
+
+    try {
+      await downloadResume(job.cover_letter_storage_path, job.cover_letter_filename || 'cover_letter.pdf');
+      toast({
+        title: 'Downloading cover letter',
+        description: `Starting download for ${job.cover_letter_filename || 'cover_letter.pdf'}`,
+      });
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Download failed',
+        description: err?.message || 'Could not download cover letter',
       });
     }
   };
@@ -183,6 +203,18 @@ const JobTable: React.FC<Props> = ({ jobs, onViewDetails, onEdit }) => {
                         title={`Download tailored resume (${job.resume_filename || 'resume.pdf'})`}
                       >
                         <Download className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    {/* Small cover letter download button */}
+                    {job.cover_letter_storage_path && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-emerald-400/80 hover:text-emerald-400 hover:bg-emerald-500/10"
+                        onClick={(e) => handleDownloadCoverLetter(e, job)}
+                        title={`Download cover letter (${job.cover_letter_filename || 'cover_letter.pdf'})`}
+                      >
+                        <ScrollText className="h-3.5 w-3.5" />
                       </Button>
                     )}
                     <Button

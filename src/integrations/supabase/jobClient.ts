@@ -61,11 +61,11 @@ const saveLocalApplications = (items: JobApplication[]) => {
 // =========================================================
 
 /**
- * Uploads a resume to private storage.
- * Returns the storage path and filename.
+ * Uploads a document (resume or cover letter) to private storage.
  */
-export const uploadResume = async (
-  file: File
+export const uploadJobDocument = async (
+  file: File,
+  folder = 'resumes'
 ): Promise<{ storagePath: string; filename: string }> => {
   const validation = validateResumeFile(file);
   if (!validation.valid) {
@@ -74,7 +74,7 @@ export const uploadResume = async (
 
   const sanitized = sanitizeFilename(file.name);
   const timestamp = Date.now();
-  const filePath = `resumes/${timestamp}_${sanitized}`;
+  const filePath = `${folder}/${timestamp}_${sanitized}`;
 
   // Try primary bucket first, fallback if not yet created
   let uploadBucket = BUCKET_NAME;
@@ -103,8 +103,28 @@ export const uploadResume = async (
 };
 
 /**
+ * Uploads a resume to private storage.
+ * Returns the storage path and filename.
+ */
+export const uploadResume = async (
+  file: File
+): Promise<{ storagePath: string; filename: string }> => {
+  return uploadJobDocument(file, 'resumes');
+};
+
+/**
+ * Uploads an optional cover letter to private storage.
+ * Returns the storage path and filename.
+ */
+export const uploadCoverLetter = async (
+  file: File
+): Promise<{ storagePath: string; filename: string }> => {
+  return uploadJobDocument(file, 'cover_letters');
+};
+
+/**
  * Generates a secure, temporary Signed URL (valid for 15 minutes)
- * to safely view or stream a private resume.
+ * to safely view or stream a private document (resume or cover letter).
  */
 export const getResumeSignedUrl = async (
   compositePath: string,
@@ -135,12 +155,14 @@ export const getResumeSignedUrl = async (
   return data.signedUrl;
 };
 
+export const getDocumentSignedUrl = getResumeSignedUrl;
+
 /**
- * Downloads a resume as a Blob and triggers an in-browser file download.
+ * Downloads a document as a Blob and triggers an in-browser file download.
  */
 export const downloadResume = async (
   compositePath: string,
-  downloadName = 'resume.pdf'
+  downloadName = 'document.pdf'
 ): Promise<void> => {
   let bucket = BUCKET_NAME;
   let path = compositePath;
@@ -172,6 +194,8 @@ export const downloadResume = async (
   document.body.removeChild(link);
   window.URL.revokeObjectURL(blobUrl);
 };
+
+export const downloadDocument = downloadResume;
 
 // =========================================================
 // Database CRUD Operations
