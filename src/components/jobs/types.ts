@@ -154,4 +154,21 @@ export const JOB_TYPE_OPTIONS = [
   'Freelance',
 ];
 
+export interface SavedJobLink {
+  id: string;
+  url: string;
+  company_name?: string | null;
+  role_name?: string | null;
+  location?: string | null;
+  source?: string | null;
+  notes?: string | null;
+  deadline?: string | null;
+  salary_note?: string | null;
+  status: 'saved' | 'applied' | 'archived';
+  created_at: string;
+  updated_at: string;
+}
+
+export type NewSavedJobLink = Omit<SavedJobLink, 'id' | 'created_at' | 'updated_at'>;
+
 

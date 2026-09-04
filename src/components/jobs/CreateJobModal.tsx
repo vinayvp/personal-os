@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -47,10 +47,12 @@ import { useToast } from '@/hooks/use-toast';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (newJob: NewJobApplication) => Promise<void>;
+  onSuccess: (newJob: NewJobApplication, fromSavedLinkId?: string) => Promise<void>;
+  initialData?: Partial<NewJobApplication> | null;
+  fromSavedLinkId?: string | null;
 }
 
-const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
+const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, initialData, fromSavedLinkId }) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -108,6 +110,30 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     setSelectedFile(null);
     setSelectedCoverLetter(null);
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      if (initialData) {
+        if (initialData.company_name) setCompanyName(initialData.company_name);
+        if (initialData.role_name) setRoleName(initialData.role_name);
+        if (initialData.city) setCity(initialData.city);
+        if (initialData.country) setCountry(initialData.country);
+        if (initialData.application_link) setApplicationLink(initialData.application_link);
+        if (initialData.follow_up_notes) setFollowUpNotes(initialData.follow_up_notes);
+        if (initialData.found_in) {
+          if (FOUND_IN_OPTIONS.includes(initialData.found_in)) {
+            setFoundInPreset(initialData.found_in);
+            setIsCustomFoundIn(false);
+          } else {
+            setIsCustomFoundIn(true);
+            setCustomFoundIn(initialData.found_in);
+          }
+        }
+      }
+    } else {
+      resetForm();
+    }
+  }, [isOpen, initialData]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -217,7 +243,7 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
         follow_up_notes: followUpNotes.trim() || null,
       };
 
-      await onSuccess(newJob);
+      await onSuccess(newJob, fromSavedLinkId || undefined);
       resetForm();
       onClose();
       toast({

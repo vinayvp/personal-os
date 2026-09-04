@@ -19,7 +19,11 @@ import {
   RefreshCw,
   SlidersHorizontal,
   X,
+  Bookmark,
+  BookmarkPlus,
 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import PageLoader from '@/components/common/PageLoader';
 import RefreshButton from '@/components/common/RefreshButton';
 import JobStats from './jobs/JobStats';
@@ -29,11 +33,14 @@ import GoalCardModal from './jobs/GoalCardModal';
 import CreateJobModal from './jobs/CreateJobModal';
 import EditJobModal from './jobs/EditJobModal';
 import JobDetailModal from './jobs/JobDetailModal';
+import SavedLinksView from './jobs/SavedLinksView';
+import AddSavedLinkModal from './jobs/AddSavedLinkModal';
 import {
   JobApplication,
   JobStatus,
   NewJobApplication,
   STATUS_CONFIG,
+  SavedJobLink,
 } from './jobs/types';
 import {
   fetchJobApplications,
@@ -42,14 +49,22 @@ import {
   deleteJobApplication,
   calculateJobStats,
   calculateCountryStats,
+  fetchSavedJobLinks,
+  deleteSavedJobLink,
+  updateSavedJobLink,
+  markSavedJobLinkAsApplied,
 } from '@/integrations/supabase/jobClient';
 import { useToast } from '@/hooks/use-toast';
 
 const JobTrackerApp: React.FC = () => {
   const { toast } = useToast();
 
+  // Navigation Tab State
+  const [activeTab, setActiveTab] = useState<'applications' | 'saved_links'>('applications');
+
   // Data State
   const [applications, setApplications] = useState<JobApplication[]>([]);
+  const [savedLinks, setSavedLinks] = useState<SavedJobLink[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters State
@@ -61,20 +76,27 @@ const JobTrackerApp: React.FC = () => {
   // Modals State
   const [isGoalCardOpen, setIsGoalCardOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<JobApplication | null>(null);
   const [viewingJob, setViewingJob] = useState<JobApplication | null>(null);
+  const [prefilledJobData, setPrefilledJobData] = useState<Partial<NewJobApplication> | null>(null);
+  const [convertingLinkId, setConvertingLinkId] = useState<string | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const data = await fetchJobApplications();
-      setApplications(data);
+      const [appsData, linksData] = await Promise.all([
+        fetchJobApplications(),
+        fetchSavedJobLinks(),
+      ]);
+      setApplications(appsData);
+      setSavedLinks(linksData);
     } catch (err) {
-      console.error('Failed to load applications:', err);
+      console.error('Failed to load applications and saved links:', err);
       toast({
         variant: 'destructive',
         title: 'Loading error',
-        description: 'Failed to load job applications.',
+        description: 'Failed to load job tracker data.',
       });
     } finally {
       setIsLoading(false);
@@ -141,9 +163,23 @@ const JobTrackerApp: React.FC = () => {
   }, [applications, searchQuery, statusFilter, countryFilter]);
 
   // CRUD Handlers
-  const handleCreate = async (newJob: NewJobApplication) => {
+  const handleCreate = async (newJob: NewJobApplication, fromSavedLinkId?: string) => {
     const created = await createJobApplication(newJob);
     setApplications((prev) => [created, ...prev]);
+
+    if (fromSavedLinkId) {
+      await markSavedJobLinkAsApplied(fromSavedLinkId);
+      setSavedLinks((prev) =>
+        prev.map((l) => (l.id === fromSavedLinkId ? { ...l, status: 'applied' } : l))
+      );
+      toast({
+        title: 'Saved link converted!',
+        description: 'Marked as applied in your Apply Later list.',
+      });
+    }
+
+    setPrefilledJobData(null);
+    setConvertingLinkId(null);
   };
 
   const handleUpdate = async (id: string, updates: Partial<JobApplication>) => {
@@ -163,6 +199,33 @@ const JobTrackerApp: React.FC = () => {
     });
   };
 
+  const handleApplyNowFromSavedLink = (link: SavedJobLink) => {
+    setPrefilledJobData({
+      company_name: link.company_name || '',
+      role_name: link.role_name || '',
+      city: link.location || '',
+      application_link: link.url || '',
+      found_in: link.source || 'LinkedIn',
+      follow_up_notes: link.notes || '',
+    });
+    setConvertingLinkId(link.id);
+    setIsCreateOpen(true);
+  };
+
+  const handleDeleteSavedLink = async (id: string) => {
+    await deleteSavedJobLink(id);
+    setSavedLinks((prev) => prev.filter((l) => l.id !== id));
+    toast({
+      title: 'Saved link removed',
+      description: 'The job link was removed from your list.',
+    });
+  };
+
+  const handleUpdateSavedLink = async (id: string, updates: Partial<SavedJobLink>) => {
+    const updated = await updateSavedJobLink(id, updates);
+    setSavedLinks((prev) => prev.map((l) => (l.id === id ? updated : l)));
+  };
+
   const clearAllFilters = () => {
     setSearchQuery('');
     setStatusFilter('all');
@@ -171,6 +234,11 @@ const JobTrackerApp: React.FC = () => {
 
   const hasActiveFilters =
     searchQuery.trim() !== '' || statusFilter !== 'all' || countryFilter !== 'all';
+
+  const pendingSavedLinksCount = useMemo(
+    () => savedLinks.filter((l) => l.status === 'saved').length,
+    [savedLinks]
+  );
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-background overflow-y-auto">
@@ -206,17 +274,57 @@ const JobTrackerApp: React.FC = () => {
               <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
             </Button>
 
-            {/* Add Application Button */}
-            <Button
-              size="sm"
-              onClick={() => setIsCreateOpen(true)}
-              className="gap-1.5 shadow-sm font-semibold"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Application</span>
-            </Button>
+            {/* Primary Action Button based on tab */}
+            {activeTab === 'applications' ? (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setPrefilledJobData(null);
+                  setConvertingLinkId(null);
+                  setIsCreateOpen(true);
+                }}
+                className="gap-1.5 shadow-sm font-semibold"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Application</span>
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                onClick={() => setIsAddLinkOpen(true)}
+                className="gap-1.5 shadow-sm font-semibold"
+              >
+                <BookmarkPlus className="w-4 h-4" />
+                <span>Save Job Link</span>
+              </Button>
+            )}
           </div>
         </div>
+
+        {/* Navigation Tabs between Applications and Apply Later */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+          <div className="flex items-center justify-between pb-1 border-b border-border/60">
+            <TabsList className="bg-muted/40 p-1 border border-border/50">
+              <TabsTrigger value="applications" className="gap-2 text-xs sm:text-sm font-medium">
+                <Briefcase className="w-4 h-4" />
+                <span>Applications</span>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 ml-0.5">
+                  {applications.length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="saved_links" className="gap-2 text-xs sm:text-sm font-medium">
+                <Bookmark className="w-4 h-4" />
+                <span>Apply Later</span>
+                {pendingSavedLinksCount > 0 && (
+                  <Badge className="text-[10px] px-1.5 py-0 h-4 ml-0.5 bg-amber-500/20 text-amber-300 border-amber-500/30">
+                    {pendingSavedLinksCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="applications" className="space-y-5 mt-4">
 
         {/* ======================================================== */}
         {/* Statistics & Country Breakdown Overview                  */}
@@ -397,6 +505,18 @@ const JobTrackerApp: React.FC = () => {
             onDelete={handleDelete}
           />
         )}
+          </TabsContent>
+
+          <TabsContent value="saved_links" className="space-y-5 mt-4">
+            <SavedLinksView
+              links={savedLinks}
+              onAddNew={() => setIsAddLinkOpen(true)}
+              onApplyNow={handleApplyNowFromSavedLink}
+              onDelete={handleDeleteSavedLink}
+              onUpdate={handleUpdateSavedLink}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* ======================================================== */}
@@ -406,8 +526,22 @@ const JobTrackerApp: React.FC = () => {
 
       <CreateJobModal
         isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
+        onClose={() => {
+          setIsCreateOpen(false);
+          setPrefilledJobData(null);
+          setConvertingLinkId(null);
+        }}
         onSuccess={handleCreate}
+        initialData={prefilledJobData}
+        fromSavedLinkId={convertingLinkId}
+      />
+
+      <AddSavedLinkModal
+        isOpen={isAddLinkOpen}
+        onClose={() => setIsAddLinkOpen(false)}
+        onSuccess={(newLink) => {
+          setSavedLinks((prev) => [newLink, ...prev.filter((l) => l.id !== newLink.id)]);
+        }}
       />
 
       <EditJobModal

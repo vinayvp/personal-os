@@ -1,5 +1,5 @@
 import { supabase } from './client';
-import { JobApplication, NewJobApplication, JobStatsData, CountryStat } from '@/components/jobs/types';
+import { JobApplication, NewJobApplication, JobStatsData, CountryStat, SavedJobLink, NewSavedJobLink } from '@/components/jobs/types';
 
 const BUCKET_NAME = 'job-resumes';
 const FALLBACK_BUCKET = 'note-images';
@@ -540,4 +540,207 @@ export const formatSalaryInLakhs = (
 
   return { lakhsText, originalText };
 };
+
+// =========================================================
+// Saved Job Links (Apply Later Backlog)
+// =========================================================
+
+const SAVED_LINKS_CACHE_KEY = 'portfolio_saved_job_links_cache';
+
+const getLocalSavedLinks = (): SavedJobLink[] => {
+  try {
+    const raw = localStorage.getItem(SAVED_LINKS_CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveLocalSavedLinks = (items: SavedJobLink[]) => {
+  try {
+    localStorage.setItem(SAVED_LINKS_CACHE_KEY, JSON.stringify(items));
+  } catch (e) {
+    console.error('Failed to write saved job links to localStorage', e);
+  }
+};
+
+/**
+ * Automatically inspects a URL hostname and returns a common job source name.
+ */
+export const detectJobSourceFromUrl = (url: string): string => {
+  try {
+    const parsed = new URL(url.startsWith('http') ? url : `https://${url}`);
+    const host = parsed.hostname.toLowerCase();
+
+    if (host.includes('linkedin.com')) return 'LinkedIn';
+    if (host.includes('wellfound.com') || host.includes('angel.co')) return 'Wellfound (AngelList)';
+    if (host.includes('indeed.com')) return 'Indeed';
+    if (host.includes('glassdoor.com')) return 'Glassdoor';
+    if (host.includes('ycombinator.com')) return 'Y Combinator Jobs';
+    if (host.includes('otta.com') || host.includes('welcometothejungle.com')) return 'Otta / Welcome to the Jungle';
+    if (host.includes('twitter.com') || host.includes('x.com')) return 'X (Twitter)';
+
+    // Otherwise clean the domain name
+    const domain = host.replace(/^www\./, '');
+    return domain.charAt(0).toUpperCase() + domain.slice(1);
+  } catch {
+    return 'Company Website / Careers';
+  }
+};
+
+/**
+ * Fetches all saved links, prioritizing Supabase with localStorage backup fallback.
+ */
+export const fetchSavedJobLinks = async (): Promise<SavedJobLink[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('saved_job_links' as any)
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('Supabase saved_job_links query failed, using localStorage fallback:', error.message);
+      return getLocalSavedLinks();
+    }
+
+    const links = (data || []) as unknown as SavedJobLink[];
+    saveLocalSavedLinks(links);
+    return links;
+  } catch (err) {
+    console.warn('Network error fetching saved links, using localStorage:', err);
+    return getLocalSavedLinks();
+  }
+};
+
+/**
+ * Creates a new saved link in Supabase or localStorage.
+ */
+export const createSavedJobLink = async (newLink: NewSavedJobLink): Promise<SavedJobLink> => {
+  const timestamp = new Date().toISOString();
+  const fallbackId = `local_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+  const candidate: SavedJobLink = {
+    ...newLink,
+    id: fallbackId,
+    status: newLink.status || 'saved',
+    created_at: timestamp,
+    updated_at: timestamp,
+  };
+
+  try {
+    const { data, error } = await supabase
+      .from('saved_job_links' as any)
+      .insert({
+        url: candidate.url,
+        company_name: candidate.company_name || null,
+        role_name: candidate.role_name || null,
+        location: candidate.location || null,
+        source: candidate.source || null,
+        notes: candidate.notes || null,
+        deadline: candidate.deadline || null,
+        salary_note: candidate.salary_note || null,
+        status: candidate.status,
+      } as any)
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('Failed to insert into Supabase saved_job_links, falling back to local storage:', error.message);
+      const local = getLocalSavedLinks();
+      const updated = [candidate, ...local];
+      saveLocalSavedLinks(updated);
+      return candidate;
+    }
+
+    const created = data as unknown as SavedJobLink;
+    const local = getLocalSavedLinks();
+    saveLocalSavedLinks([created, ...local.filter((l) => l.id !== created.id)]);
+    return created;
+  } catch (err) {
+    console.warn('Error inserting saved link, using local storage:', err);
+    const local = getLocalSavedLinks();
+    const updated = [candidate, ...local];
+    saveLocalSavedLinks(updated);
+    return candidate;
+  }
+};
+
+/**
+ * Updates an existing saved link.
+ */
+export const updateSavedJobLink = async (
+  id: string,
+  updates: Partial<SavedJobLink>
+): Promise<SavedJobLink> => {
+  const timestamp = new Date().toISOString();
+
+  try {
+    const { data, error } = await supabase
+      .from('saved_job_links' as any)
+      .update({ ...updates, updated_at: timestamp } as any)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('Supabase update saved link failed, updating localStorage:', error.message);
+      const local = getLocalSavedLinks();
+      const target = local.find((l) => l.id === id);
+      const updated = {
+        ...(target || ({} as SavedJobLink)),
+        ...updates,
+        id,
+        updated_at: timestamp,
+      } as SavedJobLink;
+      saveLocalSavedLinks(local.map((l) => (l.id === id ? updated : l)));
+      return updated;
+    }
+
+    const updated = data as unknown as SavedJobLink;
+    const local = getLocalSavedLinks();
+    saveLocalSavedLinks(local.map((l) => (l.id === id ? updated : l)));
+    return updated;
+  } catch (err) {
+    console.warn('Error updating saved link, using localStorage:', err);
+    const local = getLocalSavedLinks();
+    const target = local.find((l) => l.id === id);
+    const updated = {
+      ...(target || ({} as SavedJobLink)),
+      ...updates,
+      id,
+      updated_at: timestamp,
+    } as SavedJobLink;
+    saveLocalSavedLinks(local.map((l) => (l.id === id ? updated : l)));
+    return updated;
+  }
+};
+
+/**
+ * Deletes a saved link.
+ */
+export const deleteSavedJobLink = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('saved_job_links' as any)
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.warn('Supabase delete saved link failed, updating localStorage:', error.message);
+    }
+  } catch (err) {
+    console.warn('Error deleting saved link from Supabase:', err);
+  } finally {
+    const local = getLocalSavedLinks();
+    saveLocalSavedLinks(local.filter((l) => l.id !== id));
+  }
+};
+
+/**
+ * Marks a saved link as 'applied' once converted to an active application.
+ */
+export const markSavedJobLinkAsApplied = async (id: string): Promise<SavedJobLink> => {
+  return updateSavedJobLink(id, { status: 'applied' });
+};
+
 
