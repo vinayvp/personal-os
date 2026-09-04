@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Check, SkipForward, RotateCcw, Plus, Loader2 } from 'lucide-react';
+import { ArrowLeft, Check, SkipForward, RotateCcw, Plus, Loader2, Edit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { RevisionCategory, RevisionElement } from './types';
 import AddRevisionElementsModal from './AddRevisionElementsModal';
+import EditRevisionElementModal from './EditRevisionElementModal';
+import RevisionMarkdown from './RevisionMarkdown';
 
 interface Props {
   categoryId: string;
@@ -21,6 +23,7 @@ const RevisionFocusView = ({ categoryId, onBack }: Props) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isBusy, setIsBusy] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const pickRandom = (els: RevisionElement[], excludeId: string | null) => {
     if (els.length === 0) return null;
@@ -198,16 +201,29 @@ const RevisionFocusView = ({ categoryId, onBack }: Props) => {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -16, scale: 0.97 }}
                 transition={{ duration: 0.22, ease: 'easeOut' }}
-                className="space-y-3"
+                className="space-y-4"
               >
-                <h2 className="text-2xl md:text-4xl font-semibold text-foreground break-words">
-                  {currentElement.name}
-                </h2>
+                <div className="flex items-center justify-center gap-2">
+                  <h2 className="text-2xl md:text-3xl font-bold text-foreground break-words">
+                    {currentElement.name}
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground shrink-0 rounded-full"
+                    onClick={() => setIsEditOpen(true)}
+                    title="Edit item notes"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
+
                 {currentElement.description && (
-                  <p className="text-sm md:text-base text-muted-foreground max-w-xl mx-auto whitespace-pre-wrap">
-                    {currentElement.description}
-                  </p>
+                  <div className="w-full max-w-2xl mx-auto text-left p-4 sm:p-5 rounded-lg bg-muted/30 border border-border/70 shadow-sm overflow-hidden">
+                    <RevisionMarkdown content={currentElement.description} />
+                  </div>
                 )}
+
                 <p className="text-xs text-muted-foreground">
                   Completed {currentElement.count} time{currentElement.count === 1 ? '' : 's'}
                 </p>
@@ -249,6 +265,15 @@ const RevisionFocusView = ({ categoryId, onBack }: Props) => {
         }}
         categoryId={categoryId}
         categoryName={category?.name}
+      />
+
+      <EditRevisionElementModal
+        element={currentElement}
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        onSuccess={(updated) => {
+          setElements((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+        }}
       />
     </div>
   );
