@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Building2,
+  Briefcase,
   MapPin,
   Calendar,
   DollarSign,
@@ -130,6 +131,13 @@ const JobCard: React.FC<Props> = ({ job, onViewDetails, onEdit, onDelete }) => {
               >
                 <DollarSign className="w-3 h-3" />
                 <span>{lakhsText}</span>
+              </span>
+            )}
+
+            {job.job_type && (
+              <span className="flex items-center gap-1 text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md">
+                <Briefcase className="w-3 h-3" />
+                <span>{job.job_type}</span>
               </span>
             )}
 

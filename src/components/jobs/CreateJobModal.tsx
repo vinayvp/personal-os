@@ -38,6 +38,7 @@ import {
   STATUS_CONFIG,
   COMMON_CURRENCIES,
   FOUND_IN_OPTIONS,
+  JOB_TYPE_OPTIONS,
 } from './types';
 import { uploadResume, validateResumeFile, convertSalaryToInr } from '@/integrations/supabase/jobClient';
 import { useToast } from '@/hooks/use-toast';
@@ -58,6 +59,9 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
   const [roleName, setRoleName] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
+  const [jobType, setJobType] = useState('Full-time');
+  const [isCustomJobType, setIsCustomJobType] = useState(false);
+  const [customJobType, setCustomJobType] = useState('');
   const [status, setStatus] = useState<JobStatus>('applied');
   const [salaryMin, setSalaryMin] = useState('');
   const [salaryMax, setSalaryMax] = useState('');
@@ -81,6 +85,9 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     setRoleName('');
     setCity('');
     setCountry('');
+    setJobType('Full-time');
+    setIsCustomJobType(false);
+    setCustomJobType('');
     setStatus('applied');
     setSalaryMin('');
     setSalaryMax('');
@@ -155,6 +162,7 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
         role_name: roleName.trim(),
         city: city.trim() || null,
         country: country.trim() || null,
+        job_type: (isCustomJobType ? customJobType.trim() : jobType) || null,
         status,
         salary_min: numMin,
         salary_max: numMax,
@@ -326,8 +334,8 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
             </div>
           </div>
 
-          {/* Location: City & Country */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          {/* Location & Job Type */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
             <div className="space-y-1.5">
               <Label htmlFor="city" className="text-xs font-semibold flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
@@ -335,7 +343,7 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
               </Label>
               <Input
                 id="city"
-                placeholder="e.g. London, San Francisco, Remote"
+                placeholder="e.g. London, Malmö"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 className="h-9"
@@ -345,15 +353,67 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
             <div className="space-y-1.5">
               <Label htmlFor="country" className="text-xs font-semibold flex items-center gap-1">
                 <Globe className="w-3.5 h-3.5 text-muted-foreground" />
-                Country (for Country Analytics)
+                Country
               </Label>
               <Input
                 id="country"
-                placeholder="e.g. United Kingdom, Germany, USA"
+                placeholder="e.g. Sweden, USA, UK"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 className="h-9"
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="jobType" className="text-xs font-semibold flex items-center gap-1">
+                  <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
+                  Job Type
+                </Label>
+                <button
+                  type="button"
+                  onClick={() => setIsCustomJobType(!isCustomJobType)}
+                  className="text-[11px] text-primary hover:underline"
+                >
+                  {isCustomJobType ? '← List' : '+ Custom'}
+                </button>
+              </div>
+
+              {isCustomJobType ? (
+                <Input
+                  id="jobType"
+                  placeholder="e.g. Contract-to-hire"
+                  value={customJobType}
+                  onChange={(e) => setCustomJobType(e.target.value)}
+                  className="h-9 text-xs"
+                  autoFocus
+                />
+              ) : (
+                <Select
+                  value={jobType}
+                  onValueChange={(val) => {
+                    if (val === '__custom__') {
+                      setIsCustomJobType(true);
+                    } else {
+                      setJobType(val);
+                    }
+                  }}
+                >
+                  <SelectTrigger id="jobType" className="h-9 text-xs">
+                    <SelectValue placeholder="Job Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {JOB_TYPE_OPTIONS.map((jt) => (
+                      <SelectItem key={jt} value={jt}>
+                        {jt}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__custom__" className="text-primary font-medium">
+                      + Custom (Type text...)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 

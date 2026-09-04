@@ -16,6 +16,7 @@ export interface JobApplication {
   role_name: string;
   city?: string | null;
   country?: string | null;
+  job_type?: string | null;
   status: JobStatus;
   salary_min?: number | null;
   salary_max?: number | null;
@@ -142,4 +143,13 @@ export const FOUND_IN_OPTIONS = [
   'X (Twitter)',
   'Recruiter Outreach',
 ];
+
+export const JOB_TYPE_OPTIONS = [
+  'Full-time',
+  'Contract',
+  'Part-time',
+  'Internship',
+  'Freelance',
+];
+
 

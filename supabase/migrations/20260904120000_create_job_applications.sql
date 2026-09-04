@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS public.job_applications (
   role_name TEXT NOT NULL,
   city TEXT,
   country TEXT,
+  job_type TEXT,
   status TEXT NOT NULL DEFAULT 'applied',
   salary_min NUMERIC,
   salary_max NUMERIC,
@@ -30,6 +31,9 @@ CREATE TABLE IF NOT EXISTS public.job_applications (
   recruiter_phone TEXT,
   follow_up_notes TEXT
 );
+
+-- Ensure job_type column exists if table was already created
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS job_type TEXT;
 
 -- Index for common queries
 CREATE INDEX IF NOT EXISTS idx_job_applications_status ON public.job_applications(status);

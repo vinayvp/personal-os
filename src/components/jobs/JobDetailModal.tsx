@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Building2,
+  Briefcase,
   MapPin,
   Calendar,
   DollarSign,
@@ -111,10 +112,19 @@ const JobDetailModal: React.FC<Props> = ({ job, isOpen, onClose, onEdit, onDelet
         {/* Header */}
         <DialogHeader className="text-left pb-4 border-b border-border/60 space-y-2">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <Badge variant="outline" className={`text-xs px-2.5 py-1 border ${config.badgeClass}`}>
-              <span className={`w-2 h-2 rounded-full mr-2 ${config.dotClass}`} />
-              {config.label}
-            </Badge>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" className={`text-xs px-2.5 py-1 border ${config.badgeClass}`}>
+                <span className={`w-2 h-2 rounded-full mr-2 ${config.dotClass}`} />
+                {config.label}
+              </Badge>
+
+              {job.job_type && (
+                <Badge variant="secondary" className="text-xs px-2.5 py-1 font-medium bg-muted/80 text-foreground/90 border border-border/50">
+                  <Briefcase className="w-3 h-3 mr-1.5 text-primary" />
+                  {job.job_type}
+                </Badge>
+              )}
+            </div>
 
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5" />

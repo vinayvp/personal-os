@@ -48,6 +48,7 @@ const JobTable: React.FC<Props> = ({ jobs, onViewDetails, onEdit }) => {
             <th className="py-3 px-4">Role Name</th>
             <th className="py-3 px-3">Company Name</th>
             <th className="py-3 px-3">Location</th>
+            <th className="py-3 px-3">Job Type</th>
             <th className="py-3 px-3">Applied Date</th>
             <th className="py-3 px-3">Salary (in Lakhs)</th>
             <th className="py-3 px-3">Status</th>
@@ -113,6 +114,17 @@ const JobTable: React.FC<Props> = ({ jobs, onViewDetails, onEdit }) => {
                     <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
                     {locationText}
                   </span>
+                </td>
+
+                {/* Job Type */}
+                <td className="py-3 px-3 whitespace-nowrap text-xs">
+                  {job.job_type ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted/70 text-foreground/90 text-[11px] font-medium border border-border/50">
+                      {job.job_type}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground/50">—</span>
+                  )}
                 </td>
 
                 {/* Applied Date */}
