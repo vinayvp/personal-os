@@ -40,11 +40,20 @@ CREATE INDEX IF NOT EXISTS idx_job_applications_applied_date ON public.job_appli
 ALTER TABLE public.job_applications ENABLE ROW LEVEL SECURITY;
 
 -- Allow access to job_applications
-CREATE POLICY "Allow access to job_applications" 
-ON public.job_applications
-FOR ALL TO anon, authenticated
-USING (true)
-WITH CHECK (true);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'job_applications' 
+    AND policyname = 'Allow access to job_applications'
+  ) THEN
+    CREATE POLICY "Allow access to job_applications" 
+    ON public.job_applications
+    FOR ALL TO anon, authenticated
+    USING (true)
+    WITH CHECK (true);
+  END IF;
+END $$;
 
 -- ==========================================
 -- 2. Create Private Storage Bucket for Resumes
@@ -54,17 +63,45 @@ VALUES ('job-resumes', 'job-resumes', false)
 ON CONFLICT (id) DO UPDATE SET public = false;
 
 -- Allow uploads
-CREATE POLICY "Allow uploads to job-resumes"
-ON storage.objects FOR INSERT TO anon, authenticated
-WITH CHECK (bucket_id = 'job-resumes');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'storage' AND tablename = 'objects' 
+    AND policyname = 'Allow uploads to job-resumes'
+  ) THEN
+    CREATE POLICY "Allow uploads to job-resumes"
+    ON storage.objects FOR INSERT TO anon, authenticated
+    WITH CHECK (bucket_id = 'job-resumes');
+  END IF;
+END $$;
 
 -- Allow signed URL generation / read
-CREATE POLICY "Allow read from job-resumes"
-ON storage.objects FOR SELECT TO anon, authenticated
-USING (bucket_id = 'job-resumes');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'storage' AND tablename = 'objects' 
+    AND policyname = 'Allow read from job-resumes'
+  ) THEN
+    CREATE POLICY "Allow read from job-resumes"
+    ON storage.objects FOR SELECT TO anon, authenticated
+    USING (bucket_id = 'job-resumes');
+  END IF;
+END $$;
 
 -- Allow delete
-CREATE POLICY "Allow delete from job-resumes"
-ON storage.objects FOR DELETE TO anon, authenticated
-USING (bucket_id = 'job-resumes');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'storage' AND tablename = 'objects' 
+    AND policyname = 'Allow delete from job-resumes'
+  ) THEN
+    CREATE POLICY "Allow delete from job-resumes"
+    ON storage.objects FOR DELETE TO anon, authenticated
+    USING (bucket_id = 'job-resumes');
+  END IF;
+END $$;
+
 
