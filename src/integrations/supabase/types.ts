@@ -407,6 +407,7 @@ export type Database = {
           created_at: string
           folder: string | null
           id: string
+          is_pinned: boolean | null
           markdown_content: string | null
           notion_url: string | null
           title: string
@@ -417,6 +418,7 @@ export type Database = {
           created_at?: string
           folder?: string | null
           id?: string
+          is_pinned?: boolean | null
           markdown_content?: string | null
           notion_url?: string | null
           title?: string
@@ -427,6 +429,7 @@ export type Database = {
           created_at?: string
           folder?: string | null
           id?: string
+          is_pinned?: boolean | null
           markdown_content?: string | null
           notion_url?: string | null
           title?: string

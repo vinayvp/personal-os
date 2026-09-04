@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Edit, Trash2, X, ExternalLink } from 'lucide-react';
+import { Edit, Trash2, X, ExternalLink, Pin } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -19,9 +19,10 @@ interface NoteViewModalProps {
   onClose: () => void;
   onEdit: (note: Note) => void;
   onDelete: () => void;
+  onTogglePin?: (note: Note) => void;
 }
 
-const NoteViewModal: React.FC<NoteViewModalProps> = ({ note, onClose, onEdit, onDelete }) => {
+const NoteViewModal: React.FC<NoteViewModalProps> = ({ note, onClose, onEdit, onDelete, onTogglePin }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
@@ -67,6 +68,18 @@ const NoteViewModal: React.FC<NoteViewModalProps> = ({ note, onClose, onEdit, on
               {note.title}
             </DialogTitle>
             <div className="flex items-center gap-2">
+              {onTogglePin && (
+                <Button
+                  variant={note.is_pinned ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => onTogglePin(note)}
+                  className={note.is_pinned ? "text-amber-400 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20" : ""}
+                  title={note.is_pinned ? "Unpin note" : "Pin note to top"}
+                >
+                  <Pin className={`w-4 h-4 mr-1.5 ${note.is_pinned ? 'fill-amber-400 rotate-45' : ''}`} />
+                  {note.is_pinned ? 'Pinned' : 'Pin'}
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, X, Save, Eye, Edit, Upload, Image, HelpCircle } from 'lucide-react';
+import { Plus, X, Save, Eye, Edit, Upload, Image, HelpCircle, Pin } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import ReactMarkdown from 'react-markdown';
@@ -30,6 +30,7 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
   const [content, setContent] = useState('');
   const [embedNotion, setEmbedNotion] = useState(false);
   const [notionUrl, setNotionUrl] = useState('');
+  const [isPinned, setIsPinned] = useState(false);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [activeTab, setActiveTab] = useState('edit');
@@ -42,6 +43,7 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
     setContent('');
     setEmbedNotion(false);
     setNotionUrl('');
+    setIsPinned(false);
     setSelectedTags([]);
     setActiveTab('edit');
   };
@@ -58,6 +60,7 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
           content: embedNotion ? null : content,
           markdown_content: embedNotion ? null : content,
           notion_url: embedNotion ? notionUrl.trim() || null : null,
+          is_pinned: isPinned,
         })
         .select()
         .single();
@@ -244,6 +247,23 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
               placeholder="https://your-workspace.notion.site/ebd/..."
             />
           )}
+
+          <div className="flex items-center justify-between rounded-md border p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="create-pin-note" className="flex items-center gap-1.5 cursor-pointer">
+                <Pin className="w-3.5 h-3.5 text-amber-400" />
+                Pin note to top
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Keep this note pinned to the top of your list.
+              </p>
+            </div>
+            <Switch
+              id="create-pin-note"
+              checked={isPinned}
+              onCheckedChange={setIsPinned}
+            />
+          </div>
 
           <div className="space-y-2">
             <div className="flex gap-2">

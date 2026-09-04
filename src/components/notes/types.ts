@@ -6,6 +6,7 @@ export interface Note {
   markdown_content: string | null;
   folder: string | null;
   notion_url: string | null;
+  is_pinned?: boolean | null;
   created_at: string;
   updated_at: string;
   tags: Tag[];

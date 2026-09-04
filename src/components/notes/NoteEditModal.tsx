@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { X, Save, Eye, Edit, Upload, HelpCircle, GripVertical } from 'lucide-react';
+import { X, Save, Eye, Edit, Upload, HelpCircle, GripVertical, Pin } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import ReactMarkdown from 'react-markdown';
@@ -36,6 +36,7 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
   const [content, setContent] = useState('');
   const [embedNotion, setEmbedNotion] = useState(false);
   const [notionUrl, setNotionUrl] = useState('');
+  const [isPinned, setIsPinned] = useState(false);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [isEditing, setIsEditing] = useState(true);
   const [isSaving, setSaving] = useState(false);
@@ -50,6 +51,7 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
       setContent(note.markdown_content || note.content || '');
       setNotionUrl(note.notion_url || '');
       setEmbedNotion(!!note.notion_url);
+      setIsPinned(Boolean(note.is_pinned));
       setSelectedTags(note.tags || []);
       setIsEditing(true);
     }
@@ -90,6 +92,7 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
           content: embedNotion ? null : content,
           markdown_content: embedNotion ? null : content,
           notion_url: embedNotion ? notionUrl.trim() || null : null,
+          is_pinned: isPinned,
           updated_at: new Date().toISOString()
         })
         .eq('id', note.id);
@@ -126,7 +129,7 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
     } finally {
       setSaving(false);
     }
-  }, [title, content, selectedTags, note, onSave, isSaving, toast]);
+  }, [title, content, embedNotion, notionUrl, isPinned, selectedTags, note, onSave, isSaving, toast]);
 
   const uploadImage = async (file: File) => {
     if (!note) return;
@@ -294,6 +297,23 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
                   placeholder="https://your-workspace.notion.site/ebd/..."
                 />
               )}
+
+              <div className="flex items-center justify-between rounded-md border p-2 sm:p-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="edit-pin-note" className="text-sm flex items-center gap-1.5 cursor-pointer">
+                    <Pin className="w-3.5 h-3.5 text-amber-400" />
+                    Pin note to top
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Keep this note pinned to the top of your list.
+                  </p>
+                </div>
+                <Switch
+                  id="edit-pin-note"
+                  checked={isPinned}
+                  onCheckedChange={setIsPinned}
+                />
+              </div>
 
               <div className="flex flex-wrap items-center gap-2">
                 <Select onValueChange={addTag} value="">
