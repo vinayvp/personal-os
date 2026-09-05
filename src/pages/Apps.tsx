@@ -1,26 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare, BookOpen, Notebook, Film, DollarSign, Github, BarChart3, Repeat, Briefcase, Zap, ChevronDown, Rocket, Loader2, ExternalLink } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
+import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare, BookOpen, Notebook, Film, DollarSign, Github, BarChart3, Repeat, Briefcase } from 'lucide-react';
 import NotesApp from '@/components/NotesApp';
 import TrackingApp from '@/components/TrackingApp';
 import TodoApp from '@/components/TodoApp';
@@ -32,8 +13,7 @@ import FinancialApp from '@/components/financial/FinancialApp';
 import JobTrackerApp from '@/components/JobTrackerApp';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-
-const NETLIFY_BUILD_HOOK_URL = 'https://api.netlify.com/build_hooks/6a9b035071da737bd3c0e988';
+import { toast } from 'sonner';
 
 /**
  * Classifies shared text or URLs to route to the optimal sub-app
@@ -66,14 +46,11 @@ const classifySharedContent = (rawText: string): { targetApp: 'movies' | 'jobs' 
 
   return { targetApp: 'notes', cleanUrlOrText: text };
 };
-
 const Apps = () => {
   const [selectedApp, setSelectedApp] = React.useState<string>('tracking');
   const [sharedMovieUrl, setSharedMovieUrl] = useState<string | null>(null);
   const [sharedJobUrl, setSharedJobUrl] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isDeploying, setIsDeploying] = useState(false);
-  const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleIncomingShare = useCallback((rawText: string) => {
@@ -138,36 +115,6 @@ const Apps = () => {
       window.removeEventListener('capacitorShareTarget', onShareEvent);
     };
   }, [handleIncomingShare]);
-
-  const handleTriggerDeploy = async () => {
-    if (isDeploying) return;
-    setIsDeploying(true);
-    setIsDeployDialogOpen(false);
-    const toastId = toast.loading('Triggering Netlify build...');
-    try {
-      const res = await fetch(NETLIFY_BUILD_HOOK_URL, {
-        method: 'POST',
-      });
-      if (!res.ok) throw new Error(`Netlify returned ${res.status}`);
-      toast.success('Netlify build triggered successfully!', {
-        id: toastId,
-        description: 'Your project is now building on Netlify.',
-        action: {
-          label: 'View Deploys',
-          onClick: () => window.open('https://app.netlify.com/projects/vinayvp/deploys', '_blank'),
-        },
-      });
-    } catch (error: any) {
-      console.error('Error triggering Netlify build:', error);
-      toast.error('Failed to trigger build', {
-        id: toastId,
-        description: error?.message || 'Network error occurred.',
-      });
-    } finally {
-      setIsDeploying(false);
-    }
-  };
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
     sessionStorage.removeItem('app_authenticated');
@@ -303,49 +250,6 @@ const Apps = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Actions Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="hidden md:flex gap-1.5 font-medium">
-                <Zap className="h-4 w-4 text-amber-500" />
-                Actions
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-60">
-              <DropdownMenuLabel className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Zap className="h-3.5 w-3.5 text-amber-500" />
-                Quick Actions
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => setIsDeployDialogOpen(true)}
-                disabled={isDeploying}
-                className="cursor-pointer gap-2 py-2"
-              >
-                {isDeploying ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                ) : (
-                  <Rocket className="h-4 w-4 text-primary" />
-                )}
-                <div className="flex flex-col">
-                  <span className="font-medium text-sm">Deploy Project</span>
-                  <span className="text-[11px] text-muted-foreground">Trigger Netlify build hook</span>
-                </div>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="cursor-pointer gap-2">
-                <a
-                  href="https://app.netlify.com/projects/vinayvp/deploys"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-xs">View Netlify Deploys</span>
-                </a>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
           {/* Desktop External Links */}
           <Button variant="outline" size="icon" asChild className="hidden md:flex h-8 w-8">
             <a href="https://github.com/vinayvp/portfolio_and_apps" target="_blank" rel="noopener noreferrer" title="GitHub">
@@ -492,25 +396,6 @@ const Apps = () => {
                 <BarChart3 className="h-4 w-4" />
               </a>
             </Button>
-            <div className="pt-2 border-t">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  setIsDeployDialogOpen(true);
-                }}
-                disabled={isDeploying}
-                className="w-full justify-start text-primary"
-              >
-                {isDeploying ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Rocket className="mr-2 h-4 w-4" />
-                )}
-                {isDeploying ? 'Deploying...' : 'Deploy Project (Netlify)'}
-              </Button>
-            </div>
             <Button 
               variant="outline" 
               size="sm" 
@@ -526,28 +411,6 @@ const Apps = () => {
       <main className="flex-1 overflow-y-auto">
         {renderSelectedApp()}
       </main>
-
-      {/* Netlify Deploy Confirmation Dialog */}
-      <AlertDialog open={isDeployDialogOpen} onOpenChange={setIsDeployDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Rocket className="h-5 w-5 text-primary" />
-              Trigger Netlify Build & Deploy?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This will trigger your Netlify build hook to fetch the latest commit on <strong className="text-foreground font-semibold">main</strong> and deploy it to production.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleTriggerDeploy} className="gap-1.5">
-              <Rocket className="h-4 w-4" />
-              Deploy Now
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
