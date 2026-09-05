@@ -198,14 +198,14 @@ const Apps = () => {
               <FileText className="mr-2 h-4 w-4" />
               Notes
             </Button>
-            <Button
+            {/* <Button
               variant={selectedApp === 'journal' ? 'default' : 'outline'}
               onClick={() => setSelectedApp('journal')}
               size="sm"
             >
               <Notebook className="mr-2 h-4 w-4" />
               Journal
-            </Button>
+            </Button> */}
             <Button
               variant={selectedApp === 'lessons' ? 'default' : 'outline'}
               onClick={() => setSelectedApp('lessons')}
@@ -325,7 +325,7 @@ const Apps = () => {
               <FileText className="mr-2 h-4 w-4" />
               Notes
             </Button>
-            <Button
+            {/* <Button
               variant={selectedApp === 'journal' ? 'default' : 'outline'}
               onClick={() => handleAppSelect('journal')}
               size="sm"
@@ -333,7 +333,7 @@ const Apps = () => {
             >
               <Notebook className="mr-2 h-4 w-4" />
               Journal
-            </Button>
+            </Button> */}
             <Button
               variant={selectedApp === 'lessons' ? 'default' : 'outline'}
               onClick={() => handleAppSelect('lessons')}
