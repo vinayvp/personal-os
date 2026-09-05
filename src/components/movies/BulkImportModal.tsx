@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, FileText, AlertCircle, CheckCircle, X, Type } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { extractImdbId } from "./AddMovieModal";
 
 interface Movie {
   id: string;
@@ -117,8 +118,11 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({
   };
 
   const searchOMDb = async (title: string): Promise<any> => {
+    const isImdb = /imdb\.com\/title\/tt\d+/i.test(title) || /^tt\d{6,10}$/i.test(title.trim());
+    const imdbId = isImdb ? extractImdbId(title) : null;
+    const body = imdbId ? { imdbId } : { title };
     const { data, error } = await supabase.functions.invoke('search-movie', {
-      body: { title }
+      body
     });
 
     if (error) {
@@ -393,11 +397,14 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({
     "custom_category": "Sci-Fi Favorites"
   },
   {
-    "title": "Inception",
+    "title": "https://www.imdb.com/title/tt1375666/",
     "custom_category": "Mind Benders"
   }
 ]`}
                       </pre>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Note: <span className="font-mono">title</span> can be a movie name, an IMDb ID (e.g. <span className="font-mono">tt0804484</span>), or an IMDb URL.
+                      </p>
                     </div>
                   </div>
                 </CardContent>

@@ -40,11 +40,20 @@ interface Category {
   name: string;
 }
 
-const MoviesApp = () => {
+interface MoviesAppProps {
+  initialSharedUrl?: string | null;
+  onClearSharedUrl?: () => void;
+}
+
+const MoviesApp: React.FC<MoviesAppProps> = ({
+  initialSharedUrl,
+  onClearSharedUrl,
+}) => {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [activeSharedUrl, setActiveSharedUrl] = useState<string | null>(initialSharedUrl || null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isCreateCategoryModalOpen, setIsCreateCategoryModalOpen] = useState(false);
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
@@ -58,6 +67,13 @@ const MoviesApp = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (initialSharedUrl) {
+      setActiveSharedUrl(initialSharedUrl);
+      setIsAddModalOpen(true);
+    }
+  }, [initialSharedUrl]);
 
   useEffect(() => {
     loadMovies();
@@ -390,9 +406,19 @@ const MoviesApp = () => {
         {/* Modals */}
         <AddMovieModal
           isOpen={isAddModalOpen}
-          onClose={() => setIsAddModalOpen(false)}
-          onMovieAdded={handleMovieAdded}
+          onClose={() => {
+            setIsAddModalOpen(false);
+            setActiveSharedUrl(null);
+            onClearSharedUrl?.();
+          }}
+          onMovieAdded={(movie) => {
+            handleMovieAdded(movie);
+            setActiveSharedUrl(null);
+            onClearSharedUrl?.();
+          }}
           categories={categories}
+          initialQuery={activeSharedUrl || undefined}
+          autoSearch={!!activeSharedUrl}
         />
 
         {selectedMovie && (

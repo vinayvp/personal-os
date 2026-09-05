@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -26,12 +26,14 @@ interface AddSavedLinkModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (newLink: SavedJobLink) => void;
+  initialUrl?: string;
 }
 
 const AddSavedLinkModal: React.FC<AddSavedLinkModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  initialUrl,
 }) => {
   const { toast } = useToast();
 
@@ -55,6 +57,12 @@ const AddSavedLinkModal: React.FC<AddSavedLinkModalProps> = ({
       }
     }
   };
+
+  useEffect(() => {
+    if (isOpen && initialUrl) {
+      handleUrlChange(initialUrl);
+    }
+  }, [isOpen, initialUrl]);
 
   const resetForm = () => {
     setUrl('');

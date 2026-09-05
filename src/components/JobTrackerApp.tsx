@@ -56,11 +56,20 @@ import {
 } from '@/integrations/supabase/jobClient';
 import { useToast } from '@/hooks/use-toast';
 
-const JobTrackerApp: React.FC = () => {
+interface JobTrackerAppProps {
+  initialSharedUrl?: string | null;
+  onClearSharedUrl?: () => void;
+}
+
+const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
+  initialSharedUrl,
+  onClearSharedUrl,
+}) => {
   const { toast } = useToast();
 
   // Navigation Tab State
   const [activeTab, setActiveTab] = useState<'applications' | 'saved_links'>('applications');
+  const [activeSharedUrl, setActiveSharedUrl] = useState<string | null>(initialSharedUrl || null);
 
   // Data State
   const [applications, setApplications] = useState<JobApplication[]>([]);
@@ -81,6 +90,14 @@ const JobTrackerApp: React.FC = () => {
   const [viewingJob, setViewingJob] = useState<JobApplication | null>(null);
   const [prefilledJobData, setPrefilledJobData] = useState<Partial<NewJobApplication> | null>(null);
   const [convertingLinkId, setConvertingLinkId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialSharedUrl) {
+      setActiveSharedUrl(initialSharedUrl);
+      setActiveTab('saved_links');
+      setIsAddLinkOpen(true);
+    }
+  }, [initialSharedUrl]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -538,10 +555,17 @@ const JobTrackerApp: React.FC = () => {
 
       <AddSavedLinkModal
         isOpen={isAddLinkOpen}
-        onClose={() => setIsAddLinkOpen(false)}
+        onClose={() => {
+          setIsAddLinkOpen(false);
+          setActiveSharedUrl(null);
+          onClearSharedUrl?.();
+        }}
         onSuccess={(newLink) => {
           setSavedLinks((prev) => [newLink, ...prev.filter((l) => l.id !== newLink.id)]);
+          setActiveSharedUrl(null);
+          onClearSharedUrl?.();
         }}
+        initialUrl={activeSharedUrl || undefined}
       />
 
       <EditJobModal

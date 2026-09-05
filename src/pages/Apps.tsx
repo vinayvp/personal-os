@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare, BookOpen, Notebook, Film, DollarSign, Github, BarChart3, Repeat, Briefcase, Zap, ChevronDown, Rocket, Loader2, ExternalLink } from 'lucide-react';
 import {
@@ -35,12 +35,109 @@ import { useNavigate } from 'react-router-dom';
 
 const NETLIFY_BUILD_HOOK_URL = 'https://api.netlify.com/build_hooks/6a9b035071da737bd3c0e988';
 
+/**
+ * Classifies shared text or URLs to route to the optimal sub-app
+ */
+const classifySharedContent = (rawText: string): { targetApp: 'movies' | 'jobs' | 'notes'; cleanUrlOrText: string } => {
+  const text = rawText.trim();
+  
+  // Extract URL if surrounded by extra text (e.g., "Check out this movie https://www.imdb.com/title/tt0804484/")
+  const urlMatch = text.match(/(https?:\/\/[^\s]+)/i);
+  const foundUrl = urlMatch ? urlMatch[1] : text;
+
+  // 1. Check if IMDb URL or standalone IMDb ID
+  if (/imdb\.com\/title\/(tt\d+)/i.test(foundUrl) || /^tt\d{6,10}$/i.test(foundUrl) || /imdb\.com/i.test(foundUrl)) {
+    return { targetApp: 'movies', cleanUrlOrText: foundUrl };
+  }
+
+  // 2. Check if Job Link
+  if (
+    /linkedin\.com\/jobs/i.test(foundUrl) ||
+    /indeed\.com/i.test(foundUrl) ||
+    /wellfound\.com/i.test(foundUrl) ||
+    /glassdoor\.com/i.test(foundUrl) ||
+    /lever\.co/i.test(foundUrl) ||
+    /greenhouse\.io/i.test(foundUrl) ||
+    /workday\.com/i.test(foundUrl) ||
+    /ashbyhq\.com/i.test(foundUrl)
+  ) {
+    return { targetApp: 'jobs', cleanUrlOrText: foundUrl };
+  }
+
+  return { targetApp: 'notes', cleanUrlOrText: text };
+};
+
 const Apps = () => {
   const [selectedApp, setSelectedApp] = React.useState<string>('tracking');
+  const [sharedMovieUrl, setSharedMovieUrl] = useState<string | null>(null);
+  const [sharedJobUrl, setSharedJobUrl] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
   const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
   const navigate = useNavigate();
+
+  const handleIncomingShare = useCallback((rawText: string) => {
+    if (!rawText || !rawText.trim()) return;
+    const { targetApp, cleanUrlOrText } = classifySharedContent(rawText);
+
+    if (targetApp === 'movies') {
+      setSelectedApp('movies');
+      setSharedMovieUrl(cleanUrlOrText);
+      toast.info('Received IMDb link! Opening Movies...', { duration: 3500 });
+    } else if (targetApp === 'jobs') {
+      setSelectedApp('jobs');
+      setSharedJobUrl(cleanUrlOrText);
+      toast.info('Received job link! Opening Job Tracker...', { duration: 3500 });
+    } else {
+      setSelectedApp('notes');
+      toast.info('Received shared content', { duration: 3000 });
+    }
+  }, []);
+
+  useEffect(() => {
+    // 1. Check native AndroidShare interface
+    try {
+      const androidShare = (window as any).AndroidShare;
+      if (androidShare && typeof androidShare.getPendingSharedText === 'function') {
+        const text = androidShare.getPendingSharedText();
+        if (text && text.trim()) {
+          handleIncomingShare(text);
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading AndroidShare:', e);
+    }
+
+    // 2. Check window.__pendingSharedText (for global state handover)
+    if ((window as any).__pendingSharedText) {
+      const text = (window as any).__pendingSharedText;
+      (window as any).__pendingSharedText = null;
+      handleIncomingShare(text);
+    }
+
+    // 3. Check URL query parameters (?url=... or ?text=... or ?shareUrl=...)
+    const params = new URLSearchParams(window.location.search);
+    const urlParam = params.get('url') || params.get('shareUrl') || params.get('text');
+    if (urlParam) {
+      handleIncomingShare(urlParam);
+      // Clean query params from URL without reloading
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+
+    // 4. Listen for warm-start events dispatched from MainActivity
+    const onShareEvent = (event: any) => {
+      const text = event.detail?.text;
+      if (text) {
+        handleIncomingShare(text);
+      }
+    };
+
+    window.addEventListener('capacitorShareTarget', onShareEvent);
+    return () => {
+      window.removeEventListener('capacitorShareTarget', onShareEvent);
+    };
+  }, [handleIncomingShare]);
 
   const handleTriggerDeploy = async () => {
     if (isDeploying) return;
@@ -100,13 +197,23 @@ const Apps = () => {
       case 'journal':
         return <JournalApp />;
       case 'movies':
-        return <MoviesApp />;
+        return (
+          <MoviesApp
+            initialSharedUrl={sharedMovieUrl}
+            onClearSharedUrl={() => setSharedMovieUrl(null)}
+          />
+        );
       case 'revision':
         return <RevisionApp />;
       case 'financial':
         return <FinancialApp />;
       case 'jobs':
-        return <JobTrackerApp />;
+        return (
+          <JobTrackerApp
+            initialSharedUrl={sharedJobUrl}
+            onClearSharedUrl={() => setSharedJobUrl(null)}
+          />
+        );
       default:
         return null;
     }

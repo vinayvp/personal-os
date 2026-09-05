@@ -13,7 +13,22 @@ serve(async (req) => {
   }
 
   try {
-    const { title, year, imdbId } = await req.json();
+    let { title, year, imdbId } = await req.json();
+
+    // Extract clean IMDb ID if imdbId is provided as a URL or formatted string
+    if (imdbId) {
+      const match = String(imdbId).match(/(tt\d{6,10})/i);
+      if (match) {
+        imdbId = match[1].toLowerCase();
+      }
+    } else if (title) {
+      // If title is an IMDb URL or standalone IMDb ID, extract it into imdbId
+      const titleMatch = String(title).match(/(?:imdb\.com\/title\/)?(tt\d{6,10})/i);
+      if (titleMatch && (/imdb\.com\/title\//i.test(title) || /^tt\d{6,10}$/i.test(String(title).trim()))) {
+        imdbId = titleMatch[1].toLowerCase();
+        title = undefined;
+      }
+    }
     
     if (!title && !imdbId) {
       return new Response(

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,18 +49,43 @@ interface OMDbData {
   imdbID?: string;
 }
 
+/**
+ * Extracts a normalized IMDb ID (e.g. "tt0804484") from:
+ * - Direct ID: "tt0804484" or "TT0804484"
+ * - Full URLs: "https://www.imdb.com/title/tt0804484/" or "https://m.imdb.com/title/tt0804484/?ref_=..."
+ * - Subpages / Query params: "https://www.imdb.com/title/tt0804484/reference"
+ */
+export const extractImdbId = (input: string): string | null => {
+  if (!input) return null;
+  const trimmed = input.trim();
+
+  // Match IMDb title URL e.g. https://www.imdb.com/title/tt0804484/...
+  const urlMatch = trimmed.match(/imdb\.com\/title\/(tt\d{6,10})/i);
+  if (urlMatch) return urlMatch[1].toLowerCase();
+
+  // Match standalone tt ID e.g. tt0804484 or within query param / path
+  const idMatch = trimmed.match(/(?:^|\/|=|\b)(tt\d{6,10})(?:[/?#&]|\b|$)/i);
+  if (idMatch) return idMatch[1].toLowerCase();
+
+  return null;
+};
+
 interface AddMovieModalProps {
   isOpen: boolean;
   onClose: () => void;
   onMovieAdded: (movie: Movie) => void;
   categories: Category[];
+  initialQuery?: string;
+  autoSearch?: boolean;
 }
 
 const AddMovieModal: React.FC<AddMovieModalProps> = ({
   isOpen,
   onClose,
   onMovieAdded,
-  categories
+  categories,
+  initialQuery,
+  autoSearch = false
 }) => {
   const [searchTitle, setSearchTitle] = useState('');
   const [searchYear, setSearchYear] = useState('');
@@ -75,8 +100,69 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
   const [searchError, setSearchError] = useState('');
   const { toast } = useToast();
 
-  const searchOMDb = async () => {
-    if (!searchTitle.trim() && !searchImdbId.trim()) return;
+  const handleTitleChange = (val: string) => {
+    // If the user pastes an IMDb URL into the title input, auto-extract into the IMDb field
+    if (/imdb\.com\/title\/tt\d+/i.test(val)) {
+      const extracted = extractImdbId(val);
+      if (extracted) {
+        setSearchImdbId(extracted);
+        setSearchTitle('');
+        return;
+      }
+    }
+    setSearchTitle(val);
+  };
+
+  const handleImdbChange = (val: string) => {
+    // If user pastes an IMDb URL, automatically extract the clean ID
+    if (val.includes('imdb.com') || val.includes('/') || val.includes('?')) {
+      const extracted = extractImdbId(val);
+      if (extracted) {
+        setSearchImdbId(extracted);
+        return;
+      }
+    }
+    setSearchImdbId(val);
+  };
+
+  const selectMovie = (movie: OMDbData) => {
+    setSelectedMovie(movie);
+    setEditableData({
+      Title: movie.Title,
+      Year: movie.Year,
+      Genre: movie.Genre,
+      imdbRating: movie.imdbRating,
+      Rated: movie.Rated,
+      Poster: movie.Poster,
+      Plot: movie.Plot,
+      Actors: movie.Actors,
+      Director: movie.Director,
+      imdbID: movie.imdbID
+    });
+    setMarkAsWatched(false);
+  };
+
+  const executeSearch = async (override?: { title?: string; imdbId?: string; year?: string; autoSelect?: boolean }) => {
+    const rawImdb = override?.imdbId !== undefined ? override.imdbId : searchImdbId;
+    const rawTitle = override?.title !== undefined ? override.title : searchTitle;
+    const rawYear = override?.year !== undefined ? override.year : searchYear;
+
+    const imdbFromId = extractImdbId(rawImdb);
+    const imdbFromTitle = (/imdb\.com\/title\/tt\d+/i.test(rawTitle) || /^tt\d{6,10}$/i.test(rawTitle.trim()))
+      ? extractImdbId(rawTitle)
+      : null;
+
+    const resolvedImdbId = imdbFromId || imdbFromTitle;
+    const resolvedTitle = resolvedImdbId ? '' : rawTitle.trim();
+
+    if (!resolvedTitle && !resolvedImdbId) return;
+
+    if (resolvedImdbId) {
+      setSearchImdbId(resolvedImdbId);
+    }
+    if (resolvedImdbId && (imdbFromTitle || /imdb\.com/i.test(rawTitle))) {
+      setSearchTitle('');
+    }
 
     setIsSearching(true);
     setSearchError('');
@@ -84,15 +170,24 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
     try {
       const { data, error } = await supabase.functions.invoke('search-movie', {
         body: { 
-          title: searchTitle,
-          year: searchYear.trim() || undefined,
-          imdbId: searchImdbId.trim() || undefined
+          title: resolvedTitle || undefined,
+          year: !resolvedImdbId && rawYear.trim() ? rawYear.trim() : undefined,
+          imdbId: resolvedImdbId || undefined
         }
       });
 
       if (error) {
         console.error('Edge function error:', error);
-        setSearchError('Failed to search. Please try again.');
+        let message = 'Failed to search. Please try again.';
+        try {
+          if ('context' in error && typeof (error as any).context?.json === 'function') {
+            const errBody = await (error as any).context.json();
+            if (errBody?.error) message = errBody.error;
+          }
+        } catch {
+          // ignore error parsing
+        }
+        setSearchError(message);
         setSearchResults([]);
         return;
       }
@@ -116,6 +211,9 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
           imdbID: data.imdb_id
         };
         setSearchResults([movieResult]);
+        if (override?.autoSelect || resolvedImdbId) {
+          selectMovie(movieResult);
+        }
       } else {
         setSearchError('No results found');
         setSearchResults([]);
@@ -129,22 +227,25 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
     }
   };
 
-  const selectMovie = (movie: OMDbData) => {
-    setSelectedMovie(movie);
-    setEditableData({
-      Title: movie.Title,
-      Year: movie.Year,
-      Genre: movie.Genre,
-      imdbRating: movie.imdbRating,
-      Rated: movie.Rated,
-      Poster: movie.Poster,
-      Plot: movie.Plot,
-      Actors: movie.Actors,
-      Director: movie.Director,
-      imdbID: movie.imdbID
-    });
-    setMarkAsWatched(false);
-  };
+  const searchOMDb = () => executeSearch();
+
+  useEffect(() => {
+    if (isOpen && initialQuery) {
+      const parsedId = extractImdbId(initialQuery);
+      if (parsedId) {
+        setSearchImdbId(parsedId);
+        setSearchTitle('');
+        if (autoSearch) {
+          executeSearch({ imdbId: parsedId, autoSelect: true });
+        }
+      } else {
+        setSearchTitle(initialQuery);
+        if (autoSearch) {
+          executeSearch({ title: initialQuery });
+        }
+      }
+    }
+  }, [isOpen, initialQuery, autoSearch]);
 
   const saveMovie = async () => {
     if (!selectedMovie || !editableData.Title) return;
@@ -152,15 +253,37 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
     setIsSaving(true);
     try {
       // Check for duplicates first
-      const { data: existingMovies, error: searchError } = await supabase
-        .from('movies_tv')
-        .select('title, release_year')
-        .eq('title', editableData.Title || selectedMovie.Title)
-        .eq('release_year', editableData.Year || selectedMovie.Year);
+      const targetTitle = editableData.Title || selectedMovie.Title;
+      const targetYear = editableData.Year || selectedMovie.Year;
+      const targetImdbId = editableData.imdbID || selectedMovie.imdbID;
 
-      if (searchError) {
-        console.error('Error checking for duplicates:', searchError);
-      } else if (existingMovies && existingMovies.length > 0) {
+      let isDuplicate = false;
+      if (targetImdbId) {
+        const { data: imdbMatches, error: imdbCheckError } = await supabase
+          .from('movies_tv')
+          .select('id')
+          .eq('imdb_id', targetImdbId);
+        if (imdbCheckError) {
+          console.error('Error checking for imdb duplicates:', imdbCheckError);
+        } else if (imdbMatches && imdbMatches.length > 0) {
+          isDuplicate = true;
+        }
+      }
+
+      if (!isDuplicate && targetTitle && targetYear) {
+        const { data: existingMovies, error: titleCheckError } = await supabase
+          .from('movies_tv')
+          .select('id')
+          .eq('title', targetTitle)
+          .eq('release_year', targetYear);
+        if (titleCheckError) {
+          console.error('Error checking for title duplicates:', titleCheckError);
+        } else if (existingMovies && existingMovies.length > 0) {
+          isDuplicate = true;
+        }
+      }
+
+      if (isDuplicate) {
         toast({
           title: "Duplicate Found",
           description: "This movie/TV show is already in your collection.",
@@ -272,15 +395,15 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
                 <Input
                   placeholder="Search for a movie or TV show..."
                   value={searchTitle}
-                  onChange={(e) => setSearchTitle(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && searchOMDb()}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && searchOMDb()}
                   className="flex-1"
                 />
                 <Input
                   placeholder="Year (optional)"
                   value={searchYear}
                   onChange={(e) => setSearchYear(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && searchOMDb()}
+                  onKeyDown={(e) => e.key === 'Enter' && searchOMDb()}
                   className="w-32"
                 />
                 <Button onClick={searchOMDb} disabled={isSearching}>
@@ -295,18 +418,23 @@ const AddMovieModal: React.FC<AddMovieModalProps> = ({
                 <div className="flex-1 border-t border-border"></div>
               </div>
               
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Search by IMDb ID (e.g., tt1234567)"
-                  value={searchImdbId}
-                  onChange={(e) => setSearchImdbId(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && searchOMDb()}
-                  className="flex-1"
-                />
-                <Button onClick={searchOMDb} disabled={isSearching}>
-                  <Search className="w-4 h-4 mr-2" />
-                  {isSearching ? 'Searching...' : 'Search'}
-                </Button>
+              <div className="space-y-1.5">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Search by IMDb ID or Link (e.g., tt0804484 or https://www.imdb.com/title/tt0804484/)"
+                    value={searchImdbId}
+                    onChange={(e) => handleImdbChange(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && searchOMDb()}
+                    className="flex-1"
+                  />
+                  <Button onClick={searchOMDb} disabled={isSearching}>
+                    <Search className="w-4 h-4 mr-2" />
+                    {isSearching ? 'Searching...' : 'Search'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Paste a full IMDb link or ID (e.g., <span className="font-mono">https://www.imdb.com/title/tt0804484/</span> or <span className="font-mono">tt0804484</span>)
+                </p>
               </div>
 
               {searchError && (
