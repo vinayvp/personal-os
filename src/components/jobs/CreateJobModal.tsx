@@ -38,10 +38,16 @@ import {
   NewJobApplication,
   STATUS_CONFIG,
   COMMON_CURRENCIES,
-  FOUND_IN_OPTIONS,
   JOB_TYPE_OPTIONS,
+  JobPlatform,
 } from './types';
-import { uploadResume, uploadCoverLetter, validateResumeFile, convertSalaryToInr } from '@/integrations/supabase/jobClient';
+import {
+  uploadResume,
+  uploadCoverLetter,
+  validateResumeFile,
+  convertSalaryToInr,
+  findPlatformByUrl,
+} from '@/integrations/supabase/jobClient';
 import { useToast } from '@/hooks/use-toast';
 
 interface Props {
@@ -50,9 +56,19 @@ interface Props {
   onSuccess: (newJob: NewJobApplication, fromSavedLinkId?: string) => Promise<void>;
   initialData?: Partial<NewJobApplication> | null;
   fromSavedLinkId?: string | null;
+  platforms?: JobPlatform[];
+  onOpenAddPlatform?: () => void;
 }
 
-const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, initialData, fromSavedLinkId }) => {
+const CreateJobModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  initialData,
+  fromSavedLinkId,
+  platforms = [],
+  onOpenAddPlatform,
+}) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -70,8 +86,8 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, initialDa
   const [salaryMax, setSalaryMax] = useState('');
   const [salaryCurrency, setSalaryCurrency] = useState('USD');
   const [applicationLink, setApplicationLink] = useState('');
+  const [selectedPlatformId, setSelectedPlatformId] = useState('');
   const [isCustomFoundIn, setIsCustomFoundIn] = useState(false);
-  const [foundInPreset, setFoundInPreset] = useState('LinkedIn');
   const [customFoundIn, setCustomFoundIn] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [recruiterEmail, setRecruiterEmail] = useState('');
@@ -100,8 +116,8 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, initialDa
     setSalaryMax('');
     setSalaryCurrency('USD');
     setApplicationLink('');
+    setSelectedPlatformId('');
     setIsCustomFoundIn(false);
-    setFoundInPreset('LinkedIn');
     setCustomFoundIn('');
     setJobDescription('');
     setRecruiterEmail('');
@@ -120,9 +136,15 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, initialDa
         if (initialData.country) setCountry(initialData.country);
         if (initialData.application_link) setApplicationLink(initialData.application_link);
         if (initialData.follow_up_notes) setFollowUpNotes(initialData.follow_up_notes);
-        if (initialData.found_in) {
-          if (FOUND_IN_OPTIONS.includes(initialData.found_in)) {
-            setFoundInPreset(initialData.found_in);
+        if (initialData.platform_id) {
+          setSelectedPlatformId(initialData.platform_id);
+          setIsCustomFoundIn(false);
+        } else if (initialData.found_in) {
+          const matched = platforms.find(
+            (p) => p.name.toLowerCase() === initialData.found_in?.trim().toLowerCase()
+          );
+          if (matched) {
+            setSelectedPlatformId(matched.id);
             setIsCustomFoundIn(false);
           } else {
             setIsCustomFoundIn(true);
@@ -133,7 +155,7 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, initialDa
     } else {
       resetForm();
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, platforms]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -216,6 +238,19 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, initialDa
       const numMax = salaryMax ? parseFloat(salaryMax) : null;
       const salaryConversion = await convertSalaryToInr(numMin, numMax, salaryCurrency);
 
+      let finalPlatformId: string | null = null;
+      let finalFoundIn: string | null = null;
+
+      if (isCustomFoundIn) {
+        finalFoundIn = customFoundIn.trim() || null;
+      } else if (selectedPlatformId) {
+        const platform = platforms.find((p) => p.id === selectedPlatformId);
+        if (platform) {
+          finalPlatformId = platform.id;
+          finalFoundIn = platform.name;
+        }
+      }
+
       const newJob: NewJobApplication = {
         applied_date: appliedDate,
         company_name: companyName.trim(),
@@ -236,7 +271,8 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, initialDa
         cover_letter_filename: coverLetterFilename,
         cover_letter_storage_path: coverLetterStoragePath,
         application_link: cleanLink,
-        found_in: (isCustomFoundIn ? customFoundIn.trim() : foundInPreset) || null,
+        platform_id: finalPlatformId,
+        found_in: finalFoundIn,
         job_description: jobDescription.trim() || null,
         recruiter_email: recruiterEmail.trim() || null,
         recruiter_phone: recruiterPhone.trim() || null,
@@ -348,21 +384,32 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, initialDa
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="foundIn" className="text-xs font-semibold">
-                  Found In / Platform
+                  Job Platform / Source
                 </Label>
-                <button
-                  type="button"
-                  onClick={() => setIsCustomFoundIn(!isCustomFoundIn)}
-                  className="text-[11px] text-primary hover:underline"
-                >
-                  {isCustomFoundIn ? '← List' : '+ Custom'}
-                </button>
+                <div className="flex items-center gap-2">
+                  {onOpenAddPlatform && (
+                    <button
+                      type="button"
+                      onClick={onOpenAddPlatform}
+                      className="text-[11px] text-primary hover:underline font-medium"
+                    >
+                      + New Platform
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomFoundIn(!isCustomFoundIn)}
+                    className="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    {isCustomFoundIn ? '← Select platform' : '+ Custom text'}
+                  </button>
+                </div>
               </div>
 
               {isCustomFoundIn ? (
                 <Input
                   id="foundIn"
-                  placeholder="e.g. Hacker News, Meetup..."
+                  placeholder="e.g. Direct Referral, Meetup, Event..."
                   value={customFoundIn}
                   onChange={(e) => setCustomFoundIn(e.target.value)}
                   className="h-9 text-xs"
@@ -370,25 +417,33 @@ const CreateJobModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, initialDa
                 />
               ) : (
                 <Select
-                  value={foundInPreset}
+                  value={selectedPlatformId}
                   onValueChange={(val) => {
                     if (val === '__custom__') {
                       setIsCustomFoundIn(true);
+                      setSelectedPlatformId('');
+                    } else if (val === '__add_new__') {
+                      onOpenAddPlatform?.();
                     } else {
-                      setFoundInPreset(val);
+                      setSelectedPlatformId(val);
                     }
                   }}
                 >
                   <SelectTrigger id="foundIn" className="h-9 text-xs">
-                    <SelectValue placeholder="Source" />
+                    <SelectValue placeholder={platforms.length > 0 ? "Select from Job Platforms" : "No platforms in directory"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {FOUND_IN_OPTIONS.map((opt) => (
-                      <SelectItem key={opt} value={opt}>
-                        {opt}
+                    {platforms.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} {p.scope === 'specific' && p.countries?.length ? `(${p.countries.join(', ')})` : ''}
                       </SelectItem>
                     ))}
-                    <SelectItem value="__custom__" className="text-primary font-medium">
+                    {platforms.length === 0 && (
+                      <SelectItem value="__add_new__" className="text-primary font-medium">
+                        + Add Platform to Directory
+                      </SelectItem>
+                    )}
+                    <SelectItem value="__custom__" className="text-muted-foreground">
                       + Other (Type custom text...)
                     </SelectItem>
                   </SelectContent>

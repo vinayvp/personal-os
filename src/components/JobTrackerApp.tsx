@@ -632,6 +632,11 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
         onSuccess={handleCreate}
         initialData={prefilledJobData}
         fromSavedLinkId={convertingLinkId}
+        platforms={platforms}
+        onOpenAddPlatform={() => {
+          setEditingPlatform(null);
+          setIsAddPlatformOpen(true);
+        }}
       />
 
       <AddSavedLinkModal
@@ -647,6 +652,11 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
           onClearSharedUrl?.();
         }}
         initialUrl={activeSharedUrl || undefined}
+        platforms={platforms}
+        onOpenAddPlatform={() => {
+          setEditingPlatform(null);
+          setIsAddPlatformOpen(true);
+        }}
       />
 
       <PlatformModal
@@ -664,6 +674,11 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
         isOpen={Boolean(editingJob)}
         onClose={() => setEditingJob(null)}
         onSuccess={handleUpdate}
+        platforms={platforms}
+        onOpenAddPlatform={() => {
+          setEditingPlatform(null);
+          setIsAddPlatformOpen(true);
+        }}
       />
 
       <JobDetailModal

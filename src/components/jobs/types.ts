@@ -30,6 +30,7 @@ export interface JobApplication {
   cover_letter_filename?: string | null;
   cover_letter_storage_path?: string | null;
   application_link?: string | null;
+  platform_id?: string | null;
   found_in?: string | null;
   job_description?: string | null;
   recruiter_email?: string | null;
@@ -133,18 +134,7 @@ export const COMMON_CURRENCIES = [
   { code: 'INR', symbol: '₹', label: 'INR (₹)' },
 ];
 
-export const FOUND_IN_OPTIONS = [
-  'LinkedIn',
-  'Wellfound (AngelList)',
-  'Company Website / Careers',
-  'Referral / Networking',
-  'Indeed',
-  'Glassdoor',
-  'Y Combinator Jobs',
-  'Otta / Welcome to the Jungle',
-  'X (Twitter)',
-  'Recruiter Outreach',
-];
+export const FOUND_IN_OPTIONS: string[] = [];
 
 export const JOB_TYPE_OPTIONS = [
   'Full-time',
@@ -160,6 +150,7 @@ export interface SavedJobLink {
   company_name?: string | null;
   role_name?: string | null;
   location?: string | null;
+  platform_id?: string | null;
   source?: string | null;
   notes?: string | null;
   deadline?: string | null;

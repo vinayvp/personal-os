@@ -39,8 +39,8 @@ import {
   JobStatus,
   STATUS_CONFIG,
   COMMON_CURRENCIES,
-  FOUND_IN_OPTIONS,
   JOB_TYPE_OPTIONS,
+  JobPlatform,
 } from './types';
 import {
   uploadResume,
@@ -56,9 +56,18 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (id: string, updates: Partial<JobApplication>) => Promise<void>;
+  platforms?: JobPlatform[];
+  onOpenAddPlatform?: () => void;
 }
 
-const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
+const EditJobModal: React.FC<Props> = ({
+  job,
+  isOpen,
+  onClose,
+  onSuccess,
+  platforms = [],
+  onOpenAddPlatform,
+}) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -76,8 +85,8 @@ const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
   const [salaryMax, setSalaryMax] = useState('');
   const [salaryCurrency, setSalaryCurrency] = useState('USD');
   const [applicationLink, setApplicationLink] = useState('');
+  const [selectedPlatformId, setSelectedPlatformId] = useState('');
   const [isCustomFoundIn, setIsCustomFoundIn] = useState(false);
-  const [foundInPreset, setFoundInPreset] = useState('LinkedIn');
   const [customFoundIn, setCustomFoundIn] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [recruiterEmail, setRecruiterEmail] = useState('');
@@ -125,19 +134,26 @@ const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
         setCustomJobType('');
       }
 
-      if (job.found_in) {
-        if (FOUND_IN_OPTIONS.includes(job.found_in)) {
+      if (job.platform_id) {
+        setSelectedPlatformId(job.platform_id);
+        setIsCustomFoundIn(false);
+        setCustomFoundIn('');
+      } else if (job.found_in) {
+        const matched = platforms.find(
+          (p) => p.name.toLowerCase() === job.found_in?.trim().toLowerCase()
+        );
+        if (matched) {
+          setSelectedPlatformId(matched.id);
           setIsCustomFoundIn(false);
-          setFoundInPreset(job.found_in);
           setCustomFoundIn('');
         } else {
           setIsCustomFoundIn(true);
-          setFoundInPreset('LinkedIn');
+          setSelectedPlatformId('');
           setCustomFoundIn(job.found_in);
         }
       } else {
+        setSelectedPlatformId('');
         setIsCustomFoundIn(false);
-        setFoundInPreset('LinkedIn');
         setCustomFoundIn('');
       }
 
@@ -262,6 +278,19 @@ const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
       const numMax = salaryMax ? parseFloat(salaryMax) : null;
       const salaryConversion = await convertSalaryToInr(numMin, numMax, salaryCurrency);
 
+      let finalPlatformId: string | null = null;
+      let finalFoundIn: string | null = null;
+
+      if (isCustomFoundIn) {
+        finalFoundIn = customFoundIn.trim() || null;
+      } else if (selectedPlatformId) {
+        const platform = platforms.find((p) => p.id === selectedPlatformId);
+        if (platform) {
+          finalPlatformId = platform.id;
+          finalFoundIn = platform.name;
+        }
+      }
+
       const updates: Partial<JobApplication> = {
         applied_date: appliedDate,
         company_name: companyName.trim(),
@@ -281,7 +310,8 @@ const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
         cover_letter_filename: coverLetterFilename,
         cover_letter_storage_path: coverLetterStoragePath,
         application_link: cleanLink,
-        found_in: (isCustomFoundIn ? customFoundIn.trim() : foundInPreset) || null,
+        platform_id: finalPlatformId,
+        found_in: finalFoundIn,
         job_description: jobDescription.trim() || null,
         recruiter_email: recruiterEmail.trim() || null,
         recruiter_phone: recruiterPhone.trim() || null,
@@ -390,21 +420,32 @@ const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="editFoundIn" className="text-xs font-semibold">
-                  Found In / Platform
+                  Job Platform / Source
                 </Label>
-                <button
-                  type="button"
-                  onClick={() => setIsCustomFoundIn(!isCustomFoundIn)}
-                  className="text-[11px] text-primary hover:underline"
-                >
-                  {isCustomFoundIn ? '← List' : '+ Custom'}
-                </button>
+                <div className="flex items-center gap-2">
+                  {onOpenAddPlatform && (
+                    <button
+                      type="button"
+                      onClick={onOpenAddPlatform}
+                      className="text-[11px] text-primary hover:underline font-medium"
+                    >
+                      + New Platform
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomFoundIn(!isCustomFoundIn)}
+                    className="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    {isCustomFoundIn ? '← Select platform' : '+ Custom text'}
+                  </button>
+                </div>
               </div>
 
               {isCustomFoundIn ? (
                 <Input
                   id="editFoundIn"
-                  placeholder="e.g. Hacker News, Meetup..."
+                  placeholder="e.g. Direct Referral, Meetup, Event..."
                   value={customFoundIn}
                   onChange={(e) => setCustomFoundIn(e.target.value)}
                   className="h-9 text-xs"
@@ -412,25 +453,33 @@ const EditJobModal: React.FC<Props> = ({ job, isOpen, onClose, onSuccess }) => {
                 />
               ) : (
                 <Select
-                  value={foundInPreset}
+                  value={selectedPlatformId}
                   onValueChange={(val) => {
                     if (val === '__custom__') {
                       setIsCustomFoundIn(true);
+                      setSelectedPlatformId('');
+                    } else if (val === '__add_new__') {
+                      onOpenAddPlatform?.();
                     } else {
-                      setFoundInPreset(val);
+                      setSelectedPlatformId(val);
                     }
                   }}
                 >
                   <SelectTrigger id="editFoundIn" className="h-9 text-xs">
-                    <SelectValue placeholder="Source" />
+                    <SelectValue placeholder={platforms.length > 0 ? "Select from Job Platforms" : "No platforms in directory"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {FOUND_IN_OPTIONS.map((opt) => (
-                      <SelectItem key={opt} value={opt}>
-                        {opt}
+                    {platforms.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} {p.scope === 'specific' && p.countries?.length ? `(${p.countries.join(', ')})` : ''}
                       </SelectItem>
                     ))}
-                    <SelectItem value="__custom__" className="text-primary font-medium">
+                    {platforms.length === 0 && (
+                      <SelectItem value="__add_new__" className="text-primary font-medium">
+                        + Add Platform to Directory
+                      </SelectItem>
+                    )}
+                    <SelectItem value="__custom__" className="text-muted-foreground">
                       + Other (Type custom text...)
                     </SelectItem>
                   </SelectContent>

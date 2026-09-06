@@ -645,6 +645,7 @@ export const createSavedJobLink = async (newLink: NewSavedJobLink): Promise<Save
         company_name: candidate.company_name || null,
         role_name: candidate.role_name || null,
         location: candidate.location || null,
+        platform_id: candidate.platform_id || null,
         source: candidate.source || null,
         notes: candidate.notes || null,
         deadline: candidate.deadline || null,
@@ -759,150 +760,24 @@ export const markSavedJobLinkAsApplied = async (id: string): Promise<SavedJobLin
 
 const LOCAL_STORAGE_PLATFORMS_KEY = 'portfolio_job_platforms_cache';
 
-export const DEFAULT_JOB_PLATFORMS: JobPlatform[] = [
-  {
-    id: 'default-linkedin',
-    name: 'LinkedIn',
-    url: 'https://www.linkedin.com/jobs',
-    scope: 'global',
-    countries: null,
-    notes: 'Primary professional network, direct Easy Apply and enterprise job postings.',
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'default-indeed',
-    name: 'Indeed',
-    url: 'https://www.indeed.com',
-    scope: 'global',
-    countries: null,
-    notes: 'Largest comprehensive job search aggregator worldwide.',
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'default-wellfound',
-    name: 'Wellfound (AngelList)',
-    url: 'https://wellfound.com/jobs',
-    scope: 'global',
-    countries: null,
-    notes: 'Premier platform for early-stage to Series C startups and equity transparency.',
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'default-yc',
-    name: 'Y Combinator Work at a Startup',
-    url: 'https://www.workatastartup.com',
-    scope: 'global',
-    countries: null,
-    notes: 'Direct hiring portal connecting candidates directly with Y Combinator founders.',
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'default-otta',
-    name: 'Otta (Welcome to the Jungle)',
-    url: 'https://app.otta.com',
-    scope: 'specific',
-    countries: ['United States', 'United Kingdom', 'European Union'],
-    notes: 'Curated tech and startup opportunities with verified salary bands.',
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'default-glassdoor',
-    name: 'Glassdoor',
-    url: 'https://www.glassdoor.com/Job',
-    scope: 'global',
-    countries: null,
-    notes: 'Job openings paired with company culture ratings, salary reports, and interview reviews.',
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'default-levels',
-    name: 'Levels.fyi Jobs',
-    url: 'https://www.levels.fyi/jobs',
-    scope: 'global',
-    countries: null,
-    notes: 'Verified high-compensation engineering, product, and leadership openings.',
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'default-weworkremotely',
-    name: 'We Work Remotely',
-    url: 'https://weworkremotely.com',
-    scope: 'global',
-    countries: null,
-    notes: 'Top community for 100% remote software development and tech roles.',
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'default-remoteok',
-    name: 'RemoteOK',
-    url: 'https://remoteok.com',
-    scope: 'global',
-    countries: null,
-    notes: 'Global remote job listings for engineers and digital nomads.',
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'default-naukri',
-    name: 'Naukri',
-    url: 'https://www.naukri.com',
-    scope: 'specific',
-    countries: ['India'],
-    notes: 'Major job board in India for tech, IT services, and enterprise companies.',
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'default-instahyre',
-    name: 'Instahyre',
-    url: 'https://www.instahyre.com',
-    scope: 'specific',
-    countries: ['India'],
-    notes: 'Curated tech talent portal matching top engineering candidates in India.',
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'default-stepstone',
-    name: 'StepStone',
-    url: 'https://www.stepstone.de',
-    scope: 'specific',
-    countries: ['Germany', 'European Union'],
-    notes: 'Leading job board across Germany, Austria, and broader DACH region.',
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-  },
-  {
-    id: 'default-relocate',
-    name: 'Relocate.me',
-    url: 'https://relocate.me',
-    scope: 'specific',
-    countries: ['European Union', 'United Kingdom', 'Canada'],
-    notes: 'Tech jobs providing verified international visa sponsorship and relocation support.',
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-01T00:00:00Z',
-  },
-];
+export const DEFAULT_JOB_PLATFORMS: JobPlatform[] = [];
 
 const getLocalJobPlatforms = (): JobPlatform[] => {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_PLATFORMS_KEY);
-    if (!raw) {
-      localStorage.setItem(LOCAL_STORAGE_PLATFORMS_KEY, JSON.stringify(DEFAULT_JOB_PLATFORMS));
-      return DEFAULT_JOB_PLATFORMS;
-    }
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_JOB_PLATFORMS;
+    if (Array.isArray(parsed)) {
+      // Purge any legacy default-* mock entries so only real user data appears
+      const clean = parsed.filter((p: any) => p && !p.id?.startsWith('default-'));
+      if (clean.length !== parsed.length) {
+        localStorage.setItem(LOCAL_STORAGE_PLATFORMS_KEY, JSON.stringify(clean));
+      }
+      return clean;
+    }
+    return [];
   } catch {
-    return DEFAULT_JOB_PLATFORMS;
+    return [];
   }
 };
 
@@ -916,27 +791,23 @@ const saveLocalJobPlatforms = (items: JobPlatform[]) => {
 
 /**
  * Fetches all job platforms, prioritizing Supabase with localStorage fallback.
+ * Returns only real inserted platforms (never hardcoded defaults).
  */
 export const fetchJobPlatforms = async (): Promise<JobPlatform[]> => {
   try {
     const { data, error } = await supabase
       .from('job_platforms' as any)
       .select('*')
-      .order('created_at', { ascending: true });
+      .order('name', { ascending: true });
 
     if (error) {
       console.warn('Supabase job_platforms table unavailable, using local cache:', error.message);
       return getLocalJobPlatforms();
     }
 
-    if (data && data.length > 0) {
-      const platforms = data as unknown as JobPlatform[];
-      saveLocalJobPlatforms(platforms);
-      return platforms;
-    }
-
-    // If Supabase table is empty, seed defaults
-    return getLocalJobPlatforms();
+    const platforms = (data || []) as unknown as JobPlatform[];
+    saveLocalJobPlatforms(platforms);
+    return platforms;
   } catch (err) {
     console.warn('Network error fetching job platforms, falling back to local cache:', err);
     return getLocalJobPlatforms();
@@ -1111,24 +982,25 @@ export const calculatePlatformStats = (
     const foundIn = (app.found_in || '').trim().toLowerCase();
     const appDomain = extractDomainFromUrl(app.application_link);
 
-    // Find best matching platform
-    let matchedPlatform: JobPlatform | undefined;
+    // 1. Direct platform_id connection between both tables
+    if (app.platform_id) {
+      matchedPlatform = platforms.find((p) => p.id === app.platform_id);
+    }
 
-    for (const p of platforms) {
-      const pName = p.name.trim().toLowerCase();
-      const pDomain = extractDomainFromUrl(p.url);
+    // 2. Direct or substring match on platform name and found_in
+    if (!matchedPlatform && foundIn) {
+      matchedPlatform = platforms.find((p) => {
+        const pName = p.name.trim().toLowerCase();
+        return foundIn === pName || foundIn.includes(pName) || pName.includes(foundIn);
+      });
+    }
 
-      // 1. Direct or substring match on platform name and found_in
-      if (foundIn && (foundIn === pName || foundIn.includes(pName) || pName.includes(foundIn))) {
-        matchedPlatform = p;
-        break;
-      }
-
-      // 2. Domain match between platform URL and application_link
-      if (appDomain && pDomain && (appDomain === pDomain || appDomain.includes(pDomain) || pDomain.includes(appDomain))) {
-        matchedPlatform = p;
-        break;
-      }
+    // 3. Domain match between platform URL and application_link
+    if (!matchedPlatform && appDomain) {
+      matchedPlatform = platforms.find((p) => {
+        const pDomain = extractDomainFromUrl(p.url);
+        return pDomain && (appDomain === pDomain || appDomain.includes(pDomain) || pDomain.includes(appDomain));
+      });
     }
 
     if (matchedPlatform && statsMap[matchedPlatform.id]) {
@@ -1170,6 +1042,24 @@ export const calculatePlatformStats = (
   }
 
   return statsMap;
+};
+
+/**
+ * Checks a URL domain against the user's configured job platforms.
+ * Returns the matching JobPlatform if found.
+ */
+export const findPlatformByUrl = (
+  url: string,
+  platforms: JobPlatform[] = []
+): JobPlatform | undefined => {
+  if (!url || platforms.length === 0) return undefined;
+  const targetDomain = extractDomainFromUrl(url);
+  if (!targetDomain) return undefined;
+
+  return platforms.find((p) => {
+    const pDomain = extractDomainFromUrl(p.url);
+    return pDomain && (targetDomain === pDomain || targetDomain.includes(pDomain) || pDomain.includes(targetDomain));
+  });
 };
 
 

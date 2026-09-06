@@ -18,8 +18,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { BookmarkPlus, Link2, Sparkles, Loader2 } from 'lucide-react';
-import { FOUND_IN_OPTIONS, NewSavedJobLink, SavedJobLink } from './types';
-import { createSavedJobLink, detectJobSourceFromUrl } from '@/integrations/supabase/jobClient';
+import { NewSavedJobLink, SavedJobLink, JobPlatform } from './types';
+import { createSavedJobLink, findPlatformByUrl } from '@/integrations/supabase/jobClient';
 import { useToast } from '@/hooks/use-toast';
 
 interface AddSavedLinkModalProps {
@@ -27,6 +27,8 @@ interface AddSavedLinkModalProps {
   onClose: () => void;
   onSuccess: (newLink: SavedJobLink) => void;
   initialUrl?: string;
+  platforms?: JobPlatform[];
+  onOpenAddPlatform?: () => void;
 }
 
 const AddSavedLinkModal: React.FC<AddSavedLinkModalProps> = ({
@@ -34,6 +36,8 @@ const AddSavedLinkModal: React.FC<AddSavedLinkModalProps> = ({
   onClose,
   onSuccess,
   initialUrl,
+  platforms = [],
+  onOpenAddPlatform,
 }) => {
   const { toast } = useToast();
 
@@ -41,19 +45,21 @@ const AddSavedLinkModal: React.FC<AddSavedLinkModalProps> = ({
   const [companyName, setCompanyName] = useState('');
   const [roleName, setRoleName] = useState('');
   const [location, setLocation] = useState('');
-  const [source, setSource] = useState('LinkedIn');
+  const [selectedPlatformId, setSelectedPlatformId] = useState('');
+  const [isCustomSource, setIsCustomSource] = useState(false);
+  const [customSource, setCustomSource] = useState('');
   const [deadline, setDeadline] = useState('');
   const [salaryNote, setSalaryNote] = useState('');
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Auto-detect source when URL changes
+  // Auto-detect platform when URL changes
   const handleUrlChange = (newUrl: string) => {
     setUrl(newUrl);
-    if (newUrl.trim()) {
-      const detected = detectJobSourceFromUrl(newUrl);
-      if (detected) {
-        setSource(detected);
+    if (newUrl.trim() && platforms.length > 0 && !isCustomSource) {
+      const matched = findPlatformByUrl(newUrl, platforms);
+      if (matched) {
+        setSelectedPlatformId(matched.id);
       }
     }
   };
@@ -69,7 +75,9 @@ const AddSavedLinkModal: React.FC<AddSavedLinkModalProps> = ({
     setCompanyName('');
     setRoleName('');
     setLocation('');
-    setSource('LinkedIn');
+    setSelectedPlatformId('');
+    setIsCustomSource(false);
+    setCustomSource('');
     setDeadline('');
     setSalaryNote('');
     setNotes('');
@@ -93,12 +101,26 @@ const AddSavedLinkModal: React.FC<AddSavedLinkModalProps> = ({
         finalUrl = `https://${finalUrl}`;
       }
 
+      let finalPlatformId: string | null = null;
+      let finalSource: string | null = null;
+
+      if (isCustomSource) {
+        finalSource = customSource.trim() || null;
+      } else if (selectedPlatformId) {
+        const matched = platforms.find((p) => p.id === selectedPlatformId);
+        if (matched) {
+          finalPlatformId = matched.id;
+          finalSource = matched.name;
+        }
+      }
+
       const payload: NewSavedJobLink = {
         url: finalUrl,
         company_name: companyName.trim() || null,
         role_name: roleName.trim() || null,
         location: location.trim() || null,
-        source: source.trim() || null,
+        platform_id: finalPlatformId,
+        source: finalSource,
         deadline: deadline.trim() || null,
         salary_note: salaryNote.trim() || null,
         notes: notes.trim() || null,
@@ -195,19 +217,70 @@ const AddSavedLinkModal: React.FC<AddSavedLinkModalProps> = ({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="job-link-source" className="text-sm">Found On</Label>
-              <Select value={source} onValueChange={setSource}>
-                <SelectTrigger id="job-link-source">
-                  <SelectValue placeholder="Select platform" />
-                </SelectTrigger>
-                <SelectContent>
-                  {FOUND_IN_OPTIONS.map((opt) => (
-                    <SelectItem key={opt} value={opt}>
-                      {opt}
+              <div className="flex items-center justify-between">
+                <Label htmlFor="job-link-source" className="text-sm">Platform / Found On</Label>
+                <div className="flex items-center gap-1.5">
+                  {onOpenAddPlatform && (
+                    <button
+                      type="button"
+                      onClick={onOpenAddPlatform}
+                      className="text-[11px] text-primary hover:underline font-medium"
+                    >
+                      + New
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomSource(!isCustomSource)}
+                    className="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    {isCustomSource ? '← Select' : '+ Custom'}
+                  </button>
+                </div>
+              </div>
+              {isCustomSource ? (
+                <Input
+                  id="job-link-source"
+                  value={customSource}
+                  onChange={(e) => setCustomSource(e.target.value)}
+                  placeholder="e.g. Recruiter, Event..."
+                  className="h-9 text-xs"
+                  autoFocus
+                />
+              ) : (
+                <Select
+                  value={selectedPlatformId}
+                  onValueChange={(val) => {
+                    if (val === '__custom__') {
+                      setIsCustomSource(true);
+                      setSelectedPlatformId('');
+                    } else if (val === '__add_new__') {
+                      onOpenAddPlatform?.();
+                    } else {
+                      setSelectedPlatformId(val);
+                    }
+                  }}
+                >
+                  <SelectTrigger id="job-link-source">
+                    <SelectValue placeholder={platforms.length > 0 ? "Select platform" : "No platforms in directory"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {platforms.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} {p.scope === 'specific' && p.countries?.length ? `(${p.countries.join(', ')})` : ''}
+                      </SelectItem>
+                    ))}
+                    {platforms.length === 0 && (
+                      <SelectItem value="__add_new__" className="text-primary font-medium">
+                        + Add Platform to Directory
+                      </SelectItem>
+                    )}
+                    <SelectItem value="__custom__" className="text-muted-foreground">
+                      + Other (Type custom...)
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 
