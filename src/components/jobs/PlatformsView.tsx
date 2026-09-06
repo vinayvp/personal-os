@@ -111,10 +111,10 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
   // Unique list of countries across all platforms
   const allCountries = useMemo(() => {
     const set = new Set<string>();
-    platforms.forEach((p) => {
-      if (p.scope === 'specific' && Array.isArray(p.countries)) {
+    (platforms || []).forEach((p) => {
+      if (p && p.scope === 'specific' && Array.isArray(p.countries)) {
         p.countries.forEach((c) => {
-          if (c.trim()) set.add(c.trim());
+          if (c && typeof c === 'string' && c.trim()) set.add(c.trim());
         });
       }
     });
@@ -123,13 +123,19 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
 
   // Filter and sort platforms
   const filteredAndSortedPlatforms = useMemo(() => {
-    let list = platforms.filter((p) => {
+    let list = (platforms || []).filter((p) => {
+      if (!p) return false;
+
       // Scope/Country filter
       if (scopeFilter === 'global') {
         if (p.scope !== 'global') return false;
       } else if (scopeFilter !== 'all') {
         // Specific country name
-        if (p.scope !== 'specific' || !p.countries?.some((c) => c.toLowerCase() === scopeFilter.toLowerCase())) {
+        if (
+          p.scope !== 'specific' ||
+          !Array.isArray(p.countries) ||
+          !p.countries.some((c) => c && typeof c === 'string' && c.toLowerCase() === scopeFilter.toLowerCase())
+        ) {
           return false;
         }
       }
@@ -137,18 +143,20 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
       // Search query
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
-      const inName = p.name.toLowerCase().includes(q);
-      const inUrl = p.url.toLowerCase().includes(q);
-      const inNotes = p.notes?.toLowerCase().includes(q) || false;
-      const inCountries = p.countries?.some((c) => c.toLowerCase().includes(q)) || false;
+      const inName = (p.name || '').toLowerCase().includes(q);
+      const inUrl = (p.url || '').toLowerCase().includes(q);
+      const inNotes = (p.notes || '').toLowerCase().includes(q);
+      const inCountries =
+        Array.isArray(p.countries) &&
+        p.countries.some((c) => c && typeof c === 'string' && c.toLowerCase().includes(q));
 
       return inName || inUrl || inNotes || inCountries;
     });
 
     // Sorting
     return list.sort((a, b) => {
-      const statA = statsMap[a.id] || { totalApplied: 0, responseRate: 0 };
-      const statB = statsMap[b.id] || { totalApplied: 0, responseRate: 0 };
+      const statA = (a && a.id && statsMap[a.id]) || { totalApplied: 0, responseRate: 0 };
+      const statB = (b && b.id && statsMap[b.id]) || { totalApplied: 0, responseRate: 0 };
 
       switch (sortBy) {
         case 'applied':
@@ -156,16 +164,16 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
           if (statB.totalApplied !== statA.totalApplied) {
             return statB.totalApplied - statA.totalApplied;
           }
-          return a.name.localeCompare(b.name);
+          return (a.name || '').localeCompare(b.name || '');
         case 'rate':
           if (statB.responseRate !== statA.responseRate) {
             return statB.responseRate - statA.responseRate;
           }
           return statB.totalApplied - statA.totalApplied;
         case 'name':
-          return a.name.localeCompare(b.name);
+          return (a.name || '').localeCompare(b.name || '');
         case 'recent':
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
         default:
           return 0;
       }
@@ -501,7 +509,7 @@ export const PlatformsView: React.FC<PlatformsViewProps> = ({
                   </div>
 
                   {/* Countries tags if specific */}
-                  {!isGlobal && platform.countries && platform.countries.length > 0 && (
+                  {!isGlobal && Array.isArray(platform.countries) && platform.countries.length > 0 && (
                     <div className="flex flex-wrap gap-1 items-center">
                       <span className="text-[10px] text-muted-foreground uppercase font-semibold mr-1">
                         Countries:

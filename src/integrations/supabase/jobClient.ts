@@ -982,6 +982,8 @@ export const calculatePlatformStats = (
     const foundIn = (app.found_in || '').trim().toLowerCase();
     const appDomain = extractDomainFromUrl(app.application_link);
 
+    let matchedPlatform: JobPlatform | undefined;
+
     // 1. Direct platform_id connection between both tables
     if (app.platform_id) {
       matchedPlatform = platforms.find((p) => p.id === app.platform_id);
