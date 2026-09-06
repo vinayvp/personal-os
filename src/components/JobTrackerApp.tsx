@@ -21,6 +21,7 @@ import {
   X,
   Bookmark,
   BookmarkPlus,
+  Globe,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -35,12 +36,15 @@ import EditJobModal from './jobs/EditJobModal';
 import JobDetailModal from './jobs/JobDetailModal';
 import SavedLinksView from './jobs/SavedLinksView';
 import AddSavedLinkModal from './jobs/AddSavedLinkModal';
+import { PlatformsView } from './jobs/PlatformsView';
+import { PlatformModal } from './jobs/PlatformModal';
 import {
   JobApplication,
   JobStatus,
   NewJobApplication,
   STATUS_CONFIG,
   SavedJobLink,
+  JobPlatform,
 } from './jobs/types';
 import {
   fetchJobApplications,
@@ -53,6 +57,8 @@ import {
   deleteSavedJobLink,
   updateSavedJobLink,
   markSavedJobLinkAsApplied,
+  fetchJobPlatforms,
+  deleteJobPlatform,
 } from '@/integrations/supabase/jobClient';
 import { useToast } from '@/hooks/use-toast';
 
@@ -68,12 +74,13 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
   const { toast } = useToast();
 
   // Navigation Tab State
-  const [activeTab, setActiveTab] = useState<'applications' | 'saved_links'>('applications');
+  const [activeTab, setActiveTab] = useState<'applications' | 'saved_links' | 'platforms'>('applications');
   const [activeSharedUrl, setActiveSharedUrl] = useState<string | null>(initialSharedUrl || null);
 
   // Data State
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [savedLinks, setSavedLinks] = useState<SavedJobLink[]>([]);
+  const [platforms, setPlatforms] = useState<JobPlatform[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Filters State
@@ -86,6 +93,8 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
   const [isGoalCardOpen, setIsGoalCardOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
+  const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
+  const [editingPlatform, setEditingPlatform] = useState<JobPlatform | null>(null);
   const [editingJob, setEditingJob] = useState<JobApplication | null>(null);
   const [viewingJob, setViewingJob] = useState<JobApplication | null>(null);
   const [prefilledJobData, setPrefilledJobData] = useState<Partial<NewJobApplication> | null>(null);
@@ -102,14 +111,16 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [appsData, linksData] = await Promise.all([
+      const [appsData, linksData, platformsData] = await Promise.all([
         fetchJobApplications(),
         fetchSavedJobLinks(),
+        fetchJobPlatforms(),
       ]);
       setApplications(appsData);
       setSavedLinks(linksData);
+      setPlatforms(platformsData);
     } catch (err) {
-      console.error('Failed to load applications and saved links:', err);
+      console.error('Failed to load applications, saved links, and platforms:', err);
       toast({
         variant: 'destructive',
         title: 'Loading error',
@@ -243,6 +254,38 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
     setSavedLinks((prev) => prev.map((l) => (l.id === id ? updated : l)));
   };
 
+  const handleSavePlatform = (saved: JobPlatform) => {
+    setPlatforms((prev) => {
+      const exists = prev.some((p) => p.id === saved.id);
+      if (exists) {
+        return prev.map((p) => (p.id === saved.id ? saved : p));
+      }
+      return [saved, ...prev];
+    });
+  };
+
+  const handleDeletePlatform = async (id: string) => {
+    try {
+      await deleteJobPlatform(id);
+      setPlatforms((prev) => prev.filter((p) => p.id !== id));
+      toast({
+        title: 'Platform removed',
+        description: 'The job platform has been removed.',
+      });
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Delete failed',
+        description: err?.message || 'Could not delete platform.',
+      });
+    }
+  };
+
+  const handleFilterByPlatform = (platformName: string) => {
+    setSearchQuery(platformName);
+    setActiveTab('applications');
+  };
+
   const clearAllFilters = () => {
     setSearchQuery('');
     setStatusFilter('all');
@@ -292,7 +335,7 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
             </Button>
 
             {/* Primary Action Button based on tab */}
-            {activeTab === 'applications' ? (
+            {activeTab === 'applications' && (
               <Button
                 size="sm"
                 onClick={() => {
@@ -305,7 +348,8 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
                 <Plus className="w-4 h-4" />
                 <span>Add Application</span>
               </Button>
-            ) : (
+            )}
+            {activeTab === 'saved_links' && (
               <Button
                 size="sm"
                 onClick={() => setIsAddLinkOpen(true)}
@@ -315,10 +359,23 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
                 <span>Save Job Link</span>
               </Button>
             )}
+            {activeTab === 'platforms' && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setEditingPlatform(null);
+                  setIsAddPlatformOpen(true);
+                }}
+                className="gap-1.5 shadow-sm font-semibold"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Platform</span>
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Navigation Tabs between Applications and Apply Later */}
+        {/* Navigation Tabs between Applications, Apply Later, and Platforms */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
           <div className="flex items-center justify-between pb-1 border-b border-border/60">
             <TabsList className="bg-muted/40 p-1 border border-border/50">
@@ -337,6 +394,13 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
                     {pendingSavedLinksCount}
                   </Badge>
                 )}
+              </TabsTrigger>
+              <TabsTrigger value="platforms" className="gap-2 text-xs sm:text-sm font-medium">
+                <Globe className="w-4 h-4" />
+                <span>Platforms</span>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 ml-0.5">
+                  {platforms.length}
+                </Badge>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -533,6 +597,23 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
               onUpdate={handleUpdateSavedLink}
             />
           </TabsContent>
+
+          <TabsContent value="platforms" className="space-y-5 mt-4">
+            <PlatformsView
+              platforms={platforms}
+              applications={applications}
+              onAddNew={() => {
+                setEditingPlatform(null);
+                setIsAddPlatformOpen(true);
+              }}
+              onEdit={(platform) => {
+                setEditingPlatform(platform);
+                setIsAddPlatformOpen(true);
+              }}
+              onDelete={handleDeletePlatform}
+              onFilterByPlatform={handleFilterByPlatform}
+            />
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -566,6 +647,16 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
           onClearSharedUrl?.();
         }}
         initialUrl={activeSharedUrl || undefined}
+      />
+
+      <PlatformModal
+        isOpen={isAddPlatformOpen}
+        onClose={() => {
+          setIsAddPlatformOpen(false);
+          setEditingPlatform(null);
+        }}
+        onSave={handleSavePlatform}
+        editingPlatform={editingPlatform}
       />
 
       <EditJobModal

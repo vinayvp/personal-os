@@ -1,5 +1,15 @@
 import { supabase } from './client';
-import { JobApplication, NewJobApplication, JobStatsData, CountryStat, SavedJobLink, NewSavedJobLink } from '@/components/jobs/types';
+import {
+  JobApplication,
+  NewJobApplication,
+  JobStatsData,
+  CountryStat,
+  SavedJobLink,
+  NewSavedJobLink,
+  JobPlatform,
+  NewJobPlatform,
+  PlatformStat,
+} from '@/components/jobs/types';
 
 const BUCKET_NAME = 'job-resumes';
 const FALLBACK_BUCKET = 'note-images';
@@ -742,5 +752,425 @@ export const deleteSavedJobLink = async (id: string): Promise<void> => {
 export const markSavedJobLinkAsApplied = async (id: string): Promise<SavedJobLink> => {
   return updateSavedJobLink(id, { status: 'applied' });
 };
+
+// =========================================================
+// Job Platforms: Directory & Stats per Platform
+// =========================================================
+
+const LOCAL_STORAGE_PLATFORMS_KEY = 'portfolio_job_platforms_cache';
+
+export const DEFAULT_JOB_PLATFORMS: JobPlatform[] = [
+  {
+    id: 'default-linkedin',
+    name: 'LinkedIn',
+    url: 'https://www.linkedin.com/jobs',
+    scope: 'global',
+    countries: null,
+    notes: 'Primary professional network, direct Easy Apply and enterprise job postings.',
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'default-indeed',
+    name: 'Indeed',
+    url: 'https://www.indeed.com',
+    scope: 'global',
+    countries: null,
+    notes: 'Largest comprehensive job search aggregator worldwide.',
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'default-wellfound',
+    name: 'Wellfound (AngelList)',
+    url: 'https://wellfound.com/jobs',
+    scope: 'global',
+    countries: null,
+    notes: 'Premier platform for early-stage to Series C startups and equity transparency.',
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'default-yc',
+    name: 'Y Combinator Work at a Startup',
+    url: 'https://www.workatastartup.com',
+    scope: 'global',
+    countries: null,
+    notes: 'Direct hiring portal connecting candidates directly with Y Combinator founders.',
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'default-otta',
+    name: 'Otta (Welcome to the Jungle)',
+    url: 'https://app.otta.com',
+    scope: 'specific',
+    countries: ['United States', 'United Kingdom', 'European Union'],
+    notes: 'Curated tech and startup opportunities with verified salary bands.',
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'default-glassdoor',
+    name: 'Glassdoor',
+    url: 'https://www.glassdoor.com/Job',
+    scope: 'global',
+    countries: null,
+    notes: 'Job openings paired with company culture ratings, salary reports, and interview reviews.',
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'default-levels',
+    name: 'Levels.fyi Jobs',
+    url: 'https://www.levels.fyi/jobs',
+    scope: 'global',
+    countries: null,
+    notes: 'Verified high-compensation engineering, product, and leadership openings.',
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'default-weworkremotely',
+    name: 'We Work Remotely',
+    url: 'https://weworkremotely.com',
+    scope: 'global',
+    countries: null,
+    notes: 'Top community for 100% remote software development and tech roles.',
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'default-remoteok',
+    name: 'RemoteOK',
+    url: 'https://remoteok.com',
+    scope: 'global',
+    countries: null,
+    notes: 'Global remote job listings for engineers and digital nomads.',
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'default-naukri',
+    name: 'Naukri',
+    url: 'https://www.naukri.com',
+    scope: 'specific',
+    countries: ['India'],
+    notes: 'Major job board in India for tech, IT services, and enterprise companies.',
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'default-instahyre',
+    name: 'Instahyre',
+    url: 'https://www.instahyre.com',
+    scope: 'specific',
+    countries: ['India'],
+    notes: 'Curated tech talent portal matching top engineering candidates in India.',
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'default-stepstone',
+    name: 'StepStone',
+    url: 'https://www.stepstone.de',
+    scope: 'specific',
+    countries: ['Germany', 'European Union'],
+    notes: 'Leading job board across Germany, Austria, and broader DACH region.',
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+  {
+    id: 'default-relocate',
+    name: 'Relocate.me',
+    url: 'https://relocate.me',
+    scope: 'specific',
+    countries: ['European Union', 'United Kingdom', 'Canada'],
+    notes: 'Tech jobs providing verified international visa sponsorship and relocation support.',
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  },
+];
+
+const getLocalJobPlatforms = (): JobPlatform[] => {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_PLATFORMS_KEY);
+    if (!raw) {
+      localStorage.setItem(LOCAL_STORAGE_PLATFORMS_KEY, JSON.stringify(DEFAULT_JOB_PLATFORMS));
+      return DEFAULT_JOB_PLATFORMS;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_JOB_PLATFORMS;
+  } catch {
+    return DEFAULT_JOB_PLATFORMS;
+  }
+};
+
+const saveLocalJobPlatforms = (items: JobPlatform[]) => {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_PLATFORMS_KEY, JSON.stringify(items));
+  } catch (e) {
+    console.error('Failed to write job platforms to localStorage', e);
+  }
+};
+
+/**
+ * Fetches all job platforms, prioritizing Supabase with localStorage fallback.
+ */
+export const fetchJobPlatforms = async (): Promise<JobPlatform[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('job_platforms' as any)
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.warn('Supabase job_platforms table unavailable, using local cache:', error.message);
+      return getLocalJobPlatforms();
+    }
+
+    if (data && data.length > 0) {
+      const platforms = data as unknown as JobPlatform[];
+      saveLocalJobPlatforms(platforms);
+      return platforms;
+    }
+
+    // If Supabase table is empty, seed defaults
+    return getLocalJobPlatforms();
+  } catch (err) {
+    console.warn('Network error fetching job platforms, falling back to local cache:', err);
+    return getLocalJobPlatforms();
+  }
+};
+
+/**
+ * Creates a new job platform.
+ */
+export const createJobPlatform = async (
+  newPlatform: NewJobPlatform
+): Promise<JobPlatform> => {
+  const timestamp = new Date().toISOString();
+  const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `plt_${Date.now()}`;
+
+  const candidate: JobPlatform = {
+    ...newPlatform,
+    id,
+    created_at: timestamp,
+    updated_at: timestamp,
+  };
+
+  try {
+    const { data, error } = await supabase
+      .from('job_platforms' as any)
+      .insert({
+        id: candidate.id,
+        name: candidate.name,
+        url: candidate.url,
+        scope: candidate.scope,
+        countries: candidate.countries || null,
+        notes: candidate.notes || null,
+      } as any)
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('Failed to insert into Supabase job_platforms, saving locally:', error.message);
+      const local = getLocalJobPlatforms();
+      const updated = [candidate, ...local];
+      saveLocalJobPlatforms(updated);
+      return candidate;
+    }
+
+    const created = data as unknown as JobPlatform;
+    const local = getLocalJobPlatforms();
+    saveLocalJobPlatforms([...local.filter((p) => p.id !== created.id), created]);
+    return created;
+  } catch (err) {
+    console.warn('Error creating job platform, using local storage:', err);
+    const local = getLocalJobPlatforms();
+    const updated = [candidate, ...local];
+    saveLocalJobPlatforms(updated);
+    return candidate;
+  }
+};
+
+/**
+ * Updates an existing job platform.
+ */
+export const updateJobPlatform = async (
+  id: string,
+  updates: Partial<JobPlatform>
+): Promise<JobPlatform> => {
+  const timestamp = new Date().toISOString();
+
+  try {
+    const { data, error } = await supabase
+      .from('job_platforms' as any)
+      .update({ ...updates, updated_at: timestamp } as any)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('Supabase update platform failed, updating localStorage:', error.message);
+      const local = getLocalJobPlatforms();
+      const target = local.find((p) => p.id === id);
+      const updated = {
+        ...(target || ({} as JobPlatform)),
+        ...updates,
+        id,
+        updated_at: timestamp,
+      } as JobPlatform;
+      saveLocalJobPlatforms(local.map((p) => (p.id === id ? updated : p)));
+      return updated;
+    }
+
+    const updated = data as unknown as JobPlatform;
+    const local = getLocalJobPlatforms();
+    saveLocalJobPlatforms(local.map((p) => (p.id === id ? updated : p)));
+    return updated;
+  } catch (err) {
+    console.warn('Error updating platform, using localStorage:', err);
+    const local = getLocalJobPlatforms();
+    const target = local.find((p) => p.id === id);
+    const updated = {
+      ...(target || ({} as JobPlatform)),
+      ...updates,
+      id,
+      updated_at: timestamp,
+    } as JobPlatform;
+    saveLocalJobPlatforms(local.map((p) => (p.id === id ? updated : p)));
+    return updated;
+  }
+};
+
+/**
+ * Deletes a job platform.
+ */
+export const deleteJobPlatform = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('job_platforms' as any)
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.warn('Supabase delete platform failed, updating localStorage:', error.message);
+    }
+  } catch (err) {
+    console.warn('Error deleting platform from Supabase:', err);
+  } finally {
+    const local = getLocalJobPlatforms();
+    saveLocalJobPlatforms(local.filter((p) => p.id !== id));
+  }
+};
+
+/**
+ * Helper to extract clean domain from a URL (e.g., 'https://www.linkedin.com/jobs' -> 'linkedin.com')
+ */
+const extractDomainFromUrl = (url?: string | null): string => {
+  if (!url) return '';
+  try {
+    const normalized = url.startsWith('http') ? url : `https://${url}`;
+    const parsed = new URL(normalized);
+    return parsed.hostname.replace(/^www\./, '').toLowerCase();
+  } catch {
+    return '';
+  }
+};
+
+/**
+ * Calculates real-time statistics of applications applied per platform.
+ * Matches by:
+ * 1. Normalized name matching between platform.name and app.found_in
+ * 2. Hostname domain matching between platform.url and app.application_link
+ */
+export const calculatePlatformStats = (
+  platforms: JobPlatform[],
+  applications: JobApplication[]
+): Record<string, PlatformStat> => {
+  const statsMap: Record<string, PlatformStat> = {};
+
+  // Initialize stats for each platform
+  for (const p of platforms) {
+    statsMap[p.id] = {
+      platformId: p.id,
+      platformName: p.name,
+      totalApplied: 0,
+      interviewing: 0,
+      negotiating: 0,
+      accepted: 0,
+      noResponse: 0,
+      notSelected: 0,
+      withdrew: 0,
+      responseRate: 0,
+    };
+  }
+
+  for (const app of applications) {
+    const foundIn = (app.found_in || '').trim().toLowerCase();
+    const appDomain = extractDomainFromUrl(app.application_link);
+
+    // Find best matching platform
+    let matchedPlatform: JobPlatform | undefined;
+
+    for (const p of platforms) {
+      const pName = p.name.trim().toLowerCase();
+      const pDomain = extractDomainFromUrl(p.url);
+
+      // 1. Direct or substring match on platform name and found_in
+      if (foundIn && (foundIn === pName || foundIn.includes(pName) || pName.includes(foundIn))) {
+        matchedPlatform = p;
+        break;
+      }
+
+      // 2. Domain match between platform URL and application_link
+      if (appDomain && pDomain && (appDomain === pDomain || appDomain.includes(pDomain) || pDomain.includes(appDomain))) {
+        matchedPlatform = p;
+        break;
+      }
+    }
+
+    if (matchedPlatform && statsMap[matchedPlatform.id]) {
+      const s = statsMap[matchedPlatform.id];
+      s.totalApplied++;
+
+      switch (app.status) {
+        case 'interviewing':
+          s.interviewing++;
+          break;
+        case 'negotiating':
+          s.negotiating++;
+          break;
+        case 'accepted':
+          s.accepted++;
+          break;
+        case 'no response':
+          s.noResponse++;
+          break;
+        case 'not selected':
+          s.notSelected++;
+          break;
+        case 'withdrew':
+          s.withdrew++;
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
+  // Compute response rates
+  for (const p of platforms) {
+    const s = statsMap[p.id];
+    if (s.totalApplied > 0) {
+      const responded = s.totalApplied - s.noResponse;
+      s.responseRate = Math.round((responded / s.totalApplied) * 100);
+    }
+  }
+
+  return statsMap;
+};
+
 
 

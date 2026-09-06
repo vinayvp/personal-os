@@ -171,4 +171,28 @@ export interface SavedJobLink {
 
 export type NewSavedJobLink = Omit<SavedJobLink, 'id' | 'created_at' | 'updated_at'>;
 
+export interface JobPlatform {
+  id: string;
+  name: string;
+  url: string;
+  scope: 'global' | 'specific';
+  countries?: string[] | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
+export type NewJobPlatform = Omit<JobPlatform, 'id' | 'created_at' | 'updated_at'>;
+
+export interface PlatformStat {
+  platformId: string;
+  platformName: string;
+  totalApplied: number;
+  interviewing: number;
+  negotiating: number;
+  accepted: number;
+  noResponse: number;
+  notSelected: number;
+  withdrew: number;
+  responseRate: number; // percentage (0 - 100)
+}
