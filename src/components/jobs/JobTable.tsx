@@ -114,10 +114,10 @@ const JobTable: React.FC<Props> = ({ jobs, onViewDetails, onEdit }) => {
       <table className="w-full text-left text-sm">
         <thead className="bg-muted/40 border-b border-border/60 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           <tr>
-            <th className="py-3 px-4">Role Name</th>
-            <th className="py-3 px-3">Company Name</th>
+            <th className="py-3 px-3 max-w-[155px] sm:max-w-[180px]">Role Name</th>
+            <th className="py-3 px-2.5 max-w-[125px] sm:max-w-[140px]">Company Name</th>
             <th className="py-3 px-3">Location</th>
-            <th className="py-3 px-3">Job Type</th>
+            <th className="py-3 px-1.5 w-[65px] max-w-[65px]">Job Type</th>
             <th className="py-3 px-3">Applied Date</th>
             <th className="py-3 px-3">Salary (in Lakhs)</th>
             <th className="py-3 px-3">ATS Score</th>
@@ -157,30 +157,37 @@ const JobTable: React.FC<Props> = ({ jobs, onViewDetails, onEdit }) => {
                 onClick={() => onViewDetails(job)}
                 className="hover:bg-muted/30 cursor-pointer transition-colors"
               >
-                {/* Role Name (Standard, unhighlighted) */}
-                <td className="py-3 px-4">
-                  <div className="text-foreground/90 font-normal truncate max-w-[220px] sm:max-w-[260px]">
+                {/* Role Name (Standard, unhighlighted - reduced by 30%) */}
+                <td className="py-3 px-3">
+                  <div
+                    className="text-foreground/90 font-normal truncate max-w-[155px] sm:max-w-[180px]"
+                    title={job.role_name}
+                  >
                     {job.role_name}
                   </div>
                 </td>
 
-                {/* Company Name (Linked to job posting link if available) */}
-                <td className="py-3 px-3 whitespace-nowrap">
-                  {job.application_link ? (
-                    <a
-                      href={job.application_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="font-medium text-foreground hover:text-primary hover:underline inline-flex items-center gap-1.5 transition-colors group"
-                      title="Open job posting"
-                    >
-                      <span>{job.company_name}</span>
-                      <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-primary" />
-                    </a>
-                  ) : (
-                    <span className="font-medium text-foreground/90">{job.company_name}</span>
-                  )}
+                {/* Company Name (Linked to job posting link if available - reduced by 30%) */}
+                <td className="py-3 px-2.5">
+                  <div className="max-w-[125px] sm:max-w-[140px] truncate" title={job.company_name}>
+                    {job.application_link ? (
+                      <a
+                        href={job.application_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="font-medium text-foreground hover:text-primary hover:underline inline-flex items-center gap-1 transition-colors group max-w-full"
+                        title={`Open job posting for ${job.company_name}`}
+                      >
+                        <span className="truncate">{job.company_name}</span>
+                        <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-primary shrink-0" />
+                      </a>
+                    ) : (
+                      <span className="font-medium text-foreground/90 truncate block">
+                        {job.company_name}
+                      </span>
+                    )}
+                  </div>
                 </td>
 
                 {/* Location (City & Country together) */}
@@ -191,10 +198,13 @@ const JobTable: React.FC<Props> = ({ jobs, onViewDetails, onEdit }) => {
                   </span>
                 </td>
 
-                {/* Job Type */}
-                <td className="py-3 px-3 whitespace-nowrap text-xs">
+                {/* Job Type (Reduced by 50%) */}
+                <td className="py-3 px-1.5 whitespace-nowrap text-xs max-w-[65px]">
                   {job.job_type ? (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted/70 text-foreground/90 text-[11px] font-medium border border-border/50">
+                    <span
+                      className="inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-muted/70 text-foreground/90 text-[10px] font-medium border border-border/50 truncate max-w-[65px]"
+                      title={job.job_type}
+                    >
                       {job.job_type}
                     </span>
                   ) : (

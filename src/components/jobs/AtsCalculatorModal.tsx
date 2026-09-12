@@ -66,9 +66,11 @@ export const AtsCalculatorModal: React.FC<Props> = ({
 
   useEffect(() => {
     if (isOpen) {
-      getAtsPlatforms().then((data) => {
-        if (data && data.length > 0) setPlatforms(data);
-      });
+      getAtsPlatforms()
+        .then((data) => {
+          if (data && data.length > 0) setPlatforms(data);
+        })
+        .catch(() => {});
 
       if (savedSources && savedSources.length > 0) {
         setSources(savedSources);

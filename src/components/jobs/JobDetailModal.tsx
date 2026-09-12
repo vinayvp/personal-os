@@ -79,9 +79,13 @@ const JobDetailModal: React.FC<Props> = ({ job, isOpen, onClose, onEdit, onDelet
       if (job.ats_scores && job.ats_scores.length > 0) {
         setAtsBreakdown(job.ats_scores);
       } else if (job.id) {
-        getJobAtsScores(job.id).then((scores) => {
-          setAtsBreakdown(scores || []);
-        });
+        getJobAtsScores(job.id)
+          .then((scores) => {
+            setAtsBreakdown(scores || []);
+          })
+          .catch(() => {
+            setAtsBreakdown([]);
+          });
       } else {
         setAtsBreakdown([]);
       }

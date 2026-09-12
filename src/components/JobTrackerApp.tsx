@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { useIsMobile } from '@/hooks/use-mobile';
 import PageLoader from '@/components/common/PageLoader';
 import RefreshButton from '@/components/common/RefreshButton';
 import JobStats from './jobs/JobStats';
@@ -87,7 +88,20 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<JobStatus | 'all'>('all');
   const [countryFilter, setCountryFilter] = useState<string | 'all'>('all');
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
+  const isMobile = useIsMobile();
+  const [userSelectedMode, setUserSelectedMode] = useState<'cards' | 'table' | null>(null);
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      return 'cards';
+    }
+    return 'table';
+  });
+
+  useEffect(() => {
+    if (!userSelectedMode) {
+      setViewMode(isMobile ? 'cards' : 'table');
+    }
+  }, [isMobile, userSelectedMode]);
 
   // Modals State
   const [isGoalCardOpen, setIsGoalCardOpen] = useState(false);
@@ -496,7 +510,10 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
                 variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
                 size="icon"
                 className="h-7 w-7"
-                onClick={() => setViewMode('cards')}
+                onClick={() => {
+                  setViewMode('cards');
+                  setUserSelectedMode('cards');
+                }}
                 title="Cards View"
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
@@ -505,7 +522,10 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
                 variant={viewMode === 'table' ? 'secondary' : 'ghost'}
                 size="icon"
                 className="h-7 w-7"
-                onClick={() => setViewMode('table')}
+                onClick={() => {
+                  setViewMode('table');
+                  setUserSelectedMode('table');
+                }}
                 title="Table View"
               >
                 <List className="w-3.5 h-3.5" />
