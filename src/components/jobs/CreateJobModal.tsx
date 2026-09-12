@@ -32,10 +32,16 @@ import {
   X,
   Loader2,
   ScrollText,
+  Target,
+  Plus,
+  Trash2,
+  Clock,
 } from 'lucide-react';
 import {
   JobStatus,
   NewJobApplication,
+  JobFollowUp,
+  FollowUpType,
   STATUS_CONFIG,
   COMMON_CURRENCIES,
   JOB_TYPE_OPTIONS,
@@ -47,6 +53,7 @@ import {
   validateResumeFile,
   convertSalaryToInr,
   findPlatformByUrl,
+  normalizeFollowUps,
 } from '@/integrations/supabase/jobClient';
 import { useToast } from '@/hooks/use-toast';
 
@@ -93,6 +100,12 @@ const CreateJobModal: React.FC<Props> = ({
   const [recruiterEmail, setRecruiterEmail] = useState('');
   const [recruiterPhone, setRecruiterPhone] = useState('');
   const [followUpNotes, setFollowUpNotes] = useState('');
+  const [atsScore, setAtsScore] = useState('');
+  const [followUps, setFollowUps] = useState<JobFollowUp[]>([]);
+  const [newFollowUpDate, setNewFollowUpDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newFollowUpType, setNewFollowUpType] = useState<FollowUpType>('Email');
+  const [newFollowUpNotes, setNewFollowUpNotes] = useState('');
+  const [isAddingFollowUp, setIsAddingFollowUp] = useState(false);
 
   // Resume file state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -123,6 +136,12 @@ const CreateJobModal: React.FC<Props> = ({
     setRecruiterEmail('');
     setRecruiterPhone('');
     setFollowUpNotes('');
+    setAtsScore('');
+    setFollowUps([]);
+    setNewFollowUpDate(new Date().toISOString().split('T')[0]);
+    setNewFollowUpType('Email');
+    setNewFollowUpNotes('');
+    setIsAddingFollowUp(false);
     setSelectedFile(null);
     setSelectedCoverLetter(null);
   };
@@ -136,6 +155,8 @@ const CreateJobModal: React.FC<Props> = ({
         if (initialData.country) setCountry(initialData.country);
         if (initialData.application_link) setApplicationLink(initialData.application_link);
         if (initialData.follow_up_notes) setFollowUpNotes(initialData.follow_up_notes);
+        if (initialData.ats_score != null) setAtsScore(String(initialData.ats_score));
+        if (initialData.follow_ups) setFollowUps(normalizeFollowUps(initialData.follow_ups));
         if (initialData.platform_id) {
           setSelectedPlatformId(initialData.platform_id);
           setIsCustomFoundIn(false);
@@ -277,6 +298,10 @@ const CreateJobModal: React.FC<Props> = ({
         recruiter_email: recruiterEmail.trim() || null,
         recruiter_phone: recruiterPhone.trim() || null,
         follow_up_notes: followUpNotes.trim() || null,
+        ats_score: atsScore.trim() !== '' && !isNaN(Number(atsScore.trim()))
+          ? Math.min(100, Math.max(0, Number(atsScore.trim())))
+          : null,
+        follow_ups: followUps.length > 0 ? followUps : null,
       };
 
       await onSuccess(newJob, fromSavedLinkId || undefined);
@@ -535,39 +560,78 @@ const CreateJobModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Compensation Range */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold flex items-center gap-1">
-              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-              Estimated Compensation Range
-            </Label>
-            <div className="grid grid-cols-3 gap-2.5">
-              <Input
-                type="number"
-                placeholder="Min (e.g. 120000)"
-                value={salaryMin}
-                onChange={(e) => setSalaryMin(e.target.value)}
-                className="h-9"
-              />
-              <Input
-                type="number"
-                placeholder="Max (e.g. 160000)"
-                value={salaryMax}
-                onChange={(e) => setSalaryMax(e.target.value)}
-                className="h-9"
-              />
-              <Select value={salaryCurrency} onValueChange={setSalaryCurrency}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Currency" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COMMON_CURRENCIES.map((curr) => (
-                    <SelectItem key={curr.code} value={curr.code}>
-                      {curr.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Compensation Range & ATS Match Score */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label className="text-xs font-semibold flex items-center gap-1">
+                <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                Estimated Compensation Range
+              </Label>
+              <div className="grid grid-cols-3 gap-2">
+                <Input
+                  type="number"
+                  placeholder="Min (120000)"
+                  value={salaryMin}
+                  onChange={(e) => setSalaryMin(e.target.value)}
+                  className="h-9"
+                />
+                <Input
+                  type="number"
+                  placeholder="Max (160000)"
+                  value={salaryMax}
+                  onChange={(e) => setSalaryMax(e.target.value)}
+                  className="h-9"
+                />
+                <Select value={salaryCurrency} onValueChange={setSalaryCurrency}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COMMON_CURRENCIES.map((curr) => (
+                      <SelectItem key={curr.code} value={curr.code}>
+                        {curr.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* ATS Score */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="atsScore" className="text-xs font-semibold flex items-center gap-1">
+                  <Target className="w-3.5 h-3.5 text-primary" />
+                  ATS Score
+                </Label>
+                {atsScore.trim() !== '' && !isNaN(Number(atsScore)) && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                    Number(atsScore) >= 80
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                      : Number(atsScore) >= 60
+                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                      : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                  }`}>
+                    {Number(atsScore)}%
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                <Input
+                  id="atsScore"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  placeholder="e.g. 85"
+                  value={atsScore}
+                  onChange={(e) => setAtsScore(e.target.value)}
+                  className="h-9 pr-7 font-mono text-xs"
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
+                  %
+                </span>
+              </div>
             </div>
           </div>
 
@@ -742,19 +806,148 @@ const CreateJobModal: React.FC<Props> = ({
             />
           </div>
 
-          {/* Follow-up Notes */}
-          <div className="space-y-1.5">
-            <Label htmlFor="followUpNotes" className="text-xs font-semibold">
-              Follow-Up Notes & Next Steps
-            </Label>
-            <Textarea
-              id="followUpNotes"
-              placeholder="e.g. Sent connection request on LinkedIn, interview scheduled for Tuesday..."
-              rows={2}
-              value={followUpNotes}
-              onChange={(e) => setFollowUpNotes(e.target.value)}
-              className="resize-y text-xs"
-            />
+          {/* Follow-up Notes & Multiple Follow-up Log */}
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-primary" />
+                Follow-ups & Outreach Logs
+              </Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => setIsAddingFollowUp(!isAddingFollowUp)}
+              >
+                <Plus className="w-3 h-3" />
+                {isAddingFollowUp ? 'Cancel' : 'Add Follow-up'}
+              </Button>
+            </div>
+
+            {/* List of added follow-ups */}
+            {followUps.length > 0 && (
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                {followUps.map((fu) => (
+                  <div
+                    key={fu.id}
+                    className="flex items-start justify-between gap-2 p-2.5 rounded-lg border border-border/70 bg-muted/20 text-xs"
+                  >
+                    <div className="space-y-0.5 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-foreground">{fu.type}</span>
+                        <span className="text-[11px] text-muted-foreground font-mono">{fu.date}</span>
+                      </div>
+                      <p className="text-foreground/90 text-xs whitespace-pre-wrap">{fu.notes}</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
+                      onClick={() => setFollowUps(prev => prev.filter(item => item.id !== fu.id))}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Inline add follow-up card */}
+            {isAddingFollowUp && (
+              <div className="p-3 rounded-xl border border-primary/30 bg-primary/5 space-y-2.5">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">Date</Label>
+                    <Input
+                      type="date"
+                      value={newFollowUpDate}
+                      onChange={(e) => setNewFollowUpDate(e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">Type</Label>
+                    <Select value={newFollowUpType} onValueChange={(val) => setNewFollowUpType(val as FollowUpType)}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Email">Email</SelectItem>
+                        <SelectItem value="LinkedIn">LinkedIn</SelectItem>
+                        <SelectItem value="Phone Call">Phone Call</SelectItem>
+                        <SelectItem value="Message">Message</SelectItem>
+                        <SelectItem value="In-Person">In-Person</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-muted-foreground">Notes</Label>
+                  <Textarea
+                    placeholder="e.g. Sent email follow-up regarding interview schedule..."
+                    rows={2}
+                    value={newFollowUpNotes}
+                    onChange={(e) => setNewFollowUpNotes(e.target.value)}
+                    className="text-xs resize-y"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      setIsAddingFollowUp(false);
+                      setNewFollowUpNotes('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-7 text-xs gap-1"
+                    disabled={!newFollowUpNotes.trim()}
+                    onClick={() => {
+                      if (!newFollowUpNotes.trim()) return;
+                      const newItem: JobFollowUp = {
+                        id: crypto.randomUUID ? crypto.randomUUID() : `fu_${Date.now()}`,
+                        date: newFollowUpDate,
+                        type: newFollowUpType,
+                        notes: newFollowUpNotes.trim(),
+                        status: 'completed',
+                        created_at: new Date().toISOString(),
+                      };
+                      setFollowUps(prev => [newItem, ...prev]);
+                      setNewFollowUpNotes('');
+                      setIsAddingFollowUp(false);
+                    }}
+                  >
+                    <Plus className="w-3 h-3" />
+                    Save Follow-up
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* General Notes */}
+            <div className="space-y-1.5 pt-1">
+              <Label htmlFor="followUpNotes" className="text-xs font-semibold text-muted-foreground">
+                General Notes & Next Steps (Optional)
+              </Label>
+              <Textarea
+                id="followUpNotes"
+                placeholder="e.g. Sent connection request on LinkedIn, interview scheduled for Tuesday..."
+                rows={2}
+                value={followUpNotes}
+                onChange={(e) => setFollowUpNotes(e.target.value)}
+                className="resize-y text-xs"
+              />
+            </div>
           </div>
 
           <DialogFooter className="pt-3 border-t border-border/60 gap-2">

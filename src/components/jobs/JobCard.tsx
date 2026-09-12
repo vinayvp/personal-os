@@ -16,6 +16,8 @@ import {
   ChevronRight,
   Download,
   ScrollText,
+  Target,
+  Clock,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -25,7 +27,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { JobApplication, STATUS_CONFIG } from './types';
-import { downloadResume, formatSalaryInLakhs } from '@/integrations/supabase/jobClient';
+import {
+  downloadResume,
+  formatSalaryInLakhs,
+  normalizeFollowUps,
+  normalizeAtsScore,
+} from '@/integrations/supabase/jobClient';
 import { useToast } from '@/hooks/use-toast';
 
 interface Props {
@@ -38,12 +45,18 @@ interface Props {
 const JobCard: React.FC<Props> = ({ job, onViewDetails, onEdit, onDelete }) => {
   const { toast } = useToast();
   const config = STATUS_CONFIG[job.status] || STATUS_CONFIG.applied;
+  const followUpsList = normalizeFollowUps(job.follow_ups);
+  const safeAts = normalizeAtsScore(job.ats_score);
 
-  const formattedDate = new Date(job.applied_date).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  const formattedDate = (() => {
+    if (!job.applied_date) return '';
+    const d = new Date(job.applied_date);
+    return isNaN(d.getTime()) ? job.applied_date : d.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  })();
 
   const { lakhsText, originalText } = formatSalaryInLakhs(
     job.salary_min_inr,
@@ -122,6 +135,22 @@ const JobCard: React.FC<Props> = ({ job, onViewDetails, onEdit, onDelete }) => {
               <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${config.dotClass}`} />
               {config.label}
             </Badge>
+
+            {safeAts != null && (
+              <span
+                className={`inline-flex items-center gap-1 text-[10.5px] font-semibold px-2 py-0.5 rounded border ${
+                  safeAts >= 80
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                    : safeAts >= 60
+                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                    : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                }`}
+                title={`ATS Match Score: ${safeAts}%`}
+              >
+                <Target className="w-3 h-3" />
+                <span>ATS {safeAts}%</span>
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
@@ -158,6 +187,18 @@ const JobCard: React.FC<Props> = ({ job, onViewDetails, onEdit, onDelete }) => {
               <span className="flex items-center gap-1 text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md">
                 <Briefcase className="w-3 h-3" />
                 <span>{job.job_type}</span>
+              </span>
+            )}
+
+            {followUpsList.length > 0 && (
+              <span
+                className="flex items-center gap-1 text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md font-medium"
+                title={`Follow-ups logged: ${followUpsList.length}`}
+              >
+                <Clock className="w-3 h-3" />
+                <span>
+                  {followUpsList.length} {followUpsList.length === 1 ? 'Follow-up' : 'Follow-ups'}
+                </span>
               </span>
             )}
 

@@ -2,6 +2,7 @@ import { supabase } from './client';
 import {
   JobApplication,
   NewJobApplication,
+  JobFollowUp,
   JobStatsData,
   CountryStat,
   SavedJobLink,
@@ -48,11 +49,72 @@ export const validateResumeFile = (file: File): { valid: boolean; error?: string
   return { valid: true };
 };
 
+// Helper: Safely normalize follow_ups to prevent any runtime exceptions
+export const normalizeFollowUps = (raw: any): JobFollowUp[] => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw
+      .filter(Boolean)
+      .map((item, idx) => {
+        if (typeof item === 'string') {
+          return {
+            id: `fu_${idx}_${Date.now()}`,
+            date: new Date().toISOString().split('T')[0],
+            type: 'Other' as const,
+            notes: item,
+            status: 'completed' as const,
+          };
+        }
+        return {
+          id: item.id || `fu_${idx}_${Date.now()}`,
+          date: item.date || new Date().toISOString().split('T')[0],
+          type: item.type || 'Other',
+          notes: item.notes || '',
+          status: item.status || 'completed',
+          created_at: item.created_at,
+        };
+      });
+  }
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      return normalizeFollowUps(parsed);
+    } catch {
+      if (raw.trim()) {
+        return [
+          {
+            id: `fu_${Date.now()}`,
+            date: new Date().toISOString().split('T')[0],
+            type: 'Other',
+            notes: raw,
+            status: 'completed',
+          },
+        ];
+      }
+      return [];
+    }
+  }
+  return [];
+};
+
+export const normalizeAtsScore = (score: any): number | null => {
+  if (score == null || score === '') return null;
+  const num = Number(score);
+  return isNaN(num) ? null : Math.min(100, Math.max(0, num));
+};
+
 // Helper: LocalStorage backup fallback
 const getLocalApplications = (): JobApplication[] => {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed)
+      ? parsed.map((app) => ({
+          ...app,
+          follow_ups: normalizeFollowUps(app.follow_ups),
+          ats_score: normalizeAtsScore(app.ats_score),
+        }))
+      : [];
   } catch {
     return [];
   }
@@ -224,7 +286,12 @@ export const fetchJobApplications = async (): Promise<JobApplication[]> => {
       return getLocalApplications();
     }
 
-    const applications: JobApplication[] = data || [];
+    const rawList: any[] = data || [];
+    const applications: JobApplication[] = rawList.map((app) => ({
+      ...app,
+      follow_ups: normalizeFollowUps(app.follow_ups),
+      ats_score: normalizeAtsScore(app.ats_score),
+    }));
     saveLocalApplications(applications);
     return applications;
   } catch (err) {
@@ -244,14 +311,32 @@ export const createJobApplication = async (
     id,
     created_at: timestamp,
     updated_at: timestamp,
+    follow_ups: normalizeFollowUps(newJob.follow_ups),
+    ats_score: normalizeAtsScore(newJob.ats_score),
   };
 
   try {
-    const { data, error } = await (supabase
+    let { data, error } = await (supabase
       .from('job_applications' as any)
       .insert([payload])
       .select()
       .single() as any);
+
+    // If Supabase table does not yet have ats_score or follow_ups columns, retry without them
+    if (error && (error.message?.includes('column') || error.code === '42703')) {
+      const fallbackPayload = { ...payload };
+      delete (fallbackPayload as any).ats_score;
+      delete (fallbackPayload as any).follow_ups;
+      const retry = await (supabase
+        .from('job_applications' as any)
+        .insert([fallbackPayload])
+        .select()
+        .single() as any);
+      if (!retry.error && retry.data) {
+        data = { ...retry.data, ats_score: payload.ats_score, follow_ups: payload.follow_ups };
+        error = null;
+      }
+    }
 
     if (error) {
       console.warn('Using local storage fallback for create:', error.message);
@@ -261,9 +346,14 @@ export const createJobApplication = async (
       return payload;
     }
 
+    const result: JobApplication = {
+      ...(data || payload),
+      follow_ups: normalizeFollowUps(data?.follow_ups ?? payload.follow_ups),
+      ats_score: normalizeAtsScore(data?.ats_score ?? payload.ats_score),
+    };
     const current = getLocalApplications();
-    saveLocalApplications([data || payload, ...current]);
-    return data || payload;
+    saveLocalApplications([result, ...current.filter(item => item.id !== id)]);
+    return result;
   } catch (err) {
     const current = getLocalApplications();
     const updated = [payload, ...current];
@@ -282,30 +372,66 @@ export const updateJobApplication = async (
   };
 
   try {
-    const { data, error } = await (supabase
+    let { data, error } = await (supabase
       .from('job_applications' as any)
       .update(payload)
       .eq('id', id)
       .select()
       .single() as any);
 
-    if (error) {
-      console.warn('Using local storage fallback for update:', error.message);
-      const current = getLocalApplications();
-      const updated = current.map(item => (item.id === id ? { ...item, ...payload } : item));
-      saveLocalApplications(updated);
-      const found = updated.find(item => item.id === id);
-      return found!;
+    // If Supabase table does not yet have ats_score or follow_ups columns, retry without them
+    if (error && (error.message?.includes('column') || error.code === '42703')) {
+      const fallbackPayload = { ...payload };
+      delete (fallbackPayload as any).ats_score;
+      delete (fallbackPayload as any).follow_ups;
+      const retry = await (supabase
+        .from('job_applications' as any)
+        .update(fallbackPayload)
+        .eq('id', id)
+        .select()
+        .single() as any);
+      if (!retry.error && retry.data) {
+        data = { ...retry.data, ats_score: updates.ats_score, follow_ups: updates.follow_ups };
+        error = null;
+      }
     }
 
     const current = getLocalApplications();
-    saveLocalApplications(current.map(item => (item.id === id ? (data || { ...item, ...payload }) : item)));
-    return data;
+    const existing = current.find(item => item.id === id);
+
+    if (error) {
+      console.warn('Using local storage fallback for update:', error.message);
+      const updatedApp: JobApplication = {
+        ...(existing || ({} as JobApplication)),
+        ...payload,
+        follow_ups: normalizeFollowUps(payload.follow_ups ?? existing?.follow_ups),
+        ats_score: normalizeAtsScore(payload.ats_score ?? existing?.ats_score),
+      };
+      const updatedList = current.map(item => (item.id === id ? updatedApp : item));
+      saveLocalApplications(updatedList);
+      return updatedApp;
+    }
+
+    const result: JobApplication = {
+      ...(data || existing || {}),
+      ...payload,
+      follow_ups: normalizeFollowUps(data?.follow_ups ?? payload.follow_ups ?? existing?.follow_ups),
+      ats_score: normalizeAtsScore(data?.ats_score ?? payload.ats_score ?? existing?.ats_score),
+    };
+    saveLocalApplications(current.map(item => (item.id === id ? result : item)));
+    return result;
   } catch {
     const current = getLocalApplications();
-    const updated = current.map(item => (item.id === id ? { ...item, ...payload } : item));
+    const existing = current.find(item => item.id === id);
+    const fallbackApp: JobApplication = {
+      ...(existing || ({} as JobApplication)),
+      ...payload,
+      follow_ups: normalizeFollowUps(payload.follow_ups ?? existing?.follow_ups),
+      ats_score: normalizeAtsScore(payload.ats_score ?? existing?.ats_score),
+    };
+    const updated = current.map(item => (item.id === id ? fallbackApp : item));
     saveLocalApplications(updated);
-    return updated.find(item => item.id === id)!;
+    return fallbackApp;
   }
 };
 
@@ -318,6 +444,36 @@ export const deleteJobApplication = async (id: string): Promise<void> => {
     const current = getLocalApplications();
     saveLocalApplications(current.filter(item => item.id !== id));
   }
+};
+
+export const addJobFollowUp = async (
+  jobId: string,
+  followUp: Omit<JobFollowUp, 'id' | 'created_at'>
+): Promise<JobApplication> => {
+  const newFollowUp: JobFollowUp = {
+    ...followUp,
+    id: crypto.randomUUID ? crypto.randomUUID() : `fu_${Date.now()}`,
+    created_at: new Date().toISOString(),
+  };
+
+  const localApps = getLocalApplications();
+  const target = localApps.find(app => app.id === jobId);
+  const currentFollowUps = Array.isArray(target?.follow_ups) ? target.follow_ups : [];
+  const updatedFollowUps = [newFollowUp, ...currentFollowUps];
+
+  return updateJobApplication(jobId, { follow_ups: updatedFollowUps });
+};
+
+export const deleteJobFollowUp = async (
+  jobId: string,
+  followUpId: string
+): Promise<JobApplication> => {
+  const localApps = getLocalApplications();
+  const target = localApps.find(app => app.id === jobId);
+  const currentFollowUps = Array.isArray(target?.follow_ups) ? target.follow_ups : [];
+  const updatedFollowUps = currentFollowUps.filter(fu => fu.id !== followUpId);
+
+  return updateJobApplication(jobId, { follow_ups: updatedFollowUps });
 };
 
 // =========================================================

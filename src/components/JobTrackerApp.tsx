@@ -320,7 +320,7 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-between sm:justify-end">
-            <RefreshButton onRefresh={loadData} isLoading={isLoading} />
+            <RefreshButton onRefresh={loadData} />
 
             {/* Goal Card Button (Highlighted) */}
             <Button
@@ -583,7 +583,6 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
             jobs={filteredApplications}
             onViewDetails={(j) => setViewingJob(j)}
             onEdit={(j) => setEditingJob(j)}
-            onDelete={handleDelete}
           />
         )}
           </TabsContent>
@@ -690,6 +689,7 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
           setEditingJob(j);
         }}
         onDelete={handleDelete}
+        onUpdate={handleUpdate}
       />
     </div>
   );

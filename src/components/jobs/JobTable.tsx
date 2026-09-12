@@ -17,9 +17,14 @@ import {
   Calendar,
   FileText,
   ScrollText,
+  Target,
 } from 'lucide-react';
 import { JobApplication, STATUS_CONFIG } from './types';
-import { downloadResume, formatSalaryInLakhs } from '@/integrations/supabase/jobClient';
+import {
+  downloadResume,
+  formatSalaryInLakhs,
+  normalizeAtsScore,
+} from '@/integrations/supabase/jobClient';
 import { useToast } from '@/hooks/use-toast';
 
 interface Props {
@@ -115,6 +120,7 @@ const JobTable: React.FC<Props> = ({ jobs, onViewDetails, onEdit }) => {
             <th className="py-3 px-3">Job Type</th>
             <th className="py-3 px-3">Applied Date</th>
             <th className="py-3 px-3">Salary (in Lakhs)</th>
+            <th className="py-3 px-3">ATS Score</th>
             <th className="py-3 px-3">Status</th>
             <th className="py-3 px-3">Platform</th>
             <th className="py-3 px-4 text-right">Actions</th>
@@ -123,11 +129,16 @@ const JobTable: React.FC<Props> = ({ jobs, onViewDetails, onEdit }) => {
         <tbody className="divide-y divide-border/40">
           {jobs.map((job) => {
             const config = STATUS_CONFIG[job.status] || STATUS_CONFIG.applied;
-            const formattedDate = new Date(job.applied_date).toLocaleDateString(undefined, {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-            });
+            const safeAts = normalizeAtsScore(job.ats_score);
+            const formattedDate = (() => {
+              if (!job.applied_date) return '—';
+              const d = new Date(job.applied_date);
+              return isNaN(d.getTime()) ? job.applied_date : d.toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              });
+            })();
 
             // Convert and format in Lakhs
             const { lakhsText, originalText } = formatSalaryInLakhs(
@@ -212,6 +223,27 @@ const JobTable: React.FC<Props> = ({ jobs, onViewDetails, onEdit }) => {
                     </div>
                   ) : (
                     <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
+
+                {/* ATS Score */}
+                <td className="py-3 px-3 whitespace-nowrap text-xs font-mono">
+                  {safeAts != null ? (
+                    <span
+                      className={`inline-flex items-center gap-1 font-semibold px-2 py-0.5 rounded text-[11px] border ${
+                        safeAts >= 80
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                          : safeAts >= 60
+                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                          : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                      }`}
+                      title={`ATS Match: ${safeAts}%`}
+                    >
+                      <Target className="w-3 h-3" />
+                      {safeAts}%
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground/40">—</span>
                   )}
                 </td>
 

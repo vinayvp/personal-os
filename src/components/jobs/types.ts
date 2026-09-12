@@ -7,6 +7,23 @@ export type JobStatus =
   | 'no response'
   | 'not selected';
 
+export type FollowUpType =
+  | 'Email'
+  | 'LinkedIn'
+  | 'Phone Call'
+  | 'Message'
+  | 'In-Person'
+  | 'Other';
+
+export interface JobFollowUp {
+  id: string;
+  date: string; // YYYY-MM-DD
+  type: FollowUpType;
+  notes: string;
+  status?: 'completed' | 'scheduled' | 'pending';
+  created_at?: string;
+}
+
 export interface JobApplication {
   id: string;
   created_at: string;
@@ -36,6 +53,8 @@ export interface JobApplication {
   recruiter_email?: string | null;
   recruiter_phone?: string | null;
   follow_up_notes?: string | null;
+  ats_score?: number | null;
+  follow_ups?: JobFollowUp[] | null;
 }
 
 export type NewJobApplication = Omit<JobApplication, 'id' | 'created_at' | 'updated_at'>;
