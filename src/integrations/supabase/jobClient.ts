@@ -10,7 +10,11 @@ import {
   JobPlatform,
   NewJobPlatform,
   PlatformStat,
+  AtsPlatform,
+  JobAtsScore,
 } from '@/components/jobs/types';
+
+export type { AtsPlatform, JobAtsScore };
 
 const BUCKET_NAME = 'job-resumes';
 const FALLBACK_BUCKET = 'note-images';
@@ -305,9 +309,10 @@ export const createJobApplication = async (
 ): Promise<JobApplication> => {
   const timestamp = new Date().toISOString();
   const id = crypto.randomUUID ? crypto.randomUUID() : `job_${Date.now()}`;
+  const { ats_scores: newAtsScores, ...jobData } = newJob;
 
   const payload: JobApplication = {
-    ...newJob,
+    ...jobData,
     id,
     created_at: timestamp,
     updated_at: timestamp,
@@ -343,6 +348,9 @@ export const createJobApplication = async (
       const current = getLocalApplications();
       const updated = [payload, ...current];
       saveLocalApplications(updated);
+      if (newAtsScores && newAtsScores.length > 0) {
+        await saveJobAtsScores(id, newAtsScores);
+      }
       return payload;
     }
 
@@ -353,11 +361,21 @@ export const createJobApplication = async (
     };
     const current = getLocalApplications();
     saveLocalApplications([result, ...current.filter(item => item.id !== id)]);
+
+    if (newAtsScores && newAtsScores.length > 0) {
+      const { savedScores, averageScore } = await saveJobAtsScores(id, newAtsScores);
+      result.ats_scores = savedScores;
+      if (averageScore != null) result.ats_score = averageScore;
+    }
+
     return result;
   } catch (err) {
     const current = getLocalApplications();
     const updated = [payload, ...current];
     saveLocalApplications(updated);
+    if (newAtsScores && newAtsScores.length > 0) {
+      await saveJobAtsScores(id, newAtsScores);
+    }
     return payload;
   }
 };
@@ -366,8 +384,9 @@ export const updateJobApplication = async (
   id: string,
   updates: Partial<JobApplication>
 ): Promise<JobApplication> => {
+  const { ats_scores: updatedAtsScores, ...jobUpdates } = updates;
   const payload = {
-    ...updates,
+    ...jobUpdates,
     updated_at: new Date().toISOString(),
   };
 
@@ -409,6 +428,9 @@ export const updateJobApplication = async (
       };
       const updatedList = current.map(item => (item.id === id ? updatedApp : item));
       saveLocalApplications(updatedList);
+      if (updatedAtsScores !== undefined) {
+        await saveJobAtsScores(id, updatedAtsScores || []);
+      }
       return updatedApp;
     }
 
@@ -419,6 +441,13 @@ export const updateJobApplication = async (
       ats_score: normalizeAtsScore(data?.ats_score ?? payload.ats_score ?? existing?.ats_score),
     };
     saveLocalApplications(current.map(item => (item.id === id ? result : item)));
+
+    if (updatedAtsScores !== undefined) {
+      const { savedScores, averageScore } = await saveJobAtsScores(id, updatedAtsScores || []);
+      result.ats_scores = savedScores;
+      if (averageScore != null) result.ats_score = averageScore;
+    }
+
     return result;
   } catch {
     const current = getLocalApplications();
@@ -431,6 +460,9 @@ export const updateJobApplication = async (
     };
     const updated = current.map(item => (item.id === id ? fallbackApp : item));
     saveLocalApplications(updated);
+    if (updatedAtsScores !== undefined) {
+      saveJobAtsScores(id, updatedAtsScores || []).catch(() => {});
+    }
     return fallbackApp;
   }
 };
@@ -1219,6 +1251,214 @@ export const findPlatformByUrl = (
     return pDomain && (targetDomain === pDomain || targetDomain.includes(pDomain) || pDomain.includes(targetDomain));
   });
 };
+
+// ============================================================================
+// ATS Platforms & Job Application ATS Scores Data Helpers
+// ============================================================================
+
+export const DEFAULT_ATS_PLATFORMS: AtsPlatform[] = [
+  { id: 'ats_chatgpt', name: 'ChatGPT', url: 'https://chatgpt.com', is_default: true, created_at: '', updated_at: '' },
+  { id: 'ats_jobscan', name: 'Jobscan', url: 'https://www.jobscan.co', is_default: true, created_at: '', updated_at: '' },
+  { id: 'ats_resume_worded', name: 'Resume Worded', url: 'https://resumeworded.com', is_default: true, created_at: '', updated_at: '' },
+  { id: 'ats_teal', name: 'Teal', url: 'https://www.tealhq.com', is_default: true, created_at: '', updated_at: '' },
+  { id: 'ats_cultivated_culture', name: 'Cultivated Culture', url: 'https://cultivatedculture.com', is_default: true, created_at: '', updated_at: '' },
+  { id: 'ats_skillsyncer', name: 'SkillSyncer', url: 'https://skillsyncer.com', is_default: true, created_at: '', updated_at: '' },
+  { id: 'ats_careerflow', name: 'Careerflow', url: 'https://careerflow.ai', is_default: true, created_at: '', updated_at: '' },
+];
+
+/**
+ * Fetches all registered ATS platforms/scanners from `ats_platforms`.
+ * Falls back to DEFAULT_ATS_PLATFORMS if table is empty or not yet migrated.
+ */
+export const getAtsPlatforms = async (): Promise<AtsPlatform[]> => {
+  try {
+    const { data, error } = await (supabase
+      .from('ats_platforms' as any)
+      .select('*')
+      .order('is_default', { ascending: false })
+      .order('name', { ascending: true }) as any);
+
+    if (error || !data || data.length === 0) {
+      return DEFAULT_ATS_PLATFORMS;
+    }
+    return data as AtsPlatform[];
+  } catch {
+    return DEFAULT_ATS_PLATFORMS;
+  }
+};
+
+/**
+ * Creates a new custom ATS platform in `ats_platforms`.
+ */
+export const createAtsPlatform = async (
+  name: string,
+  url?: string
+): Promise<AtsPlatform | null> => {
+  if (!name.trim()) return null;
+  try {
+    const { data, error } = await (supabase
+      .from('ats_platforms' as any)
+      .insert([
+        {
+          name: name.trim(),
+          url: url?.trim() || null,
+          is_default: false,
+        },
+      ])
+      .select()
+      .single() as any);
+
+    if (error || !data) return null;
+    return data as AtsPlatform;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Retrieves the individual ATS scores recorded for a given job application.
+ */
+export const getJobAtsScores = async (jobId: string): Promise<JobAtsScore[]> => {
+  if (!jobId) return [];
+  try {
+    const { data, error } = await (supabase
+      .from('job_application_ats_scores' as any)
+      .select('*')
+      .eq('job_id', jobId)
+      .order('created_at', { ascending: true }) as any);
+
+    if (error || !data) {
+      const local = getLocalApplications().find((j) => j.id === jobId);
+      return local?.ats_scores || [];
+    }
+
+    return (data as JobAtsScore[]).map((s) => ({
+      ...s,
+      score: Number(s.score),
+    }));
+  } catch {
+    const local = getLocalApplications().find((j) => j.id === jobId);
+    return local?.ats_scores || [];
+  }
+};
+
+/**
+ * Saves/replaces the individual ATS scores for a job application in `job_application_ats_scores`,
+ * calculates the arithmetic average, and updates `job_applications.ats_score`.
+ */
+export const saveJobAtsScores = async (
+  jobId: string,
+  scores: Array<{ platform_id?: string | null; platform_name: string; score: number | string }>
+): Promise<{ savedScores: JobAtsScore[]; averageScore: number | null }> => {
+  if (!jobId) return { savedScores: [], averageScore: null };
+
+  const validScores = scores.filter(
+    (s) =>
+      s &&
+      s.score !== '' &&
+      !isNaN(Number(s.score)) &&
+      Number(s.score) >= 0 &&
+      Number(s.score) <= 100
+  );
+
+  const averageScore =
+    validScores.length > 0
+      ? Math.round(
+          validScores.reduce((acc, curr) => acc + Number(curr.score), 0) /
+            validScores.length
+        )
+      : null;
+
+  try {
+    // 1. Delete existing scores for this job
+    await (supabase
+      .from('job_application_ats_scores' as any)
+      .delete()
+      .eq('job_id', jobId) as any);
+
+    // 2. Insert new valid scores
+    let insertedScores: JobAtsScore[] = [];
+    if (validScores.length > 0) {
+      const records = validScores.map((s) => ({
+        job_id: jobId,
+        platform_id: s.platform_id || null,
+        platform_name: s.platform_name.trim(),
+        score: Number(s.score),
+      }));
+
+      const { data, error } = await (supabase
+        .from('job_application_ats_scores' as any)
+        .insert(records)
+        .select() as any);
+
+      if (!error && data) {
+        insertedScores = (data as JobAtsScore[]).map((item) => ({
+          ...item,
+          score: Number(item.score),
+        }));
+      } else {
+        insertedScores = records.map((r, idx) => ({
+          ...r,
+          id: `ats_${Date.now()}_${idx}`,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }));
+      }
+    }
+
+    // 3. Update job_applications.ats_score with the calculated average
+    await (supabase
+      .from('job_applications' as any)
+      .update({
+        ats_score: averageScore,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', jobId) as any);
+
+    // 4. Update local cache
+    const current = getLocalApplications();
+    const updated = current.map((item) => {
+      if (item.id === jobId) {
+        return {
+          ...item,
+          ats_score: averageScore,
+          ats_scores: insertedScores,
+        };
+      }
+      return item;
+    });
+    saveLocalApplications(updated);
+
+    return { savedScores: insertedScores, averageScore };
+  } catch (err) {
+    console.warn('Fallback saving job ATS scores locally:', err);
+    const fallbackScores: JobAtsScore[] = validScores.map((r, idx) => ({
+      id: `ats_${Date.now()}_${idx}`,
+      job_id: jobId,
+      platform_id: r.platform_id || null,
+      platform_name: r.platform_name.trim(),
+      score: Number(r.score),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }));
+
+    const current = getLocalApplications();
+    const updated = current.map((item) => {
+      if (item.id === jobId) {
+        return {
+          ...item,
+          ats_score: averageScore,
+          ats_scores: fallbackScores,
+        };
+      }
+      return item;
+    });
+    saveLocalApplications(updated);
+
+    return { savedScores: fallbackScores, averageScore };
+  }
+};
+
 
 
 

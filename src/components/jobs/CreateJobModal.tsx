@@ -36,7 +36,9 @@ import {
   Plus,
   Trash2,
   Clock,
+  Calculator,
 } from 'lucide-react';
+import { AtsCalculatorModal, AtsSourceEntry } from './AtsCalculatorModal';
 import {
   JobStatus,
   NewJobApplication,
@@ -101,6 +103,8 @@ const CreateJobModal: React.FC<Props> = ({
   const [recruiterPhone, setRecruiterPhone] = useState('');
   const [followUpNotes, setFollowUpNotes] = useState('');
   const [atsScore, setAtsScore] = useState('');
+  const [isAtsModalOpen, setIsAtsModalOpen] = useState(false);
+  const [atsSources, setAtsSources] = useState<AtsSourceEntry[]>([]);
   const [followUps, setFollowUps] = useState<JobFollowUp[]>([]);
   const [newFollowUpDate, setNewFollowUpDate] = useState(new Date().toISOString().split('T')[0]);
   const [newFollowUpType, setNewFollowUpType] = useState<FollowUpType>('Email');
@@ -137,6 +141,7 @@ const CreateJobModal: React.FC<Props> = ({
     setRecruiterPhone('');
     setFollowUpNotes('');
     setAtsScore('');
+    setAtsSources([]);
     setFollowUps([]);
     setNewFollowUpDate(new Date().toISOString().split('T')[0]);
     setNewFollowUpType('Email');
@@ -156,6 +161,16 @@ const CreateJobModal: React.FC<Props> = ({
         if (initialData.application_link) setApplicationLink(initialData.application_link);
         if (initialData.follow_up_notes) setFollowUpNotes(initialData.follow_up_notes);
         if (initialData.ats_score != null) setAtsScore(String(initialData.ats_score));
+        if (initialData.ats_scores && initialData.ats_scores.length > 0) {
+          setAtsSources(
+            initialData.ats_scores.map((s) => ({
+              id: s.id || `src_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+              platform_id: s.platform_id,
+              source: s.platform_name,
+              score: String(s.score),
+            }))
+          );
+        }
         if (initialData.follow_ups) setFollowUps(normalizeFollowUps(initialData.follow_ups));
         if (initialData.platform_id) {
           setSelectedPlatformId(initialData.platform_id);
@@ -302,6 +317,15 @@ const CreateJobModal: React.FC<Props> = ({
           ? Math.min(100, Math.max(0, Number(atsScore.trim())))
           : null,
         follow_ups: followUps.length > 0 ? followUps : null,
+        ats_scores: atsSources
+          .filter((s) => s.score.trim() !== '' && !isNaN(Number(s.score)))
+          .map((s) => ({
+            id: s.id,
+            job_id: '',
+            platform_id: s.platform_id || null,
+            platform_name: s.source.trim(),
+            score: Number(s.score),
+          })),
       };
 
       await onSuccess(newJob, fromSavedLinkId || undefined);
@@ -326,7 +350,8 @@ const CreateJobModal: React.FC<Props> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto p-5 sm:p-6">
         <DialogHeader className="text-left pb-2 border-b border-border/60">
           <DialogTitle className="text-lg sm:text-xl font-bold text-foreground flex items-center gap-2">
@@ -604,17 +629,29 @@ const CreateJobModal: React.FC<Props> = ({
                   <Target className="w-3.5 h-3.5 text-primary" />
                   ATS Score
                 </Label>
-                {atsScore.trim() !== '' && !isNaN(Number(atsScore)) && (
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
-                    Number(atsScore) >= 80
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                      : Number(atsScore) >= 60
-                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                      : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                  }`}>
-                    {Number(atsScore)}%
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsAtsModalOpen(true)}
+                    className="h-6 px-2 text-[11px] font-medium gap-1 text-primary border-primary/30 hover:bg-primary/10 hover:border-primary/50"
+                  >
+                    <Calculator className="w-3 h-3" />
+                    ATS
+                  </Button>
+                  {atsScore.trim() !== '' && !isNaN(Number(atsScore)) && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                      Number(atsScore) >= 80
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                        : Number(atsScore) >= 60
+                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                        : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                    }`}>
+                      {Number(atsScore)}%
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="relative">
                 <Input
@@ -972,6 +1009,18 @@ const CreateJobModal: React.FC<Props> = ({
         </form>
       </DialogContent>
     </Dialog>
+
+    <AtsCalculatorModal
+      isOpen={isAtsModalOpen}
+      onClose={() => setIsAtsModalOpen(false)}
+      initialScore={atsScore.trim() !== '' && !isNaN(Number(atsScore)) ? Number(atsScore) : null}
+      savedSources={atsSources}
+      onApply={(avg, sources) => {
+        setAtsScore(String(avg));
+        if (sources) setAtsSources(sources);
+      }}
+    />
+  </>
   );
 };
 

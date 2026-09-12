@@ -55,6 +55,7 @@ export interface JobApplication {
   follow_up_notes?: string | null;
   ats_score?: number | null;
   follow_ups?: JobFollowUp[] | null;
+  ats_scores?: JobAtsScore[] | null;
 }
 
 export type NewJobApplication = Omit<JobApplication, 'id' | 'created_at' | 'updated_at'>;
@@ -206,3 +207,26 @@ export interface PlatformStat {
   withdrew: number;
   responseRate: number; // percentage (0 - 100)
 }
+
+export interface AtsPlatform {
+  id: string;
+  name: string;
+  url?: string | null;
+  is_default?: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type NewAtsPlatform = Omit<AtsPlatform, 'id' | 'created_at' | 'updated_at'>;
+
+export interface JobAtsScore {
+  id: string;
+  job_id: string;
+  platform_id?: string | null;
+  platform_name: string;
+  score: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type NewJobAtsScore = Omit<JobAtsScore, 'id' | 'created_at' | 'updated_at'>;

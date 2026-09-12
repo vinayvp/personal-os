@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -43,13 +43,14 @@ import {
   Send,
   MessageSquare,
 } from 'lucide-react';
-import { JobApplication, STATUS_CONFIG, JobFollowUp, FollowUpType } from './types';
+import { JobApplication, STATUS_CONFIG, JobFollowUp, FollowUpType, JobAtsScore } from './types';
 import {
   getResumeSignedUrl,
   downloadResume,
   formatSalaryInLakhs,
   normalizeFollowUps,
   normalizeAtsScore,
+  getJobAtsScores,
 } from '@/integrations/supabase/jobClient';
 import { useToast } from '@/hooks/use-toast';
 
@@ -71,6 +72,21 @@ const JobDetailModal: React.FC<Props> = ({ job, isOpen, onClose, onEdit, onDelet
   const [followUpType, setFollowUpType] = useState<FollowUpType>('Email');
   const [followUpNotes, setFollowUpNotes] = useState('');
   const [isSavingFollowUp, setIsSavingFollowUp] = useState(false);
+  const [atsBreakdown, setAtsBreakdown] = useState<JobAtsScore[]>([]);
+
+  useEffect(() => {
+    if (job) {
+      if (job.ats_scores && job.ats_scores.length > 0) {
+        setAtsBreakdown(job.ats_scores);
+      } else if (job.id) {
+        getJobAtsScores(job.id).then((scores) => {
+          setAtsBreakdown(scores || []);
+        });
+      } else {
+        setAtsBreakdown([]);
+      }
+    }
+  }, [job]);
 
   if (!job) return null;
 
@@ -357,7 +373,7 @@ const JobDetailModal: React.FC<Props> = ({ job, isOpen, onClose, onEdit, onDelet
               )}
 
               {atsScore != null && (
-                <div className="flex-1 p-3.5 space-y-1">
+                <div className="flex-1 p-3.5 space-y-1.5">
                   <span className="text-muted-foreground text-[11px] font-medium flex items-center gap-1.5">
                     <Target className="w-3.5 h-3.5 text-primary shrink-0" />
                     ATS Match Score
@@ -382,6 +398,19 @@ const JobDetailModal: React.FC<Props> = ({ job, isOpen, onClose, onEdit, onDelet
                         : 'Needs Review'}
                     </span>
                   </div>
+                  {atsBreakdown.length > 0 && (
+                    <div className="pt-1 flex items-center gap-1.5 flex-wrap">
+                      {atsBreakdown.map((item) => (
+                        <span
+                          key={item.id || item.platform_name}
+                          className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted/60 border border-border/50 text-foreground/80"
+                        >
+                          <span className="text-muted-foreground">{item.platform_name}:</span>{' '}
+                          <span className="font-mono font-bold">{item.score}%</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -37,7 +37,9 @@ import {
   Plus,
   Trash2,
   Clock,
+  Calculator,
 } from 'lucide-react';
+import { AtsCalculatorModal, AtsSourceEntry } from './AtsCalculatorModal';
 import {
   JobApplication,
   JobStatus,
@@ -55,6 +57,7 @@ import {
   downloadResume,
   convertSalaryToInr,
   normalizeFollowUps,
+  getJobAtsScores,
 } from '@/integrations/supabase/jobClient';
 import { useToast } from '@/hooks/use-toast';
 
@@ -100,6 +103,8 @@ const EditJobModal: React.FC<Props> = ({
   const [recruiterPhone, setRecruiterPhone] = useState('');
   const [followUpNotes, setFollowUpNotes] = useState('');
   const [atsScore, setAtsScore] = useState('');
+  const [isAtsModalOpen, setIsAtsModalOpen] = useState(false);
+  const [atsSources, setAtsSources] = useState<AtsSourceEntry[]>([]);
   const [followUps, setFollowUps] = useState<JobFollowUp[]>([]);
   const [newFollowUpDate, setNewFollowUpDate] = useState(new Date().toISOString().split('T')[0]);
   const [newFollowUpType, setNewFollowUpType] = useState<FollowUpType>('Email');
@@ -131,6 +136,36 @@ const EditJobModal: React.FC<Props> = ({
       setSalaryCurrency(job.salary_currency || 'USD');
       setApplicationLink(job.application_link || '');
       setAtsScore(job.ats_score != null ? String(job.ats_score) : '');
+      if (job.ats_scores && job.ats_scores.length > 0) {
+        setAtsSources(
+          job.ats_scores.map((s) => ({
+            id: s.id || `src_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+            platform_id: s.platform_id,
+            source: s.platform_name,
+            score: String(s.score),
+          }))
+        );
+      } else {
+        getJobAtsScores(job.id).then((scores) => {
+          if (scores && scores.length > 0) {
+            setAtsSources(
+              scores.map((s) => ({
+                id: s.id,
+                platform_id: s.platform_id,
+                source: s.platform_name,
+                score: String(s.score),
+              }))
+            );
+          } else if (job.ats_score != null && job.ats_score > 0) {
+            setAtsSources([
+              { id: 'src_1', source: 'ChatGPT', score: String(job.ats_score) },
+              { id: 'src_2', source: 'Jobscan', score: '' },
+            ]);
+          } else {
+            setAtsSources([]);
+          }
+        });
+      }
       setFollowUps(normalizeFollowUps(job.follow_ups));
       setNewFollowUpDate(new Date().toISOString().split('T')[0]);
       setNewFollowUpType('Email');
@@ -339,6 +374,15 @@ const EditJobModal: React.FC<Props> = ({
           ? Math.min(100, Math.max(0, Number(atsScore.trim())))
           : null,
         follow_ups: followUps.length > 0 ? followUps : null,
+        ats_scores: atsSources
+          .filter((s) => s.score.trim() !== '' && !isNaN(Number(s.score)))
+          .map((s) => ({
+            id: s.id,
+            job_id: job.id,
+            platform_id: s.platform_id || null,
+            platform_name: s.source.trim(),
+            score: Number(s.score),
+          })),
       };
 
       await onSuccess(job.id, updates);
@@ -362,7 +406,8 @@ const EditJobModal: React.FC<Props> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto p-5 sm:p-6">
         <DialogHeader className="text-left pb-2 border-b border-border/60">
           <DialogTitle className="text-lg sm:text-xl font-bold text-foreground flex items-center gap-2">
@@ -638,17 +683,29 @@ const EditJobModal: React.FC<Props> = ({
                   <Target className="w-3.5 h-3.5 text-primary" />
                   ATS Score
                 </Label>
-                {atsScore.trim() !== '' && !isNaN(Number(atsScore)) && (
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
-                    Number(atsScore) >= 80
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                      : Number(atsScore) >= 60
-                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                      : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                  }`}>
-                    {Number(atsScore)}%
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsAtsModalOpen(true)}
+                    className="h-6 px-2 text-[11px] font-medium gap-1 text-primary border-primary/30 hover:bg-primary/10 hover:border-primary/50"
+                  >
+                    <Calculator className="w-3 h-3" />
+                    ATS
+                  </Button>
+                  {atsScore.trim() !== '' && !isNaN(Number(atsScore)) && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                      Number(atsScore) >= 80
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                        : Number(atsScore) >= 60
+                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                        : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                    }`}>
+                      {Number(atsScore)}%
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="relative">
                 <Input
@@ -1090,6 +1147,18 @@ const EditJobModal: React.FC<Props> = ({
         </form>
       </DialogContent>
     </Dialog>
+
+    <AtsCalculatorModal
+      isOpen={isAtsModalOpen}
+      onClose={() => setIsAtsModalOpen(false)}
+      initialScore={atsScore.trim() !== '' && !isNaN(Number(atsScore)) ? Number(atsScore) : null}
+      savedSources={atsSources}
+      onApply={(avg, sources) => {
+        setAtsScore(String(avg));
+        if (sources) setAtsSources(sources);
+      }}
+    />
+  </>
   );
 };
 
