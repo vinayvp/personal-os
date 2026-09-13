@@ -6,6 +6,74 @@ import { CheckCircle2, Circle, Trash2, Target, Calendar, Edit2, Plus, Minus } fr
 import { format, isToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import type { Habit, HabitCompletion } from '../HabitTracker';
 
+export const parseCustomDays = (customDays: any): number[] => {
+  if (!customDays) return [];
+  if (Array.isArray(customDays)) return customDays.map(Number).filter(n => !isNaN(n));
+  if (typeof customDays === 'string') {
+    try {
+      const parsed = JSON.parse(customDays);
+      if (Array.isArray(parsed)) return parsed.map(Number).filter(n => !isNaN(n));
+    } catch {
+      return customDays
+        .replace(/[{}[\]]/g, '')
+        .split(',')
+        .map(s => Number(s.trim()))
+        .filter(n => !isNaN(n));
+    }
+  }
+  return [];
+};
+
+const ICON_MAP: Record<string, string> = {
+  dumbbell: 'fitness_center',
+  fitness: 'fitness_center',
+  fitness_center: 'fitness_center',
+  book: 'menu_book',
+  bookopen: 'menu_book',
+  menu_book: 'menu_book',
+  reading: 'menu_book',
+  laptop: 'laptop',
+  droplet: 'local_drink',
+  water: 'local_drink',
+  local_drink: 'local_drink',
+  run: 'directions_run',
+  directions_run: 'directions_run',
+  meditation: 'self_improvement',
+  self_improvement: 'self_improvement',
+  sleep: 'bedtime',
+  bedtime: 'bedtime',
+  food: 'restaurant',
+  restaurant: 'restaurant',
+  work: 'work',
+  study: 'school',
+  school: 'school',
+  music: 'music_note',
+  music_note: 'music_note',
+  brush: 'brush',
+  spa: 'spa',
+  phone: 'phone',
+  home: 'home',
+  health: 'favorite',
+  favorite: 'favorite',
+};
+
+const renderHabitIcon = (habit: Habit) => {
+  if (!habit.icon || ['radio_button_checked', 'radio_button_unchecked', 'circle', 'default', 'target'].includes(habit.icon.toLowerCase())) {
+    return null;
+  }
+  const cleanIcon = habit.icon.toLowerCase();
+  const iconName = ICON_MAP[cleanIcon] || habit.icon;
+  return (
+    <span 
+      className="material-icons text-sm md:text-base shrink-0" 
+      style={{ color: habit.color || '#3B82F6' }}
+      aria-hidden="true"
+    >
+      {iconName}
+    </span>
+  );
+};
+
 interface HabitDashboardProps {
   habits: Habit[];
   completions: HabitCompletion[];
@@ -63,13 +131,16 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
   };
 
   const calculateProgress = (habit: Habit) => {
+    const targetCount = habit.target_count || 1;
+    const targetPeriod = habit.target_period || 'weekly';
+
     // For "total" target period (no frequency), count all completions
-    if (habit.target_period === 'total' || habit.frequency_type === 'none') {
+    if (targetPeriod === 'total' || habit.frequency_type === 'none') {
       const totalCompletions = completions.filter(c => c.habit_id === habit.id).length;
       return {
         completed: totalCompletions,
-        target: habit.target_count,
-        percentage: Math.min((totalCompletions / habit.target_count) * 100, 100)
+        target: targetCount,
+        percentage: Math.min((totalCompletions / targetCount) * 100, 100)
       };
     }
 
@@ -77,7 +148,7 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
     let periodStart: Date;
     let periodEnd: Date;
 
-    switch (habit.target_period) {
+    switch (targetPeriod) {
       case 'weekly':
         periodStart = startOfWeek(now);
         periodEnd = endOfWeek(now);
@@ -103,8 +174,8 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
 
     return {
       completed: completionsInPeriod,
-      target: habit.target_count,
-      percentage: Math.min((completionsInPeriod / habit.target_count) * 100, 100)
+      target: targetCount,
+      percentage: Math.min((completionsInPeriod / targetCount) * 100, 100)
     };
   };
 
@@ -112,18 +183,23 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
     if (habit.frequency_type === 'none') return 'Total Goal';
     if (habit.frequency_type === 'daily') return 'Daily';
     if (habit.frequency_type === 'weekly') return 'Weekly';
-    if (habit.frequency_type === 'custom' && habit.custom_days) {
-      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      return habit.custom_days.map(day => dayNames[day]).join(', ');
+    if (habit.frequency_type === 'custom') {
+      const days = parseCustomDays(habit.custom_days);
+      if (days.length > 0) {
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        return days.map(day => dayNames[day] || `Day ${day}`).join(', ');
+      }
+      return 'Custom Days';
     }
     return 'Custom';
   };
 
   const getProgressLabel = (habit: Habit, progress: { completed: number; target: number }) => {
-    if (habit.target_period === 'total' || habit.frequency_type === 'none') {
+    const targetPeriod = habit.target_period || 'weekly';
+    if (targetPeriod === 'total' || habit.frequency_type === 'none') {
       return `${progress.completed}/${progress.target} total`;
     }
-    const periodLabel = habit.target_period.slice(0, -2); // weekly -> week, monthly -> month
+    const periodLabel = targetPeriod.slice(0, -2); // weekly -> week, monthly -> month
     return `${progress.completed}/${progress.target} this ${periodLabel}`;
   };
 
@@ -152,6 +228,7 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
         const todayCompletions = completions.filter(c => c.habit_id === habit.id && c.completion_date === today).length;
         const isNoFrequencyHabit = habit.frequency_type === 'none';
         const canAddMore = isNoFrequencyHabit && progress.completed < progress.target;
+        const canMinus = isNoFrequencyHabit && progress.completed > 0;
 
         return (
           <Card key={habit.id} className="transition-all hover:shadow-md">
@@ -166,7 +243,8 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
                           size="sm"
                           className="p-0 h-6 w-6 md:h-8 md:w-8"
                           onClick={() => onToggleCompletion(habit.id, today, false)}
-                          disabled={todayCompletions === 0}
+                          disabled={!canMinus}
+                          title="Decrease completions"
                         >
                           <Minus className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground hover:text-destructive" />
                         </Button>
@@ -185,6 +263,7 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
                           className="p-0 h-6 w-6 md:h-8 md:w-8"
                           onClick={() => onToggleCompletion(habit.id, today, true)}
                           disabled={!canAddMore}
+                          title="Increase completions"
                         >
                           <Plus className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground hover:text-green-500" />
                         </Button>
@@ -193,27 +272,24 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="p-0 h-auto shrink-0"
+                        className="p-0 h-auto shrink-0 hover:bg-transparent"
                         onClick={() => onToggleCompletion(habit.id, today)}
+                        title={isCompleted ? "Click to uncheck" : "Click to check in"}
                       >
                         {isCompleted ? (
-                          <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 text-green-500" />
+                          <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 text-green-500 transition-transform active:scale-95" />
                         ) : (
-                          <div className="flex items-center justify-center w-5 h-5 md:w-6 md:h-6">
-                            <span 
-                              className="material-icons text-base md:text-lg hover:text-primary" 
-                              style={{ color: habit.color || '#3B82F6' }}
-                            >
-                              {habit.icon || 'radio_button_checked'}
-                            </span>
-                          </div>
+                          <Circle className="w-5 h-5 md:w-6 md:h-6 text-muted-foreground hover:text-primary transition-colors active:scale-95" />
                         )}
                       </Button>
                     )}
                     <div className="min-w-0 flex-1">
-                      <CardTitle className={`text-sm md:text-lg truncate ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
-                        {habit.name}
-                      </CardTitle>
+                      <div className="flex items-center gap-1.5 md:gap-2">
+                        {renderHabitIcon(habit)}
+                        <CardTitle className={`text-sm md:text-lg truncate ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
+                          {habit.name || (habit as any)?.title || 'Untitled'}
+                        </CardTitle>
+                      </div>
                       {habit.goal && (
                         <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1 line-clamp-1">{habit.goal}</p>
                       )}

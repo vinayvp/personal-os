@@ -67,7 +67,7 @@ const HabitCalendar = ({ habits, completions, onToggleCompletion }: HabitCalenda
                 <SelectItem value="all">All Habits</SelectItem>
                 {habits.map(habit => (
                   <SelectItem key={habit.id} value={habit.id}>
-                    {habit.name}
+                    {habit.name || (habit as any)?.title || 'Untitled'}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -137,7 +137,7 @@ const HabitCalendar = ({ habits, completions, onToggleCompletion }: HabitCalenda
                       
                       <div className="flex-1">
                         <h4 className={`font-medium ${isCompleted ? 'line-through text-muted-foreground' : ''}`}>
-                          {habit.name}
+                          {habit.name || (habit as any)?.title || 'Untitled'}
                         </h4>
                         {habit.goal && (
                           <p className="text-sm text-muted-foreground">{habit.goal}</p>
@@ -147,7 +147,7 @@ const HabitCalendar = ({ habits, completions, onToggleCompletion }: HabitCalenda
 
                     <div className="flex gap-2">
                       <Badge variant="outline" className="text-xs">
-                        {habit.target_count}x {habit.target_period.slice(0, -2)}
+                        {habit.target_count || 1}x {((habit.target_period || 'weekly') as string).slice(0, -2)}
                       </Badge>
                     </div>
                   </div>

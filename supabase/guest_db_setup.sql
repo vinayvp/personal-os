@@ -1,0 +1,1382 @@
+-- ==============================================================================
+-- TURNKEY GUEST DATABASE SETUP & MIGRATION SCRIPT
+-- Project: Vinayak Portfolio & Sub-Apps (Guest Mode)
+-- 
+-- Instructions:
+-- 1. Open your Guest Supabase Dashboard (SQL Editor -> New Query).
+-- 2. Paste this ENTIRE script (ensure no text is highlighted) and click "Run".
+-- 3. CRITICAL FOR FINANCE APP:
+--    In your Supabase Dashboard -> Project Settings (gear icon ⚙️) -> API
+--    Scroll down to "Data API Settings" (or "PostgREST Configuration")
+--    Under "Exposed schemas", add: finance  (so it reads: public, finance)
+--    Click "Save". This allows PostgREST to serve the finance schema via API!
+-- ==============================================================================
+
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ------------------------------------------------------------------------------
+-- 1. HABIT TRACKER (habits & habit_completions)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.habits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    name TEXT,
+    color TEXT DEFAULT '#10B981',
+    icon TEXT DEFAULT 'fitness_center',
+    frequency_type TEXT DEFAULT 'daily',
+    target_count INTEGER DEFAULT 1,
+    target_period TEXT DEFAULT 'weekly',
+    custom_days INTEGER[] DEFAULT NULL,
+    goal TEXT DEFAULT NULL,
+    end_date DATE DEFAULT NULL,
+    user_id UUID DEFAULT NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Idempotent column additions in case table was created earlier
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS title TEXT;
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS color TEXT DEFAULT '#10B981';
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS icon TEXT DEFAULT 'fitness_center';
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS frequency_type TEXT DEFAULT 'daily';
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS target_count INTEGER DEFAULT 1;
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS target_period TEXT DEFAULT 'weekly';
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS custom_days INTEGER[];
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS goal TEXT;
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS end_date DATE;
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+-- Ensure frequency_type and target_period check constraints allow modern values ('none' and 'total')
+ALTER TABLE public.habits DROP CONSTRAINT IF EXISTS habits_frequency_type_check;
+ALTER TABLE public.habits ADD CONSTRAINT habits_frequency_type_check CHECK (frequency_type IN ('daily', 'weekly', 'custom', 'none'));
+ALTER TABLE public.habits DROP CONSTRAINT IF EXISTS habits_target_period_check;
+ALTER TABLE public.habits ADD CONSTRAINT habits_target_period_check CHECK (target_period IN ('weekly', 'monthly', 'yearly', 'total'));
+
+-- Ensure both name and title are populated
+UPDATE public.habits SET name = title WHERE name IS NULL AND title IS NOT NULL;
+UPDATE public.habits SET title = name WHERE title IS NULL AND name IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS public.habit_completions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    habit_id UUID NOT NULL REFERENCES public.habits(id) ON DELETE CASCADE,
+    completion_date DATE NOT NULL,
+    completed_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.habit_completions ADD COLUMN IF NOT EXISTS completion_date DATE;
+ALTER TABLE public.habit_completions ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ DEFAULT now();
+
+-- ------------------------------------------------------------------------------
+-- 2. TODOS (todos)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.todos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    description TEXT,
+    priority TEXT DEFAULT 'medium',
+    category TEXT DEFAULT 'General',
+    status TEXT DEFAULT 'pending',
+    completed BOOLEAN DEFAULT false,
+    due_date TIMESTAMPTZ,
+    user_id UUID DEFAULT NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.todos ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.todos ADD COLUMN IF NOT EXISTS priority TEXT DEFAULT 'medium';
+ALTER TABLE public.todos ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'General';
+ALTER TABLE public.todos ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
+ALTER TABLE public.todos ADD COLUMN IF NOT EXISTS completed BOOLEAN DEFAULT false;
+ALTER TABLE public.todos ADD COLUMN IF NOT EXISTS due_date TIMESTAMPTZ;
+ALTER TABLE public.todos ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}';
+ALTER TABLE public.todos ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.todos ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+-- ------------------------------------------------------------------------------
+-- 3. NOTES & TAGS (notes, tags, note_tags)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.notes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    content TEXT,
+    tags TEXT[] DEFAULT '{}',
+    category TEXT DEFAULT 'General',
+    is_pinned BOOLEAN DEFAULT false,
+    user_id UUID DEFAULT NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.notes ADD COLUMN IF NOT EXISTS content TEXT;
+ALTER TABLE public.notes ADD COLUMN IF NOT EXISTS markdown_content TEXT;
+ALTER TABLE public.notes ADD COLUMN IF NOT EXISTS folder TEXT;
+ALTER TABLE public.notes ADD COLUMN IF NOT EXISTS notion_url TEXT;
+ALTER TABLE public.notes ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}';
+ALTER TABLE public.notes ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'General';
+ALTER TABLE public.notes ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT false;
+ALTER TABLE public.notes ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.notes ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+CREATE TABLE IF NOT EXISTS public.tags (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE,
+    color TEXT DEFAULT '#3B82F6',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.tags ADD COLUMN IF NOT EXISTS color TEXT DEFAULT '#3B82F6';
+
+CREATE TABLE IF NOT EXISTS public.note_tags (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    note_id UUID NOT NULL REFERENCES public.notes(id) ON DELETE CASCADE,
+    tag_id UUID NOT NULL REFERENCES public.tags(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(note_id, tag_id)
+);
+
+-- ------------------------------------------------------------------------------
+-- 4. LESSONS LEARNED (lesson_categories & lessons)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.lesson_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE,
+    color TEXT DEFAULT '#6366F1',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.lesson_categories ADD COLUMN IF NOT EXISTS color TEXT DEFAULT '#6366F1';
+
+CREATE TABLE IF NOT EXISTS public.lessons (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    description TEXT,
+    takeaways TEXT,
+    content TEXT,
+    category_id UUID REFERENCES public.lesson_categories(id) ON DELETE SET NULL,
+    user_id UUID DEFAULT NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS takeaways TEXT;
+ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS content TEXT;
+ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES public.lesson_categories(id) ON DELETE SET NULL;
+ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.lessons ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+DO $$
+BEGIN
+    ALTER TABLE public.lessons ALTER COLUMN content DROP NOT NULL;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+UPDATE public.lessons SET content = description WHERE content IS NULL AND description IS NOT NULL;
+UPDATE public.lessons SET description = content WHERE description IS NULL AND content IS NOT NULL;
+
+-- ------------------------------------------------------------------------------
+-- 5. MOVIES & TV (movies_tv, movies_categories, movies_platforms)
+-- ------------------------------------------------------------------------------
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'movies_categories' AND table_type = 'VIEW'
+    ) THEN
+        EXECUTE 'DROP VIEW public.movies_categories CASCADE';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'movies_platforms' AND table_type = 'VIEW'
+    ) THEN
+        EXECUTE 'DROP VIEW public.movies_platforms CASCADE';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'movies_tv' AND table_type = 'VIEW'
+    ) THEN
+        EXECUTE 'DROP VIEW public.movies_tv CASCADE';
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.movies_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE,
+    color TEXT DEFAULT '#EC4899',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.movies_categories ADD COLUMN IF NOT EXISTS color TEXT DEFAULT '#EC4899';
+
+CREATE TABLE IF NOT EXISTS public.movies_platforms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE,
+    url TEXT,
+    url_template TEXT,
+    icon TEXT DEFAULT 'Tv',
+    enabled BOOLEAN DEFAULT true,
+    is_default BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.movies_platforms ADD COLUMN IF NOT EXISTS url TEXT;
+ALTER TABLE public.movies_platforms ADD COLUMN IF NOT EXISTS url_template TEXT;
+ALTER TABLE public.movies_platforms ADD COLUMN IF NOT EXISTS icon TEXT DEFAULT 'Tv';
+ALTER TABLE public.movies_platforms ADD COLUMN IF NOT EXISTS enabled BOOLEAN DEFAULT true;
+ALTER TABLE public.movies_platforms ADD COLUMN IF NOT EXISTS is_default BOOLEAN DEFAULT false;
+ALTER TABLE public.movies_platforms ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+        WHERE tc.table_schema = 'public' 
+          AND tc.table_name = 'movies_platforms' 
+          AND tc.constraint_type = 'UNIQUE' 
+          AND kcu.column_name = 'name'
+    ) THEN
+        ALTER TABLE public.movies_platforms ADD CONSTRAINT movies_platforms_name_key UNIQUE (name);
+    END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.movies_tv (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    type TEXT DEFAULT 'movie',
+    imdb_id TEXT,
+    imdb_rating NUMERIC DEFAULT NULL,
+    imdb_url TEXT,
+    status TEXT DEFAULT 'watchlist',
+    personal_rating NUMERIC DEFAULT NULL,
+    review TEXT,
+    poster_url TEXT,
+    release_year INTEGER,
+    year INTEGER,
+    director TEXT,
+    genre TEXT,
+    runtime TEXT,
+    plot TEXT,
+    category_id UUID REFERENCES public.movies_categories(id) ON DELETE SET NULL,
+    platform_id UUID REFERENCES public.movies_platforms(id) ON DELETE SET NULL,
+    user_id UUID DEFAULT NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'movie';
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS imdb_id TEXT;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS imdb_rating NUMERIC;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS imdb_url TEXT;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'watchlist';
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS personal_rating NUMERIC;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS review TEXT;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS poster_url TEXT;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS release_year INTEGER;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS year INTEGER;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS director TEXT;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS genre TEXT;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS runtime TEXT;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS plot TEXT;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES public.movies_categories(id) ON DELETE SET NULL;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS platform_id UUID REFERENCES public.movies_platforms(id) ON DELETE SET NULL;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+UPDATE public.movies_tv SET release_year = year WHERE release_year IS NULL AND year IS NOT NULL;
+UPDATE public.movies_tv SET year = release_year WHERE year IS NULL AND release_year IS NOT NULL;
+
+-- Safely drop legacy base tables if they exist so views can be created without ERROR 42809
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'movies' AND table_type = 'BASE TABLE'
+    ) THEN
+        EXECUTE 'DROP TABLE public.movies CASCADE';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'movie_categories' AND table_type = 'BASE TABLE'
+    ) THEN
+        EXECUTE 'DROP TABLE public.movie_categories CASCADE';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'movie_platforms' AND table_type = 'BASE TABLE'
+    ) THEN
+        EXECUTE 'DROP TABLE public.movie_platforms CASCADE';
+    END IF;
+END $$;
+
+-- Drop and recreate backwards compatibility aliases/views to avoid 42P16 column mismatch errors
+DROP VIEW IF EXISTS public.movies CASCADE;
+DROP VIEW IF EXISTS public.movie_categories CASCADE;
+DROP VIEW IF EXISTS public.movie_platforms CASCADE;
+
+CREATE OR REPLACE VIEW public.movies AS SELECT * FROM public.movies_tv;
+CREATE OR REPLACE VIEW public.movie_categories AS SELECT * FROM public.movies_categories;
+CREATE OR REPLACE VIEW public.movie_platforms AS SELECT * FROM public.movies_platforms;
+
+-- ------------------------------------------------------------------------------
+-- 6. REVISION & SPACED REPETITION (revision_category & revision_element)
+-- ------------------------------------------------------------------------------
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'revision_category' AND table_type = 'VIEW'
+    ) THEN
+        EXECUTE 'DROP VIEW public.revision_category CASCADE';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'revision_element' AND table_type = 'VIEW'
+    ) THEN
+        EXECUTE 'DROP VIEW public.revision_element CASCADE';
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.revision_category (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE,
+    color TEXT DEFAULT '#8B5CF6',
+    count INTEGER DEFAULT 0,
+    curr_element_id UUID,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.revision_category ADD COLUMN IF NOT EXISTS color TEXT DEFAULT '#8B5CF6';
+ALTER TABLE public.revision_category ADD COLUMN IF NOT EXISTS count INTEGER DEFAULT 0;
+ALTER TABLE public.revision_category ADD COLUMN IF NOT EXISTS curr_element_id UUID;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+        WHERE tc.table_schema = 'public' 
+          AND tc.table_name = 'revision_category' 
+          AND tc.constraint_type = 'UNIQUE' 
+          AND kcu.column_name = 'name'
+    ) THEN
+        ALTER TABLE public.revision_category ADD CONSTRAINT revision_category_name_key UNIQUE (name);
+    END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.revision_element (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    name TEXT,
+    content TEXT NOT NULL,
+    category_id UUID REFERENCES public.revision_category(id) ON DELETE SET NULL,
+    difficulty TEXT DEFAULT 'medium',
+    next_review_date TIMESTAMPTZ DEFAULT now(),
+    review_count INTEGER DEFAULT 0,
+    count INTEGER DEFAULT 0,
+    interval_days INTEGER DEFAULT 1,
+    user_id UUID DEFAULT NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.revision_element ADD COLUMN IF NOT EXISTS title TEXT;
+ALTER TABLE public.revision_element ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE public.revision_element ADD COLUMN IF NOT EXISTS content TEXT;
+ALTER TABLE public.revision_element ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.revision_element ADD COLUMN IF NOT EXISTS count INTEGER DEFAULT 0;
+ALTER TABLE public.revision_element ADD COLUMN IF NOT EXISTS review_count INTEGER DEFAULT 0;
+ALTER TABLE public.revision_element ADD COLUMN IF NOT EXISTS difficulty TEXT DEFAULT 'medium';
+ALTER TABLE public.revision_element ADD COLUMN IF NOT EXISTS interval_days INTEGER DEFAULT 1;
+ALTER TABLE public.revision_element ADD COLUMN IF NOT EXISTS next_review_date TIMESTAMPTZ DEFAULT now();
+ALTER TABLE public.revision_element ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.revision_element ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+DO $$
+BEGIN
+    ALTER TABLE public.revision_element ALTER COLUMN name DROP NOT NULL;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+UPDATE public.revision_element SET title = name WHERE title IS NULL AND name IS NOT NULL;
+UPDATE public.revision_element SET name = title WHERE name IS NULL AND title IS NOT NULL;
+UPDATE public.revision_element SET review_count = count WHERE review_count IS NULL AND count IS NOT NULL;
+UPDATE public.revision_element SET count = review_count WHERE count IS NULL AND review_count IS NOT NULL;
+
+-- Add foreign key constraint for curr_element_id after table exists
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'revision_category_curr_element_id_fkey'
+    ) THEN
+        ALTER TABLE public.revision_category 
+        ADD CONSTRAINT revision_category_curr_element_id_fkey 
+        FOREIGN KEY (curr_element_id) REFERENCES public.revision_element(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+
+-- Safely drop legacy base tables if they exist so views can be created without ERROR 42809
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'revision_categories' AND table_type = 'BASE TABLE'
+    ) THEN
+        EXECUTE 'DROP TABLE public.revision_categories CASCADE';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'revision_elements' AND table_type = 'BASE TABLE'
+    ) THEN
+        EXECUTE 'DROP TABLE public.revision_elements CASCADE';
+    END IF;
+END $$;
+
+-- Drop and recreate plural aliases/views to avoid 42P16 column mismatch errors
+DROP VIEW IF EXISTS public.revision_categories CASCADE;
+DROP VIEW IF EXISTS public.revision_elements CASCADE;
+
+CREATE OR REPLACE VIEW public.revision_categories AS SELECT * FROM public.revision_category;
+CREATE OR REPLACE VIEW public.revision_elements AS SELECT * FROM public.revision_element;
+
+-- ------------------------------------------------------------------------------
+-- 7. JOURNAL (journal_entries)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.journal_entries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    date DATE NOT NULL UNIQUE,
+    content TEXT,
+    mood TEXT DEFAULT 'productive',
+    tags TEXT[] DEFAULT '{}',
+    attachments TEXT[] DEFAULT '{}',
+    word_count INTEGER DEFAULT 0,
+    rich_content JSONB DEFAULT NULL,
+    user_id UUID DEFAULT NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.journal_entries ADD COLUMN IF NOT EXISTS content TEXT;
+ALTER TABLE public.journal_entries ADD COLUMN IF NOT EXISTS mood TEXT DEFAULT 'productive';
+ALTER TABLE public.journal_entries ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}';
+ALTER TABLE public.journal_entries ADD COLUMN IF NOT EXISTS attachments TEXT[] DEFAULT '{}';
+ALTER TABLE public.journal_entries ADD COLUMN IF NOT EXISTS word_count INTEGER DEFAULT 0;
+ALTER TABLE public.journal_entries ADD COLUMN IF NOT EXISTS rich_content JSONB;
+ALTER TABLE public.journal_entries ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.journal_entries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+-- ------------------------------------------------------------------------------
+-- 8. JOB TRACKER (job_applications, saved_job_links, job_platforms, ats_platforms, job_application_ats_scores)
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.ats_platforms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE,
+    url TEXT,
+    is_default BOOLEAN DEFAULT false,
+    description TEXT,
+    icon TEXT DEFAULT 'BarChart2',
+    color TEXT DEFAULT '#6366F1',
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.ats_platforms ADD COLUMN IF NOT EXISTS url TEXT;
+ALTER TABLE public.ats_platforms ADD COLUMN IF NOT EXISTS is_default BOOLEAN DEFAULT false;
+ALTER TABLE public.ats_platforms ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.ats_platforms ADD COLUMN IF NOT EXISTS icon TEXT DEFAULT 'BarChart2';
+ALTER TABLE public.ats_platforms ADD COLUMN IF NOT EXISTS color TEXT DEFAULT '#6366F1';
+ALTER TABLE public.ats_platforms ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+ALTER TABLE public.ats_platforms ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+        WHERE tc.table_schema = 'public' 
+          AND tc.table_name = 'ats_platforms' 
+          AND tc.constraint_type = 'UNIQUE' 
+          AND kcu.column_name = 'name'
+    ) THEN
+        ALTER TABLE public.ats_platforms ADD CONSTRAINT ats_platforms_name_key UNIQUE (name);
+    END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.job_platforms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE,
+    url TEXT,
+    scope TEXT DEFAULT 'global',
+    countries TEXT[] DEFAULT '{}',
+    is_active BOOLEAN DEFAULT true,
+    icon TEXT DEFAULT 'Briefcase',
+    color TEXT DEFAULT '#3B82F6',
+    is_default BOOLEAN DEFAULT false,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.job_platforms ADD COLUMN IF NOT EXISTS url TEXT;
+ALTER TABLE public.job_platforms ADD COLUMN IF NOT EXISTS scope TEXT DEFAULT 'global';
+ALTER TABLE public.job_platforms ADD COLUMN IF NOT EXISTS countries TEXT[] DEFAULT '{}';
+ALTER TABLE public.job_platforms ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+ALTER TABLE public.job_platforms ADD COLUMN IF NOT EXISTS icon TEXT DEFAULT 'Briefcase';
+ALTER TABLE public.job_platforms ADD COLUMN IF NOT EXISTS color TEXT DEFAULT '#3B82F6';
+ALTER TABLE public.job_platforms ADD COLUMN IF NOT EXISTS is_default BOOLEAN DEFAULT false;
+ALTER TABLE public.job_platforms ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE public.job_platforms ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+        WHERE tc.table_schema = 'public' 
+          AND tc.table_name = 'job_platforms' 
+          AND tc.constraint_type = 'UNIQUE' 
+          AND kcu.column_name = 'name'
+    ) THEN
+        ALTER TABLE public.job_platforms ADD CONSTRAINT job_platforms_name_key UNIQUE (name);
+    END IF;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.job_applications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_name TEXT NOT NULL,
+    role_name TEXT NOT NULL,
+    status TEXT DEFAULT 'applied',
+    job_type TEXT DEFAULT 'Full-time',
+    city TEXT DEFAULT 'Remote',
+    country TEXT DEFAULT 'India',
+    salary_min NUMERIC DEFAULT NULL,
+    salary_max NUMERIC DEFAULT NULL,
+    salary_currency TEXT DEFAULT 'INR',
+    salary_min_inr NUMERIC DEFAULT NULL,
+    salary_max_inr NUMERIC DEFAULT NULL,
+    salary_inr_rate NUMERIC DEFAULT NULL,
+    resume_url TEXT DEFAULT NULL,
+    resume_filename TEXT DEFAULT NULL,
+    resume_storage_path TEXT DEFAULT NULL,
+    cover_letter_filename TEXT DEFAULT NULL,
+    cover_letter_storage_path TEXT DEFAULT NULL,
+    application_link TEXT DEFAULT NULL,
+    platform_id UUID REFERENCES public.job_platforms(id) ON DELETE SET NULL,
+    platform TEXT DEFAULT 'LinkedIn',
+    found_in TEXT DEFAULT NULL,
+    job_description TEXT DEFAULT NULL,
+    recruiter_email TEXT DEFAULT NULL,
+    recruiter_phone TEXT DEFAULT NULL,
+    applied_date DATE DEFAULT CURRENT_DATE,
+    ats_score NUMERIC DEFAULT NULL,
+    follow_ups JSONB DEFAULT '[]'::jsonb,
+    follow_up_notes TEXT DEFAULT NULL,
+    notes TEXT DEFAULT NULL,
+    user_id UUID DEFAULT NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS company_name TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS role_name TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'applied';
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS job_type TEXT DEFAULT 'Full-time';
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS city TEXT DEFAULT 'Remote';
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'India';
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS salary_min NUMERIC;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS salary_max NUMERIC;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS salary_currency TEXT DEFAULT 'INR';
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS salary_min_inr NUMERIC;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS salary_max_inr NUMERIC;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS salary_inr_rate NUMERIC;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS resume_url TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS resume_filename TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS resume_storage_path TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS cover_letter_filename TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS cover_letter_storage_path TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS application_link TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS platform_id UUID REFERENCES public.job_platforms(id) ON DELETE SET NULL;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS platform TEXT DEFAULT 'LinkedIn';
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS found_in TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS job_description TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS recruiter_email TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS recruiter_phone TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS applied_date DATE DEFAULT CURRENT_DATE;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS ats_score NUMERIC;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS follow_ups JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS follow_up_notes TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+CREATE TABLE IF NOT EXISTS public.saved_job_links (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    url TEXT NOT NULL,
+    company_name TEXT,
+    role_name TEXT,
+    source TEXT DEFAULT 'LinkedIn',
+    platform_id UUID REFERENCES public.job_platforms(id) ON DELETE SET NULL,
+    status TEXT DEFAULT 'to_apply',
+    salary TEXT,
+    salary_note TEXT,
+    location TEXT,
+    notes TEXT,
+    deadline DATE,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.saved_job_links ADD COLUMN IF NOT EXISTS company_name TEXT;
+ALTER TABLE public.saved_job_links ADD COLUMN IF NOT EXISTS role_name TEXT;
+ALTER TABLE public.saved_job_links ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'LinkedIn';
+ALTER TABLE public.saved_job_links ADD COLUMN IF NOT EXISTS platform_id UUID REFERENCES public.job_platforms(id) ON DELETE SET NULL;
+ALTER TABLE public.saved_job_links ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'to_apply';
+ALTER TABLE public.saved_job_links ADD COLUMN IF NOT EXISTS salary TEXT;
+ALTER TABLE public.saved_job_links ADD COLUMN IF NOT EXISTS salary_note TEXT;
+ALTER TABLE public.saved_job_links ADD COLUMN IF NOT EXISTS location TEXT;
+ALTER TABLE public.saved_job_links ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE public.saved_job_links ADD COLUMN IF NOT EXISTS deadline DATE;
+ALTER TABLE public.saved_job_links ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+CREATE TABLE IF NOT EXISTS public.job_application_ats_scores (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    job_id UUID REFERENCES public.job_applications(id) ON DELETE CASCADE,
+    application_id UUID REFERENCES public.job_applications(id) ON DELETE CASCADE,
+    platform_id UUID REFERENCES public.ats_platforms(id) ON DELETE SET NULL,
+    platform_name TEXT NOT NULL,
+    score NUMERIC NOT NULL CHECK (score >= 0 AND score <= 100),
+    checked_date DATE DEFAULT CURRENT_DATE,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.job_application_ats_scores ADD COLUMN IF NOT EXISTS job_id UUID REFERENCES public.job_applications(id) ON DELETE CASCADE;
+ALTER TABLE public.job_application_ats_scores ADD COLUMN IF NOT EXISTS application_id UUID REFERENCES public.job_applications(id) ON DELETE CASCADE;
+ALTER TABLE public.job_application_ats_scores ADD COLUMN IF NOT EXISTS platform_id UUID REFERENCES public.ats_platforms(id) ON DELETE SET NULL;
+ALTER TABLE public.job_application_ats_scores ADD COLUMN IF NOT EXISTS platform_name TEXT DEFAULT 'ATS';
+ALTER TABLE public.job_application_ats_scores ADD COLUMN IF NOT EXISTS score NUMERIC DEFAULT 0;
+ALTER TABLE public.job_application_ats_scores ADD COLUMN IF NOT EXISTS checked_date DATE DEFAULT CURRENT_DATE;
+ALTER TABLE public.job_application_ats_scores ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE public.job_application_ats_scores ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+DO $$
+BEGIN
+    ALTER TABLE public.job_application_ats_scores ALTER COLUMN job_id DROP NOT NULL;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    ALTER TABLE public.job_application_ats_scores ALTER COLUMN application_id DROP NOT NULL;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+-- Public SIP Investments table (legacy/compatibility)
+CREATE TABLE IF NOT EXISTS public.sip_investments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    amount NUMERIC NOT NULL,
+    category TEXT DEFAULT 'Mutual Fund',
+    debit_date INTEGER DEFAULT 5,
+    expected_return_rate NUMERIC DEFAULT 12,
+    start_date DATE DEFAULT CURRENT_DATE,
+    user_id UUID DEFAULT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.sip_investments ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'Mutual Fund';
+ALTER TABLE public.sip_investments ADD COLUMN IF NOT EXISTS debit_date INTEGER DEFAULT 5;
+ALTER TABLE public.sip_investments ADD COLUMN IF NOT EXISTS expected_return_rate NUMERIC DEFAULT 12;
+ALTER TABLE public.sip_investments ADD COLUMN IF NOT EXISTS start_date DATE DEFAULT CURRENT_DATE;
+ALTER TABLE public.sip_investments ADD COLUMN IF NOT EXISTS user_id UUID;
+
+-- ------------------------------------------------------------------------------
+-- 9. FINANCE SCHEMA (finance.asset_types, platforms, investments, transactions, sips, valuations)
+-- ------------------------------------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS finance;
+
+CREATE TABLE IF NOT EXISTS finance.asset_types (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE,
+    color TEXT DEFAULT '#3B82F6',
+    category TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS finance.investment_platforms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE,
+    type TEXT DEFAULT 'Broker',
+    url TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS finance.investments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    asset_type_id UUID REFERENCES finance.asset_types(id) ON DELETE SET NULL,
+    platform_id UUID REFERENCES finance.investment_platforms(id) ON DELETE SET NULL,
+    symbol TEXT,
+    currency TEXT DEFAULT 'INR',
+    notes TEXT,
+    extra_configuration JSONB DEFAULT NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS finance.investment_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    investment_id UUID NOT NULL REFERENCES finance.investments(id) ON DELETE CASCADE,
+    transaction_type TEXT NOT NULL DEFAULT 'buy',
+    transaction_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    amount_invested NUMERIC DEFAULT 0,
+    tenure_months INTEGER,
+    interest_rate NUMERIC,
+    maturity_date DATE,
+    quantity NUMERIC DEFAULT 1,
+    price_per_unit NUMERIC DEFAULT 0,
+    total_amount NUMERIC DEFAULT 0,
+    fees NUMERIC DEFAULT 0,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS finance.sip_configs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    investment_id UUID REFERENCES finance.investments(id) ON DELETE SET NULL,
+    name TEXT,
+    amount NUMERIC NOT NULL,
+    sip_day INTEGER DEFAULT 5,
+    is_active BOOLEAN DEFAULT true,
+    frequency TEXT DEFAULT 'monthly',
+    execution_day INTEGER DEFAULT 5,
+    status TEXT DEFAULT 'active',
+    start_date DATE DEFAULT CURRENT_DATE,
+    end_date DATE,
+    last_executed_date DATE,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS finance.investment_valuations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    investment_id UUID REFERENCES finance.investments(id) ON DELETE CASCADE,
+    transaction_id UUID REFERENCES finance.investment_transactions(id) ON DELETE SET NULL,
+    valuation_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    current_value NUMERIC NOT NULL,
+    metadata JSONB DEFAULT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Idempotent column additions for finance schema
+ALTER TABLE finance.asset_types ADD COLUMN IF NOT EXISTS color TEXT DEFAULT '#3B82F6';
+ALTER TABLE finance.asset_types ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'General';
+ALTER TABLE finance.asset_types ADD COLUMN IF NOT EXISTS description TEXT;
+
+ALTER TABLE finance.investment_platforms ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'Broker';
+ALTER TABLE finance.investment_platforms ADD COLUMN IF NOT EXISTS url TEXT;
+
+ALTER TABLE finance.investments ADD COLUMN IF NOT EXISTS asset_type_id UUID REFERENCES finance.asset_types(id) ON DELETE SET NULL;
+ALTER TABLE finance.investments ADD COLUMN IF NOT EXISTS platform_id UUID REFERENCES finance.investment_platforms(id) ON DELETE SET NULL;
+ALTER TABLE finance.investments ADD COLUMN IF NOT EXISTS symbol TEXT;
+ALTER TABLE finance.investments ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'INR';
+ALTER TABLE finance.investments ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE finance.investments ADD COLUMN IF NOT EXISTS extra_configuration JSONB DEFAULT NULL;
+ALTER TABLE finance.investments ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+ALTER TABLE finance.investment_transactions ADD COLUMN IF NOT EXISTS transaction_type TEXT DEFAULT 'buy';
+ALTER TABLE finance.investment_transactions ADD COLUMN IF NOT EXISTS transaction_date DATE DEFAULT CURRENT_DATE;
+ALTER TABLE finance.investment_transactions ADD COLUMN IF NOT EXISTS amount_invested NUMERIC DEFAULT 0;
+ALTER TABLE finance.investment_transactions ADD COLUMN IF NOT EXISTS tenure_months INTEGER;
+ALTER TABLE finance.investment_transactions ADD COLUMN IF NOT EXISTS interest_rate NUMERIC;
+ALTER TABLE finance.investment_transactions ADD COLUMN IF NOT EXISTS maturity_date DATE;
+ALTER TABLE finance.investment_transactions ADD COLUMN IF NOT EXISTS quantity NUMERIC DEFAULT 1;
+ALTER TABLE finance.investment_transactions ADD COLUMN IF NOT EXISTS price_per_unit NUMERIC DEFAULT 0;
+ALTER TABLE finance.investment_transactions ADD COLUMN IF NOT EXISTS total_amount NUMERIC DEFAULT 0;
+ALTER TABLE finance.investment_transactions ADD COLUMN IF NOT EXISTS fees NUMERIC DEFAULT 0;
+ALTER TABLE finance.investment_transactions ADD COLUMN IF NOT EXISTS notes TEXT;
+
+ALTER TABLE finance.sip_configs ADD COLUMN IF NOT EXISTS investment_id UUID REFERENCES finance.investments(id) ON DELETE SET NULL;
+ALTER TABLE finance.sip_configs ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE finance.sip_configs ADD COLUMN IF NOT EXISTS amount NUMERIC DEFAULT 0;
+ALTER TABLE finance.sip_configs ADD COLUMN IF NOT EXISTS sip_day INTEGER DEFAULT 5;
+ALTER TABLE finance.sip_configs ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+ALTER TABLE finance.sip_configs ADD COLUMN IF NOT EXISTS frequency TEXT DEFAULT 'monthly';
+ALTER TABLE finance.sip_configs ADD COLUMN IF NOT EXISTS execution_day INTEGER DEFAULT 5;
+ALTER TABLE finance.sip_configs ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+ALTER TABLE finance.sip_configs ADD COLUMN IF NOT EXISTS start_date DATE DEFAULT CURRENT_DATE;
+ALTER TABLE finance.sip_configs ADD COLUMN IF NOT EXISTS end_date DATE;
+ALTER TABLE finance.sip_configs ADD COLUMN IF NOT EXISTS last_executed_date DATE;
+ALTER TABLE finance.sip_configs ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+ALTER TABLE finance.investment_valuations ADD COLUMN IF NOT EXISTS investment_id UUID REFERENCES finance.investments(id) ON DELETE CASCADE;
+ALTER TABLE finance.investment_valuations ADD COLUMN IF NOT EXISTS transaction_id UUID REFERENCES finance.investment_transactions(id) ON DELETE SET NULL;
+ALTER TABLE finance.investment_valuations ADD COLUMN IF NOT EXISTS valuation_date DATE DEFAULT CURRENT_DATE;
+ALTER TABLE finance.investment_valuations ADD COLUMN IF NOT EXISTS current_value NUMERIC DEFAULT 0;
+ALTER TABLE finance.investment_valuations ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT NULL;
+
+-- Permissions & Grants
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+
+GRANT USAGE ON SCHEMA finance TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA finance TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA finance TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA finance GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA finance GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
+-- 10. ROW LEVEL SECURITY (Permissive demo access)
+-- ------------------------------------------------------------------------------
+DO $$
+DECLARE
+    tbl text;
+BEGIN
+    FOR tbl IN
+        SELECT table_name FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+          AND table_type = 'BASE TABLE'
+          AND table_name NOT LIKE 'pg_%'
+    LOOP
+        EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', tbl);
+        EXECUTE format('DROP POLICY IF EXISTS "Guest public access" ON public.%I;', tbl);
+        EXECUTE format('CREATE POLICY "Guest public access" ON public.%I FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);', tbl);
+    END LOOP;
+
+    FOR tbl IN
+        SELECT table_name FROM information_schema.tables 
+        WHERE table_schema = 'finance' 
+          AND table_type = 'BASE TABLE'
+    LOOP
+        EXECUTE format('ALTER TABLE finance.%I ENABLE ROW LEVEL SECURITY;', tbl);
+        EXECUTE format('DROP POLICY IF EXISTS "Guest public access" ON finance.%I;', tbl);
+        EXECUTE format('CREATE POLICY "Guest public access" ON finance.%I FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);', tbl);
+    END LOOP;
+END $$;
+
+-- ==============================================================================
+-- RICH SAMPLE DATA SEEDING
+-- ==============================================================================
+
+-- 1. Seed Habits (Covers all 4 types: Checked-in, Unchecked, No-frequency total goal, and Custom days)
+DELETE FROM public.habit_completions WHERE habit_id IN (
+    'a1111111-1111-1111-1111-111111111111',
+    'a2222222-2222-2222-2222-222222222222',
+    'a3333333-3333-3333-3333-333333333333',
+    'a4444444-4444-4444-4444-444444444444'
+);
+DELETE FROM public.habits WHERE id IN (
+    'a1111111-1111-1111-1111-111111111111',
+    'a2222222-2222-2222-2222-222222222222',
+    'a3333333-3333-3333-3333-333333333333',
+    'a4444444-4444-4444-4444-444444444444'
+);
+
+INSERT INTO public.habits (id, title, name, color, icon, frequency_type, target_count, target_period, custom_days, goal)
+VALUES
+    -- Type 1: Checked in today (Daily)
+    ('a1111111-1111-1111-1111-111111111111', 'Morning Workout & Stretch', 'Morning Workout & Stretch', '#10B981', 'fitness_center', 'daily', 1, 'weekly', NULL, '45 mins'),
+    -- Type 2: Unchecked today (Daily, ready for user check-in with radio circle)
+    ('a2222222-2222-2222-2222-222222222222', 'Read Technical Book / Whitepaper', 'Read Technical Book / Whitepaper', '#3B82F6', 'menu_book', 'daily', 1, 'weekly', NULL, '20 pages'),
+    -- Type 3: No frequency (Total Goal with stepper counter)
+    ('a3333333-3333-3333-3333-333333333333', 'Complete 10 System Design Cases', 'Complete 10 System Design Cases', '#8B5CF6', 'laptop', 'none', 10, 'total', NULL, '10 cases total'),
+    -- Type 4: Custom days (Mon, Wed, Fri)
+    ('a4444444-4444-4444-4444-444444444444', 'Cold Outreach & Mentorship Calls', 'Cold Outreach & Mentorship Calls', '#06B6D4', 'work', 'custom', 3, 'weekly', ARRAY[1, 3, 5], 'Mon, Wed, Fri')
+ON CONFLICT (id) DO UPDATE SET
+    title = EXCLUDED.title,
+    name = EXCLUDED.name,
+    color = EXCLUDED.color,
+    icon = EXCLUDED.icon,
+    frequency_type = EXCLUDED.frequency_type,
+    target_count = EXCLUDED.target_count,
+    target_period = EXCLUDED.target_period,
+    custom_days = EXCLUDED.custom_days,
+    goal = EXCLUDED.goal;
+
+INSERT INTO public.habit_completions (habit_id, completion_date)
+VALUES
+    ('a1111111-1111-1111-1111-111111111111', CURRENT_DATE),
+    ('a1111111-1111-1111-1111-111111111111', CURRENT_DATE - 1),
+    ('a1111111-1111-1111-1111-111111111111', CURRENT_DATE - 2),
+    ('a2222222-2222-2222-2222-222222222222', CURRENT_DATE - 1),
+    ('a2222222-2222-2222-2222-222222222222', CURRENT_DATE - 2),
+    ('a3333333-3333-3333-3333-333333333333', CURRENT_DATE - 1),
+    ('a3333333-3333-3333-3333-333333333333', CURRENT_DATE - 3),
+    ('a3333333-3333-3333-3333-333333333333', CURRENT_DATE - 5),
+    ('a3333333-3333-3333-3333-333333333333', CURRENT_DATE - 7),
+    ('a4444444-4444-4444-4444-444444444444', CURRENT_DATE - 2)
+ON CONFLICT DO NOTHING;
+
+-- 2. Seed Todos
+INSERT INTO public.todos (title, description, priority, category, status, completed, due_date)
+VALUES
+    ('Conduct Architectural Review for Distributed Cache', 'Evaluate Redis vs Dragonfly for high-throughput user state session cache.', 'high', 'Engineering', 'pending', false, NOW() + INTERVAL '2 days'),
+    ('Prepare Tech Talk Slides: Modern React & Concurrency', 'Highlight React 19 Actions, Server Components, and optimistic state updates.', 'medium', 'Work', 'pending', false, NOW() + INTERVAL '5 days'),
+    ('Review Portfolio Guest Mode Architecture', 'Ensure complete data isolation between guest playground and production database.', 'high', 'Projects', 'completed', true, NOW() - INTERVAL '1 day'),
+    ('Renew Cloud Infrastructure Subscriptions', 'Verify auto-billing on Vercel, Supabase, and AWS staging accounts.', 'low', 'Admin', 'pending', false, NOW() + INTERVAL '10 days')
+ON CONFLICT DO NOTHING;
+
+-- -- 3. Seed Notes & Tags
+INSERT INTO public.tags (name, color) VALUES
+    ('Architecture', '#6366F1'),
+    ('Productivity', '#10B981'),
+    ('Distributed Systems', '#F59E0B')
+ON CONFLICT (name) DO UPDATE SET color = EXCLUDED.color;
+
+INSERT INTO public.notes (id, title, content, tags, category, is_pinned)
+VALUES
+    (
+        '00000000-0000-0000-0000-000000000010',
+        'Distributed Systems: CAP Theorem & Consistency Models',
+        '### Core Principles of Distributed Storage\n\n- **Consistency**: Every read receives the most recent write or an error.\n- **Availability**: Every request receives a non-error response, without guarantee that it contains the most recent write.\n- **Partition Tolerance**: The system continues to operate despite an arbitrary number of messages being dropped or delayed.\n\n> In practice, modern systems tune PACELC trade-offs (e.g. latency vs consistency under normal operation).',
+        ARRAY['distributed-systems', 'architecture', 'backend'],
+        'Architecture',
+        true
+    ),
+    (
+        '00000000-0000-0000-0000-000000000020',
+        'Productivity: The 4-Hour Deep Work Block Framework',
+        '### Deep Work Protocol\n\n1. **Morning Block (08:30 - 11:30)**: Zero notifications, zero email, uninterrupted complex problem solving.\n2. **Break (11:30 - 13:00)**: Physical movement, nutrition, disconnection.\n3. **Afternoon Block (13:30 - 15:30)**: Collaborative meetings, PR reviews, documentation.\n\n*Results: 3x output with dramatically reduced cognitive fatigue.*',
+        ARRAY['productivity', 'habits', 'deep-work'],
+        'Self-Improvement',
+        false
+    )
+ON CONFLICT (id) DO UPDATE SET
+    title = EXCLUDED.title,
+    content = EXCLUDED.content,
+    tags = EXCLUDED.tags,
+    category = EXCLUDED.category,
+    is_pinned = EXCLUDED.is_pinned;
+
+-- Clean and re-link note tags using dynamic lookup by tag name
+DELETE FROM public.note_tags WHERE note_id IN (
+    '00000000-0000-0000-0000-000000000010',
+    '00000000-0000-0000-0000-000000000020'
+);
+
+INSERT INTO public.note_tags (note_id, tag_id)
+SELECT n.id, t.id
+FROM public.notes n
+JOIN public.tags t ON (
+    (n.title LIKE 'Distributed Systems%' AND t.name IN ('Architecture', 'Distributed Systems'))
+    OR (n.title LIKE 'Productivity%' AND t.name = 'Productivity')
+)
+WHERE n.id IN ('00000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000020')
+ON CONFLICT (note_id, tag_id) DO NOTHING;
+
+-- 4. Seed Journal
+INSERT INTO public.journal_entries (date, content, mood, tags, word_count) VALUES
+    (CURRENT_DATE, 'Shipped major updates to the portfolio platform today! Refined the UI components and added interactive tutorials.', 'accomplished', ARRAY['Tech', 'Portfolio', 'Release'], 210),
+    (CURRENT_DATE - INTERVAL '1 day', 'Deep dive into database architecture and caching strategies. Good progress on performance benchmarks.', 'productive', ARRAY['Learning', 'System Design'], 180),
+    (CURRENT_DATE - INTERVAL '2 days', 'Reflected on quarterly milestones and mapped out new goals for upcoming open-source projects.', 'inspired', ARRAY['Reflection', 'Planning'], 150)
+ON CONFLICT (date) DO UPDATE SET
+    content = EXCLUDED.content,
+    mood = EXCLUDED.mood,
+    tags = EXCLUDED.tags,
+    word_count = EXCLUDED.word_count;
+
+-- 5. Seed Lessons Learned (5 categories, 6 rich lessons with detailed context & takeaways)
+INSERT INTO public.lesson_categories (name, color) VALUES
+    ('System Architecture', '#6366F1'),
+    ('Leadership & Teamwork', '#10B981'),
+    ('Product & Prioritization', '#F59E0B'),
+    ('Incident Resiliency', '#EF4444'),
+    ('Career & Mindset', '#8B5CF6')
+ON CONFLICT (name) DO UPDATE SET color = EXCLUDED.color;
+
+DELETE FROM public.lessons WHERE title IN (
+    'Premature Optimization vs Architecture Scalability',
+    'Async Communication Beats Synchronous Status Meetings',
+    'The Trap of the "One More Feature" Release Cycle',
+    'Blameless Post-Mortems Build Resilient Systems',
+    'Technical Debt is a Financial Debt: Plan for Interest Payments',
+    'Saying "No" Gracefully is a Senior Engineer''s Primary Superpower'
+);
+
+INSERT INTO public.lessons (title, description, takeaways, content, category_id) VALUES
+    (
+        'Premature Optimization vs Architecture Scalability',
+        'Attempted to build a complex multi-region sharding layer before the product had validated real bottleneck requirements. Added 4 months of engineering overhead for negligible throughput gain.',
+        'Design for clean modular boundaries first. Keep data storage simple (PostgreSQL) until measured load proves horizontal sharding is required.',
+        'Attempted to build a complex multi-region sharding layer before the product had validated real bottleneck requirements. Added 4 months of engineering overhead for negligible throughput gain.',
+        (SELECT id FROM public.lesson_categories WHERE name = 'System Architecture' LIMIT 1)
+    ),
+    (
+        'Async Communication Beats Synchronous Status Meetings',
+        'Weekly round-robin status calls were draining team momentum without surfacing blockers fast enough. Engineers prepared defensive updates instead of collaborating.',
+        'Adopted daily async bullet-point updates with explicit blocker tags. Reserved live meetings strictly for brainstorms and collaborative architecture.',
+        'Weekly round-robin status calls were draining team momentum without surfacing blockers fast enough. Engineers prepared defensive updates instead of collaborating.',
+        (SELECT id FROM public.lesson_categories WHERE name = 'Leadership & Teamwork' LIMIT 1)
+    ),
+    (
+        'The Trap of the "One More Feature" Release Cycle',
+        'Delayed a major client dashboard launch by 6 weeks trying to squeeze in export-to-PDF and dark mode toggles. Early customer feedback on core workflows was needlessly delayed.',
+        'Ship the thinnest slice that creates end-to-end customer utility. Real customer validation always disproves half of your anticipated follow-up feature hypotheses.',
+        'Delayed a major client dashboard launch by 6 weeks trying to squeeze in export-to-PDF and dark mode toggles. Early customer feedback on core workflows was needlessly delayed.',
+        (SELECT id FROM public.lesson_categories WHERE name = 'Product & Prioritization' LIMIT 1)
+    ),
+    (
+        'Blameless Post-Mortems Build Resilient Systems',
+        'A critical Redis cache eviction cascading outage caused 45 minutes of API 502 errors. The initial instinct was to question why the deploying engineer missed the connection pool limit.',
+        'Focus on systemic safeguards rather than human error. Human mistakes reveal missing guardrails, circuit breakers, and load shedding tests. Added automated canary deployments and synthetic stress tests.',
+        'A critical Redis cache eviction cascading outage caused 45 minutes of API 502 errors. The initial instinct was to question why the deploying engineer missed the connection pool limit.',
+        (SELECT id FROM public.lesson_categories WHERE name = 'Incident Resiliency' LIMIT 1)
+    ),
+    (
+        'Technical Debt is a Financial Debt: Plan for Interest Payments',
+        'Rushed a prototype notification system with hardcoded SQL and tight database couplings. Six months later, adding push notifications took 3x longer than building from scratch.',
+        'Every shortcut borrows velocity from future sprints. Log tech-debt tickets immediately, assign estimated interest cost, and reserve 20% of every sprint cycle for refactoring.',
+        'Rushed a prototype notification system with hardcoded SQL and tight database couplings. Six months later, adding push notifications took 3x longer than building from scratch.',
+        (SELECT id FROM public.lesson_categories WHERE name = 'System Architecture' LIMIT 1)
+    ),
+    (
+        'Saying "No" Gracefully is a Senior Engineer''s Primary Superpower',
+        'Said yes to 5 concurrent cross-team initiatives, leading to context-switching fatigue and slipping deadlines across 3 major deliverables.',
+        'High-leverage execution requires ruthless focus. Saying no to good ideas is necessary to preserve energy and excellence for the great ones. Offer alternative paths or clear trade-off assessments when declining.',
+        'Said yes to 5 concurrent cross-team initiatives, leading to context-switching fatigue and slipping deadlines across 3 major deliverables.',
+        (SELECT id FROM public.lesson_categories WHERE name = 'Career & Mindset' LIMIT 1)
+    );
+
+-- 6. Seed Movies & Platforms
+INSERT INTO public.movies_categories (name, color) VALUES
+    ('Sci-Fi', '#8B5CF6'),
+    ('Thriller', '#EC4899'),
+    ('Drama', '#F59E0B')
+ON CONFLICT (name) DO UPDATE SET color = EXCLUDED.color;
+
+INSERT INTO public.movies_platforms (name, icon, enabled, is_default) VALUES
+    ('Netflix', 'Tv', true, true),
+    ('Prime Video', 'Film', true, false),
+    ('Apple TV+', 'Monitor', true, false)
+ON CONFLICT (name) DO UPDATE SET icon = EXCLUDED.icon;
+
+DELETE FROM public.movies_tv WHERE title IN ('Inception', 'Interstellar', 'Oppenheimer');
+
+INSERT INTO public.movies_tv (title, type, imdb_rating, status, personal_rating, review, year, release_year, director, genre, plot, platform_id, category_id) VALUES
+    ('Inception', 'movie', 8.8, 'watched', 9.5, 'Masterpiece of cerebral cinema and sound design.', 2010, 2010, 'Christopher Nolan', 'Action, Sci-Fi', 'A thief who steals corporate secrets through dream-sharing technology.', (SELECT id FROM public.movies_platforms WHERE name = 'Netflix' LIMIT 1), (SELECT id FROM public.movies_categories WHERE name = 'Sci-Fi' LIMIT 1)),
+    ('Interstellar', 'movie', 8.7, 'watched', 10.0, 'Emotionally resonant and visually stunning sci-fi journey.', 2014, 2014, 'Christopher Nolan', 'Adventure, Drama, Sci-Fi', 'A team of explorers travel through a wormhole in space in an attempt to ensure humanity survival.', (SELECT id FROM public.movies_platforms WHERE name = 'Prime Video' LIMIT 1), (SELECT id FROM public.movies_categories WHERE name = 'Sci-Fi' LIMIT 1)),
+    ('Oppenheimer', 'movie', 8.9, 'watched', 9.2, 'Incredible performances, psychological tension, and pacing.', 2023, 2023, 'Christopher Nolan', 'Biography, Drama, History', 'The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb.', (SELECT id FROM public.movies_platforms WHERE name = 'Prime Video' LIMIT 1), (SELECT id FROM public.movies_categories WHERE name = 'Drama' LIMIT 1));
+
+-- 7. Seed Revision & Spaced Repetition (5 categories, 7 diverse technical topics)
+INSERT INTO public.revision_category (name, color) VALUES
+    ('System Design', '#8B5CF6'),
+    ('Databases & Storage', '#3B82F6'),
+    ('Frontend Architecture', '#10B981'),
+    ('Networking & Security', '#F59E0B'),
+    ('Algorithms & Concurrency', '#EC4899')
+ON CONFLICT (name) DO UPDATE SET color = EXCLUDED.color;
+
+DELETE FROM public.revision_element WHERE title IN (
+    'Consistent Hashing & Virtual Nodes',
+    'Database Isolation Levels: Phantom vs Non-Repeatable Reads',
+    'React Fiber Reconciler & Concurrent Rendering',
+    'Raft Consensus: Leader Election & Log Replication',
+    'LSM Trees vs B+ Trees: Write vs Read Amplification',
+    'TLS 1.3 0-RTT & TCP Connection Termination',
+    'Actor Model vs CSP (Communicating Sequential Processes)',
+    'Raft Consensus Protocol: Leader Election & Log Replication',
+    'Postgres VACUUM & MVCC Architecture',
+    'WebSockets vs Server-Sent Events (SSE) vs HTTP/2 Long Polling',
+    'Cache Invalidation Strategies: Write-Through vs Write-Back'
+) OR name IN (
+    'Consistent Hashing & Virtual Nodes',
+    'Database Isolation Levels: Phantom vs Non-Repeatable Reads',
+    'React Fiber Reconciler & Concurrent Rendering',
+    'Raft Consensus: Leader Election & Log Replication',
+    'LSM Trees vs B+ Trees: Write vs Read Amplification',
+    'TLS 1.3 0-RTT & TCP Connection Termination',
+    'Actor Model vs CSP (Communicating Sequential Processes)',
+    'Raft Consensus Protocol: Leader Election & Log Replication',
+    'Postgres VACUUM & MVCC Architecture',
+    'WebSockets vs Server-Sent Events (SSE) vs HTTP/2 Long Polling',
+    'Cache Invalidation Strategies: Write-Through vs Write-Back'
+);
+
+INSERT INTO public.revision_element (title, name, content, category_id, difficulty, review_count, count, interval_days, next_review_date)
+VALUES (
+    'Consistent Hashing & Virtual Nodes',
+    'Consistent Hashing & Virtual Nodes',
+    'Consistent hashing maps both keys and nodes to a circular hash ring (0 to 2^32-1). Virtual nodes (vnodes) assign multiple points per physical server to ensure uniform key distribution and minimize hotspotting when nodes join or fail.',
+    (SELECT id FROM public.revision_category WHERE name = 'System Design' LIMIT 1),
+    'easy', 4, 4, 7, NOW() + INTERVAL '3 days'
+);
+
+INSERT INTO public.revision_element (title, name, content, category_id, difficulty, review_count, count, interval_days, next_review_date)
+VALUES (
+    'Database Isolation Levels: Phantom vs Non-Repeatable Reads',
+    'Database Isolation Levels: Phantom vs Non-Repeatable Reads',
+    'Non-repeatable read occurs when row data changes between reads within a transaction. Phantom read occurs when the set of rows matching a WHERE clause changes (due to INSERT/DELETE by another transaction). Serializable isolation prevents both using predicate locks or snapshot isolation.',
+    (SELECT id FROM public.revision_category WHERE name = 'Databases & Storage' LIMIT 1),
+    'medium', 2, 2, 3, NOW() + INTERVAL '1 day'
+);
+
+INSERT INTO public.revision_element (title, name, content, category_id, difficulty, review_count, count, interval_days, next_review_date)
+VALUES (
+    'React Fiber Reconciler & Concurrent Rendering',
+    'React Fiber Reconciler & Concurrent Rendering',
+    'React Fiber decomposes reconciliation into fine-grained units of work (fibers). It decouples the work phase (interruptible, priority-based lanes) from the commit phase (synchronous DOM mutations), enabling features like useTransition and selective hydration.',
+    (SELECT id FROM public.revision_category WHERE name = 'Frontend Architecture' LIMIT 1),
+    'hard', 3, 3, 4, NOW() + INTERVAL '2 days'
+);
+
+INSERT INTO public.revision_element (title, name, content, category_id, difficulty, review_count, count, interval_days, next_review_date)
+VALUES (
+    'Raft Consensus: Leader Election & Log Replication',
+    'Raft Consensus: Leader Election & Log Replication',
+    'Raft decomposes consensus into 3 subproblems: Leader Election (randomized election timers between 150-300ms to avoid split votes), Log Replication (leader appends entries and commits upon quorum ACK), and Safety (leader completeness guarantees committed entries are never overridden).',
+    (SELECT id FROM public.revision_category WHERE name = 'System Design' LIMIT 1),
+    'hard', 1, 1, 2, NOW() + INTERVAL '1 day'
+);
+
+INSERT INTO public.revision_element (title, name, content, category_id, difficulty, review_count, count, interval_days, next_review_date)
+VALUES (
+    'LSM Trees vs B+ Trees: Write vs Read Amplification',
+    'LSM Trees vs B+ Trees: Write vs Read Amplification',
+    'LSM Trees (RocksDB, Cassandra) optimize for sequential write throughput via append-only MemTable and SSTables, trading read performance (compaction, bloom filters). B+ Trees (PostgreSQL, InnoDB) optimize for fast reads with fixed-size pages and in-place updates, paying higher write amplification.',
+    (SELECT id FROM public.revision_category WHERE name = 'Databases & Storage' LIMIT 1),
+    'medium', 3, 3, 6, NOW() + INTERVAL '5 days'
+);
+
+INSERT INTO public.revision_element (title, name, content, category_id, difficulty, review_count, count, interval_days, next_review_date)
+VALUES (
+    'TLS 1.3 0-RTT & TCP Connection Termination',
+    'TLS 1.3 0-RTT & TCP Connection Termination',
+    'TLS 1.3 reduces the handshake to 1 round-trip (1-RTT) by combining crypto parameter negotiation with key exchange. Pre-shared keys enable 0-RTT resumption (with replay attack trade-offs). TCP closes gracefully with a 4-way FIN/ACK handshake and TIME_WAIT (2*MSL) to drain lingering segments.',
+    (SELECT id FROM public.revision_category WHERE name = 'Networking & Security' LIMIT 1),
+    'medium', 2, 2, 5, NOW() + INTERVAL '4 days'
+);
+
+INSERT INTO public.revision_element (title, name, content, category_id, difficulty, review_count, count, interval_days, next_review_date)
+VALUES (
+    'Actor Model vs CSP (Communicating Sequential Processes)',
+    'Actor Model vs CSP (Communicating Sequential Processes)',
+    'Actor Model (Erlang, Akka) communicates via mailbox-addressed asynchronous messages with dynamic topology. CSP (Go channels) communicates via first-class rendezvous channels where sender and receiver synchronize over the channel itself without direct actor knowledge.',
+    (SELECT id FROM public.revision_category WHERE name = 'Algorithms & Concurrency' LIMIT 1),
+    'hard', 2, 2, 3, NOW() + INTERVAL '1 day'
+);
+
+-- Point category current elements
+UPDATE public.revision_category rc
+SET curr_element_id = (
+    SELECT re.id FROM public.revision_element re 
+    WHERE re.category_id = rc.id 
+    ORDER BY re.created_at ASC LIMIT 1
+);
+
+-- 8. Seed Finance Schema (8 Core Asset Types, Platforms, Investments, Transactions, Valuations & SIPs)
+INSERT INTO finance.asset_types (name, color, category, description) VALUES
+    ('Mutual Funds & Index Funds', '#3B82F6', 'Equity', 'Diversified equity funds & index trackers'),
+    ('Direct Equity & ETFs', '#10B981', 'Equity', 'Individual stocks & thematic baskets'),
+    ('Fixed Deposits & Bonds', '#6366F1', 'Debt', 'Capital protection fixed-yield instruments'),
+    ('EPF & Provident Funds', '#8B5CF6', 'Retirement', 'Compulsory retirement provident fund'),
+    ('Gold & Commodities', '#F59E0B', 'Commodity', 'Sovereign gold bonds & precious metals'),
+    ('Crypto & Digital Assets', '#EC4899', 'Crypto', 'Decentralized protocol tokens & staking'),
+    ('REITs & Real Estate', '#14B8A6', 'Real Estate', 'Commercial office & warehouse REITs'),
+    ('Liquid Cash & Savings', '#06B6D4', 'Cash', 'Emergency reserve in high-yield account')
+ON CONFLICT (name) DO UPDATE SET
+    color = EXCLUDED.color,
+    category = EXCLUDED.category,
+    description = EXCLUDED.description;
+
+INSERT INTO finance.investment_platforms (name, type, url) VALUES
+    ('Zerodha (Coin/Kite)', 'Broker', 'https://kite.zerodha.com'),
+    ('Groww', 'Broker', 'https://groww.in'),
+    ('HDFC Bank', 'Bank', 'https://hdfcbank.com'),
+    ('EPFO India', 'Retirement', 'https://epfindia.gov.in'),
+    ('Binance / Vault', 'Exchange', 'https://binance.com')
+ON CONFLICT (name) DO UPDATE SET
+    type = EXCLUDED.type,
+    url = EXCLUDED.url;
+
+-- Clean existing sample finance investments (and cascade to tx, val, sip)
+DELETE FROM finance.investments WHERE name IN (
+    'UTI Nifty 50 Index Fund Direct Growth',
+    'Parag Parikh Flexi Cap Fund',
+    'Midcap High-Beta Momentum Basket',
+    'Clean Energy & Solar Thematic ETF',
+    'HDFC Bank Fixed Deposit (7.25% p.a.)',
+    'Employee Provident Fund (EPF)',
+    'Sovereign Gold Bond 2023 Series III',
+    'Ethereum (ETH) Staking Vault',
+    'Brookfield India Real Estate Trust (REIT)',
+    'Emergency Cash Reserve (High-Yield Savings)'
+);
+
+INSERT INTO finance.investments (name, asset_type_id, platform_id, notes, extra_configuration) VALUES
+    ('UTI Nifty 50 Index Fund Direct Growth', (SELECT id FROM finance.asset_types WHERE name = 'Mutual Funds & Index Funds' LIMIT 1), (SELECT id FROM finance.investment_platforms WHERE name = 'Zerodha (Coin/Kite)' LIMIT 1), 'Core long-term index allocation (Nifty 50)', '{"mf_scheme_code":"120716"}'::jsonb),
+    ('Parag Parikh Flexi Cap Fund', (SELECT id FROM finance.asset_types WHERE name = 'Mutual Funds & Index Funds' LIMIT 1), (SELECT id FROM finance.investment_platforms WHERE name = 'Groww' LIMIT 1), 'Active diversified equity with global exposure', '{"mf_scheme_code":"122639"}'::jsonb),
+    ('Midcap High-Beta Momentum Basket', (SELECT id FROM finance.asset_types WHERE name = 'Direct Equity & ETFs' LIMIT 1), (SELECT id FROM finance.investment_platforms WHERE name = 'Zerodha (Coin/Kite)' LIMIT 1), 'Smallcase thematic basket (underperforming post-correction)', NULL),
+    ('Clean Energy & Solar Thematic ETF', (SELECT id FROM finance.asset_types WHERE name = 'Direct Equity & ETFs' LIMIT 1), (SELECT id FROM finance.investment_platforms WHERE name = 'Zerodha (Coin/Kite)' LIMIT 1), 'Clean energy transition ETF (cyclical headwind)', NULL),
+    ('HDFC Bank Fixed Deposit (7.25% p.a.)', (SELECT id FROM finance.asset_types WHERE name = 'Fixed Deposits & Bonds' LIMIT 1), (SELECT id FROM finance.investment_platforms WHERE name = 'HDFC Bank' LIMIT 1), '18-month senior term deposit', NULL),
+    ('Employee Provident Fund (EPF)', (SELECT id FROM finance.asset_types WHERE name = 'EPF & Provident Funds' LIMIT 1), (SELECT id FROM finance.investment_platforms WHERE name = 'EPFO India' LIMIT 1), 'Statutory retirement contribution (8.25% interest rate)', NULL),
+    ('Sovereign Gold Bond 2023 Series III', (SELECT id FROM finance.asset_types WHERE name = 'Gold & Commodities' LIMIT 1), (SELECT id FROM finance.investment_platforms WHERE name = 'Zerodha (Coin/Kite)' LIMIT 1), 'RBI SGB yielding 2.5% semi-annual coupon + capital appreciation', NULL),
+    ('Ethereum (ETH) Staking Vault', (SELECT id FROM finance.asset_types WHERE name = 'Crypto & Digital Assets' LIMIT 1), (SELECT id FROM finance.investment_platforms WHERE name = 'Binance / Vault' LIMIT 1), 'Lido staked ETH (bought during mid-cycle top)', '{"coin_id":"ethereum"}'::jsonb),
+    ('Brookfield India Real Estate Trust (REIT)', (SELECT id FROM finance.asset_types WHERE name = 'REITs & Real Estate' LIMIT 1), (SELECT id FROM finance.investment_platforms WHERE name = 'Groww' LIMIT 1), 'Grade-A office parks commercial REIT with quarterly distribution', NULL),
+    ('Emergency Cash Reserve (High-Yield Savings)', (SELECT id FROM finance.asset_types WHERE name = 'Liquid Cash & Savings' LIMIT 1), (SELECT id FROM finance.investment_platforms WHERE name = 'HDFC Bank' LIMIT 1), '6-month liquidity buffer', NULL);
+
+-- Seed transactions (invested principal)
+INSERT INTO finance.investment_transactions (investment_id, transaction_type, transaction_date, amount_invested, total_amount, tenure_months, interest_rate, maturity_date) VALUES
+    ((SELECT id FROM finance.investments WHERE name = 'UTI Nifty 50 Index Fund Direct Growth' LIMIT 1), 'buy', CURRENT_DATE - 365, 150000, 150000, NULL, NULL, NULL),
+    ((SELECT id FROM finance.investments WHERE name = 'Parag Parikh Flexi Cap Fund' LIMIT 1), 'buy', CURRENT_DATE - 300, 120000, 120000, NULL, NULL, NULL),
+    ((SELECT id FROM finance.investments WHERE name = 'Midcap High-Beta Momentum Basket' LIMIT 1), 'buy', CURRENT_DATE - 180, 60000, 60000, NULL, NULL, NULL),
+    ((SELECT id FROM finance.investments WHERE name = 'Clean Energy & Solar Thematic ETF' LIMIT 1), 'buy', CURRENT_DATE - 210, 80000, 80000, NULL, NULL, NULL),
+    ((SELECT id FROM finance.investments WHERE name = 'HDFC Bank Fixed Deposit (7.25% p.a.)' LIMIT 1), 'buy', CURRENT_DATE - 240, 100000, 100000, 18, 7.25, CURRENT_DATE + 300),
+    ((SELECT id FROM finance.investments WHERE name = 'Employee Provident Fund (EPF)' LIMIT 1), 'buy', CURRENT_DATE - 500, 240000, 240000, NULL, 8.25, NULL),
+    ((SELECT id FROM finance.investments WHERE name = 'Sovereign Gold Bond 2023 Series III' LIMIT 1), 'buy', CURRENT_DATE - 270, 65000, 65000, 96, 2.50, CURRENT_DATE + 2600),
+    ((SELECT id FROM finance.investments WHERE name = 'Ethereum (ETH) Staking Vault' LIMIT 1), 'buy', CURRENT_DATE - 120, 110000, 110000, NULL, NULL, NULL),
+    ((SELECT id FROM finance.investments WHERE name = 'Brookfield India Real Estate Trust (REIT)' LIMIT 1), 'buy', CURRENT_DATE - 150, 75000, 75000, NULL, NULL, NULL),
+    ((SELECT id FROM finance.investments WHERE name = 'Emergency Cash Reserve (High-Yield Savings)' LIMIT 1), 'buy', CURRENT_DATE - 400, 150000, 150000, NULL, 3.50, NULL);
+
+-- Seed valuations: Positive gains and negative losses across asset types
+INSERT INTO finance.investment_valuations (investment_id, valuation_date, current_value) VALUES
+    ((SELECT id FROM finance.investments WHERE name = 'UTI Nifty 50 Index Fund Direct Growth' LIMIT 1), CURRENT_DATE, 186500),
+    ((SELECT id FROM finance.investments WHERE name = 'Parag Parikh Flexi Cap Fund' LIMIT 1), CURRENT_DATE, 148200),
+    ((SELECT id FROM finance.investments WHERE name = 'Midcap High-Beta Momentum Basket' LIMIT 1), CURRENT_DATE, 53100),
+    ((SELECT id FROM finance.investments WHERE name = 'Clean Energy & Solar Thematic ETF' LIMIT 1), CURRENT_DATE, 68400),
+    ((SELECT id FROM finance.investments WHERE name = 'HDFC Bank Fixed Deposit (7.25% p.a.)' LIMIT 1), CURRENT_DATE, 107250),
+    ((SELECT id FROM finance.investments WHERE name = 'Employee Provident Fund (EPF)' LIMIT 1), CURRENT_DATE, 268800),
+    ((SELECT id FROM finance.investments WHERE name = 'Sovereign Gold Bond 2023 Series III' LIMIT 1), CURRENT_DATE, 82400),
+    ((SELECT id FROM finance.investments WHERE name = 'Ethereum (ETH) Staking Vault' LIMIT 1), CURRENT_DATE, 94600),
+    ((SELECT id FROM finance.investments WHERE name = 'Brookfield India Real Estate Trust (REIT)' LIMIT 1), CURRENT_DATE, 79800),
+    ((SELECT id FROM finance.investments WHERE name = 'Emergency Cash Reserve (High-Yield Savings)' LIMIT 1), CURRENT_DATE, 154500);
+
+-- Seed SIP configurations
+INSERT INTO finance.sip_configs (investment_id, name, amount, sip_day, execution_day, is_active, frequency, status, start_date) VALUES
+    ((SELECT id FROM finance.investments WHERE name = 'UTI Nifty 50 Index Fund Direct Growth' LIMIT 1), 'UTI Nifty 50 Monthly SIP', 15000, 5, 5, true, 'monthly', 'active', CURRENT_DATE - 365),
+    ((SELECT id FROM finance.investments WHERE name = 'Parag Parikh Flexi Cap Fund' LIMIT 1), 'PPFCF Monthly SIP', 10000, 10, 10, true, 'monthly', 'active', CURRENT_DATE - 300),
+    ((SELECT id FROM finance.investments WHERE name = 'Emergency Cash Reserve (High-Yield Savings)' LIMIT 1), 'Emergency Cash Monthly Allocation', 5000, 1, 1, true, 'monthly', 'active', CURRENT_DATE - 400);
+
+-- Compatibility public SIP records
+DELETE FROM public.sip_investments WHERE name IN (
+    'UTI Nifty 50 Index Fund Direct Growth',
+    'Parag Parikh Flexi Cap Fund',
+    'Emergency Cash Reserve'
+);
+
+INSERT INTO public.sip_investments (name, amount, category, debit_date, expected_return_rate) VALUES
+    ('UTI Nifty 50 Index Fund Direct Growth', 15000, 'Index Fund', 5, 12.5),
+    ('Parag Parikh Flexi Cap Fund', 10000, 'Equity Flexi Cap', 10, 14.0),
+    ('Emergency Cash Reserve', 5000, 'Cash / Liquid', 1, 4.0);
+
+-- 9. Seed Job Tracker
+INSERT INTO public.ats_platforms (name, url, is_default) VALUES
+    ('ChatGPT', 'https://chatgpt.com', true),
+    ('Jobscan', 'https://jobscan.co', false),
+    ('Resume Worded', 'https://resumeworded.com', false),
+    ('Teal', 'https://tealhq.com', false)
+ON CONFLICT (name) DO UPDATE SET url = EXCLUDED.url;
+
+INSERT INTO public.job_platforms (name, url, is_active) VALUES
+    ('LinkedIn', 'https://linkedin.com/jobs', true),
+    ('Wellfound (AngelList)', 'https://wellfound.com/jobs', true),
+    ('Ashby', 'https://ashbyhq.com', true),
+    ('Indeed', 'https://indeed.com', true)
+ON CONFLICT (name) DO UPDATE SET url = EXCLUDED.url;
+
+DELETE FROM public.job_applications WHERE company_name IN ('Stripe', 'Vercel', 'Figma');
+
+INSERT INTO public.job_applications (
+    company_name, role_name, status, job_type, city, country,
+    salary_min_inr, salary_max_inr, salary_currency, application_link,
+    applied_date, ats_score, follow_ups, notes, platform, platform_id
+)
+VALUES
+    (
+        'Stripe',
+        'Senior Full Stack Engineer (Core Infra)',
+        'interviewing',
+        'Remote',
+        'Bengaluru',
+        'India',
+        4200000,
+        5200000,
+        'INR',
+        'https://stripe.com/jobs',
+        CURRENT_DATE - 12,
+        88,
+        '[{"id":"fu_1","date":"2026-09-08","type":"Email","notes":"Recruiter screen completed. Advanced to Technical Deep Dive round."},{"id":"fu_2","date":"2026-09-11","type":"Phone Call","notes":"Reviewed System Architecture expectations with hiring manager."}]'::jsonb,
+        'Tailored resume with emphasis on distributed ledger and payments transaction reliability.',
+        'LinkedIn',
+        (SELECT id FROM public.job_platforms WHERE name = 'LinkedIn' LIMIT 1)
+    ),
+    (
+        'Vercel',
+        'Staff Frontend Engineer (Developer Experience)',
+        'applied',
+        'Remote',
+        'San Francisco',
+        'United States',
+        5000000,
+        6500000,
+        'INR',
+        'https://vercel.com/careers',
+        CURRENT_DATE - 4,
+        92,
+        '[{"id":"fu_3","date":"2026-09-10","type":"LinkedIn","notes":"Sent connection request and personalized note to the VP of Engineering."}]'::jsonb,
+        'Highlighted React performance optimization, next.js server components, and bundle analysis.',
+        'Ashby',
+        (SELECT id FROM public.job_platforms WHERE name = 'Ashby' LIMIT 1)
+    ),
+    (
+        'Figma',
+        'Lead Platform Engineer',
+        'offered',
+        'Hybrid',
+        'London',
+        'United Kingdom',
+        6000000,
+        7500000,
+        'INR',
+        'https://figma.com/careers',
+        CURRENT_DATE - 28,
+        85,
+        '[{"id":"fu_4","date":"2026-09-05","type":"Email","notes":"Offer letter received! Reviewing compensation package and equity grants."}]'::jsonb,
+        'Strong alignment with real-time multiplayer WebAssembly and CRDT synchronization.',
+        'Wellfound (AngelList)',
+        (SELECT id FROM public.job_platforms WHERE name = 'Wellfound (AngelList)' LIMIT 1)
+    );
+
+DELETE FROM public.job_application_ats_scores WHERE job_id IN (
+    SELECT id FROM public.job_applications WHERE company_name IN ('Stripe', 'Vercel', 'Figma')
+) OR application_id IN (
+    SELECT id FROM public.job_applications WHERE company_name IN ('Stripe', 'Vercel', 'Figma')
+);
+
+INSERT INTO public.job_application_ats_scores (job_id, application_id, platform_id, platform_name, score) VALUES
+    ((SELECT id FROM public.job_applications WHERE company_name = 'Stripe' LIMIT 1), (SELECT id FROM public.job_applications WHERE company_name = 'Stripe' LIMIT 1), (SELECT id FROM public.ats_platforms WHERE name = 'ChatGPT' LIMIT 1), 'ChatGPT', 90),
+    ((SELECT id FROM public.job_applications WHERE company_name = 'Stripe' LIMIT 1), (SELECT id FROM public.job_applications WHERE company_name = 'Stripe' LIMIT 1), (SELECT id FROM public.ats_platforms WHERE name = 'Jobscan' LIMIT 1), 'Jobscan', 86),
+    ((SELECT id FROM public.job_applications WHERE company_name = 'Vercel' LIMIT 1), (SELECT id FROM public.job_applications WHERE company_name = 'Vercel' LIMIT 1), (SELECT id FROM public.ats_platforms WHERE name = 'ChatGPT' LIMIT 1), 'ChatGPT', 94),
+    ((SELECT id FROM public.job_applications WHERE company_name = 'Vercel' LIMIT 1), (SELECT id FROM public.job_applications WHERE company_name = 'Vercel' LIMIT 1), (SELECT id FROM public.ats_platforms WHERE name = 'Jobscan' LIMIT 1), 'Jobscan', 90),
+    ((SELECT id FROM public.job_applications WHERE company_name = 'Figma' LIMIT 1), (SELECT id FROM public.job_applications WHERE company_name = 'Figma' LIMIT 1), (SELECT id FROM public.ats_platforms WHERE name = 'ChatGPT' LIMIT 1), 'ChatGPT', 88),
+    ((SELECT id FROM public.job_applications WHERE company_name = 'Figma' LIMIT 1), (SELECT id FROM public.job_applications WHERE company_name = 'Figma' LIMIT 1), (SELECT id FROM public.ats_platforms WHERE name = 'Resume Worded' LIMIT 1), 'Resume Worded', 82);
+
+DELETE FROM public.saved_job_links WHERE company_name IN ('Datadog', 'Linear');
+
+INSERT INTO public.saved_job_links (company_name, role_name, url, source, status, salary, location) VALUES
+    ('Datadog', 'Senior Distributed Systems Engineer', 'https://datadoghq.com/careers', 'LinkedIn', 'to_apply', '45 - 55 LPA', 'Remote, India'),
+    ('Linear', 'Full Stack Product Engineer', 'https://linear.app/careers', 'Wellfound (AngelList)', 'researching', '50 - 65 LPA', 'Remote Worldwide');
+
+-- Success confirmation
+SELECT 'Guest database setup and sample data seed completed successfully!' as status;

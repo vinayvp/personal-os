@@ -33,6 +33,7 @@ const NotesApp = () => {
 
   const fetchNotes = async () => {
     try {
+      let notesData: any[] | null = null;
       const { data, error } = await supabase
         .from('notes')
         .select(`
@@ -43,12 +44,21 @@ const NotesApp = () => {
         `)
         .order('updated_at', { ascending: false });
 
-      if (error) throw error;
+      if (!error && data) {
+        notesData = data;
+      } else {
+        const simpleRes = await supabase
+          .from('notes')
+          .select('*')
+          .order('updated_at', { ascending: false });
+        if (simpleRes.error) throw simpleRes.error;
+        notesData = simpleRes.data;
+      }
 
-      const formattedNotes: Note[] = data?.map((note: any) => ({
+      const formattedNotes: Note[] = notesData?.map((note: any) => ({
         ...note,
         is_pinned: Boolean(note.is_pinned),
-        tags: note.note_tags?.map((nt: any) => nt.tags) || []
+        tags: note.note_tags?.map((nt: any) => nt.tags).filter(Boolean) || (Array.isArray(note.tags) ? note.tags.map((t: string) => ({ id: t, name: t, color: '#3B82F6' })) : [])
       })) || [];
 
       // Sort pinned notes to top, then updated_at descending
@@ -132,10 +142,14 @@ const NotesApp = () => {
         .select('*')
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        setTags([]);
+        return;
+      }
       setTags(data || []);
     } catch (error) {
-      console.error('Error fetching tags:', error);
+      console.warn('Error fetching tags:', error);
+      setTags([]);
     }
   };
 

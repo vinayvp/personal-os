@@ -24,16 +24,24 @@ const RevisionApp = () => {
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [catRes, elRes] = await Promise.all([
+      let [catRes, elRes] = await Promise.all([
         supabase.from('revision_category').select('*').order('created_at'),
         supabase.from('revision_element').select('*'),
       ]);
-      if (catRes.error) throw catRes.error;
-      if (elRes.error) throw elRes.error;
+
+      if (catRes.error) {
+        catRes = await (supabase as any).from('revision_categories').select('*').order('created_at');
+      }
+      if (elRes.error) {
+        elRes = await (supabase as any).from('revision_elements').select('*');
+      }
+
       setCategories((catRes.data || []) as RevisionCategory[]);
       setElements((elRes.data || []) as RevisionElement[]);
     } catch (error: any) {
-      toast.error(error.message || 'Failed to load revision categories');
+      console.warn('Failed to load revision items:', error);
+      setCategories([]);
+      setElements([]);
     } finally {
       setIsLoading(false);
     }

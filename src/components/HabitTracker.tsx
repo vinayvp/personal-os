@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar, BarChart3, Plus, Settings } from 'lucide-react';
-import HabitDashboard from './habits/HabitDashboard';
+import HabitDashboard, { parseCustomDays } from './habits/HabitDashboard';
 import HabitCalendar from './habits/HabitCalendar';
 import HabitStats from './habits/HabitStats';
 import CreateHabitModal from './habits/CreateHabitModal';
@@ -58,8 +58,16 @@ const HabitTracker = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      // Type assertion to ensure compatibility with our Habit interface
-      setHabits((data || []) as Habit[]);
+      // Defensive normalization: supports both 'name' and 'title' column schemas
+      const normalizedHabits: Habit[] = ((data || []) as any[]).map(h => ({
+        ...h,
+        name: h.name || h.title || 'Untitled Habit',
+        target_count: h.target_count ?? 1,
+        target_period: h.target_period || (h.frequency_type === 'none' ? 'total' : 'weekly'),
+        frequency_type: h.frequency_type || 'daily',
+        custom_days: parseCustomDays(h.custom_days),
+      }));
+      setHabits(normalizedHabits);
     } catch (error) {
       console.error('Error fetching habits:', error);
       toast({
@@ -182,19 +190,22 @@ const HabitTracker = () => {
 
       // For habits with no frequency, allow multiple completions up to target_count
       if (habit && habit.frequency_type === 'none') {
-        const totalCompletions = completions.filter(c => c.habit_id === habitId).length;
+        const habitAllCompletions = completions.filter(c => c.habit_id === habitId);
         
-        if (forceAdd === false && existingCompletions.length > 0) {
-          // Remove last completion for today
-          const lastCompletion = existingCompletions[existingCompletions.length - 1];
+        if (forceAdd === false && habitAllCompletions.length > 0) {
+          // Remove last completion (prefer today's if exists, else most recent)
+          const completionToRemove = existingCompletions.length > 0 
+            ? existingCompletions[existingCompletions.length - 1] 
+            : habitAllCompletions[0];
+
           const { error } = await supabase
             .from('habit_completions')
             .delete()
-            .eq('id', lastCompletion.id);
+            .eq('id', completionToRemove.id);
 
           if (error) throw error;
-          setCompletions(prev => prev.filter(c => c.id !== lastCompletion.id));
-        } else if (totalCompletions < habit.target_count) {
+          setCompletions(prev => prev.filter(c => c.id !== completionToRemove.id));
+        } else if (forceAdd !== false && habitAllCompletions.length < (habit.target_count || 10)) {
           // Add new completion
           const { data, error } = await supabase
             .from('habit_completions')

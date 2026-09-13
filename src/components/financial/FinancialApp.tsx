@@ -2,7 +2,10 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Wallet, Receipt, Briefcase, PieChart, TrendingUp } from "lucide-react";
+import { Plus, Wallet, Receipt, Briefcase, PieChart, TrendingUp, AlertCircle } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { getIsGuestMode } from "@/integrations/supabase/client";
+import { getGuestTableData } from "@/integrations/supabase/guestMockClient";
 import { financeDb } from "@/integrations/supabase/financeClient";
 import { useToast } from "@/hooks/use-toast";
 import HeroMetrics from "@/components/financial/HeroMetrics";
@@ -37,6 +40,7 @@ const FinancialApp = () => {
   const [assetTypes, setAssetTypes] = useState<AssetType[]>([]);
   const [sipConfigs, setSipConfigs] = useState<SipConfig[]>([]);
   const [loading, setLoading] = useState(true);
+  const [schemaNotExposed, setSchemaNotExposed] = useState(false);
   const [isAddInvestmentOpen, setIsAddInvestmentOpen] = useState(false);
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isAddAssetTypeOpen, setIsAddAssetTypeOpen] = useState(false);
@@ -48,8 +52,30 @@ const FinancialApp = () => {
     fetchData();
   }, []);
 
+  const loadGuestSampleData = () => {
+    const rawInvestments = getGuestTableData('investments');
+    const rawAssetTypes = getGuestTableData('asset_types');
+    const rawPlatforms = getGuestTableData('investment_platforms');
+    const rawTransactions = getGuestTableData('investment_transactions');
+    const rawSips = getGuestTableData('sip_configs');
+    const rawValuations = getGuestTableData('investment_valuations');
+
+    const enrichedInvestments = rawInvestments.map((inv: any) => ({
+      ...inv,
+      asset_type: inv.asset_type || rawAssetTypes.find((at: any) => at.id === inv.asset_type_id) || null,
+      investment_platforms: inv.investment_platforms || rawPlatforms.find((p: any) => p.id === inv.platform_id) || null,
+    }));
+
+    setInvestments(enrichedInvestments as Investment[]);
+    setTransactions(rawTransactions as InvestmentTransaction[]);
+    setAssetTypes(rawAssetTypes as AssetType[]);
+    setSipConfigs(rawSips as SipConfig[]);
+    setValuations(rawValuations as InvestmentValuation[]);
+  };
+
   const fetchData = async () => {
     setLoading(true);
+    setSchemaNotExposed(false);
     try {
       const [investmentsRes, transactionsRes, assetTypesRes, sipRes, valuationsRes] = await Promise.all([
         financeDb
@@ -79,11 +105,27 @@ const FinancialApp = () => {
       setSipConfigs((sipRes.data || []) as SipConfig[]);
       setValuations((valuationsRes.data || []) as InvestmentValuation[]);
     } catch (error: any) {
-      toast({
-        title: "Error fetching data",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.warn("Error fetching financial data:", error?.message);
+      const isGuest = window.location.pathname.startsWith('/app/guest') || getIsGuestMode();
+      const isSchemaError =
+        error?.message?.includes("Invalid schema") ||
+        error?.message?.includes("schema cache") ||
+        error?.code === "PGRST106";
+
+      if (isGuest) {
+        // In guest mode, immediately populate local sample data with zero interruption
+        loadGuestSampleData();
+      } else {
+        if (isSchemaError) {
+          setSchemaNotExposed(true);
+        } else {
+          toast({
+            title: "Error fetching data",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -183,6 +225,35 @@ const FinancialApp = () => {
           </div>
           <RefreshButton onRefresh={fetchData} />
         </div>
+
+        {schemaNotExposed && (
+          <Alert className="border-amber-500/40 bg-amber-500/10 text-foreground">
+            <AlertCircle className="h-5 w-5 text-amber-500" />
+            <AlertTitle className="text-base font-semibold text-amber-600 dark:text-amber-400">
+              Finance Schema Not Exposed in Supabase API
+            </AlertTitle>
+            <AlertDescription className="mt-2 text-sm space-y-3">
+              <p>
+                The <code>finance</code> database schema exists in PostgreSQL, but PostgREST has not yet been instructed to expose it through the Data API.
+              </p>
+              <div className="bg-background/80 p-3 rounded-md font-mono text-xs text-muted-foreground border border-border leading-relaxed">
+                <strong>Quick Fix in Supabase Dashboard:</strong><br />
+                1. Open Supabase Dashboard &rarr; <strong>Project Settings</strong> (gear icon ⚙️ on bottom left)<br />
+                2. Click <strong>API</strong> &rarr; scroll down to <strong>Data API Settings</strong><br />
+                3. Under <strong>Exposed schemas</strong>, add <code>finance</code> (e.g. <code>public, finance</code>)<br />
+                4. Click <strong>Save</strong>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button size="sm" variant="outline" onClick={fetchData}>
+                  Check Again
+                </Button>
+                <Button size="sm" variant="secondary" onClick={loadGuestSampleData}>
+                  Preview With Sample Data
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Navigation Tabs with Actions */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

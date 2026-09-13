@@ -80,8 +80,9 @@ const HabitStats = ({ habits, completions }: HabitStatsProps) => {
 
   const habitCompletionData = habits.map(habit => {
     const habitCompletions = completions.filter(c => c.habit_id === habit.id).length;
+    const habitName = habit?.name || (habit as any)?.title || 'Untitled';
     return {
-      name: habit.name.length > 20 ? habit.name.substring(0, 20) + '...' : habit.name,
+      name: habitName.length > 20 ? habitName.substring(0, 20) + '...' : habitName,
       completions: habitCompletions
     };
   }).sort((a, b) => b.completions - a.completions);
@@ -123,7 +124,7 @@ const HabitStats = ({ habits, completions }: HabitStatsProps) => {
     }
 
     return {
-      name: habit.name,
+      name: habit?.name || (habit as any)?.title || 'Untitled',
       current: currentStreak,
       longest: longestStreak
     };
@@ -250,7 +251,7 @@ const HabitStats = ({ habits, completions }: HabitStatsProps) => {
             <div className="space-y-4">
               {habitStreaks.slice(0, 5).map((habit, index) => (
                 <div key={index} className="flex items-center justify-between p-3 border rounded">
-                  <span className="font-medium truncate flex-1">{habit.name}</span>
+                  <span className="font-medium truncate flex-1">{habit.name || (habit as any)?.title || 'Untitled'}</span>
                   <div className="flex gap-4 text-sm">
                     <div className="text-center">
                       <div className="font-bold text-primary">{habit.current}</div>

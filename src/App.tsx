@@ -24,6 +24,7 @@ const App = () => (
               <Apps />
             </AuthGuard>
           } />
+          <Route path="/app/guest" element={<Apps isGuest={true} />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

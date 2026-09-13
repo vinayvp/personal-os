@@ -1,7 +1,24 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileText, TrendingUp, LogOut, Menu, X, CheckSquare, BookOpen, Notebook, Film, DollarSign, Github, BarChart3, Repeat, Briefcase } from 'lucide-react';
+import {
+  FileText,
+  TrendingUp,
+  LogOut,
+  Menu,
+  X,
+  CheckSquare,
+  BookOpen,
+  Notebook,
+  Film,
+  DollarSign,
+  Github,
+  BarChart3,
+  Repeat,
+  Briefcase,
+  HelpCircle,
+  LogIn,
+} from 'lucide-react';
 import NotesApp from '@/components/NotesApp';
 import TrackingApp from '@/components/TrackingApp';
 import TodoApp from '@/components/TodoApp';
@@ -11,9 +28,16 @@ import MoviesApp from '@/components/MoviesApp';
 import RevisionApp from '@/components/RevisionApp';
 import FinancialApp from '@/components/financial/FinancialApp';
 import JobTrackerApp from '@/components/JobTrackerApp';
+import { SubappTutorialModal } from '@/components/tutorials/SubappTutorialModal';
+import { GuestWelcomeModal } from '@/components/tutorials/GuestWelcomeModal';
+import { SubappErrorBoundary } from '@/components/common/SubappErrorBoundary';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
+
+interface AppsProps {
+  isGuest?: boolean;
+}
 
 /**
  * Classifies shared text or URLs to route to the optimal sub-app
@@ -46,12 +70,27 @@ const classifySharedContent = (rawText: string): { targetApp: 'movies' | 'jobs' 
 
   return { targetApp: 'notes', cleanUrlOrText: text };
 };
-const Apps = () => {
+const Apps: React.FC<AppsProps> = ({ isGuest = false }) => {
+  const location = useLocation();
+  const isGuestMode = isGuest || location.pathname.startsWith('/app/guest');
   const [selectedApp, setSelectedApp] = React.useState<string>('tracking');
   const [sharedMovieUrl, setSharedMovieUrl] = useState<string | null>(null);
   const [sharedJobUrl, setSharedJobUrl] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
   const navigate = useNavigate();
+
+  // Automatically show Guest Welcome Modal on initial visit to guest view
+  useEffect(() => {
+    if (isGuestMode) {
+      const hasSeen = sessionStorage.getItem('guest_welcome_modal_shown');
+      if (!hasSeen) {
+        setIsWelcomeModalOpen(true);
+        sessionStorage.setItem('guest_welcome_modal_shown', 'true');
+      }
+    }
+  }, [isGuestMode]);
 
   const handleIncomingShare = useCallback((rawText: string) => {
     if (!rawText || !rawText.trim()) return;
@@ -115,7 +154,15 @@ const Apps = () => {
       window.removeEventListener('capacitorShareTarget', onShareEvent);
     };
   }, [handleIncomingShare]);
+  const handleSwitchToOwner = () => {
+    navigate('/app');
+  };
+
   const handleLogout = async () => {
+    if (isGuestMode) {
+      handleSwitchToOwner();
+      return;
+    }
     await supabase.auth.signOut();
     sessionStorage.removeItem('app_authenticated');
     // Stay on /app route, but AuthGuard will show login form
@@ -170,7 +217,20 @@ const Apps = () => {
     <div className="flex flex-col h-screen bg-background">
       <header className="relative flex items-center justify-between p-4 border-b shrink-0 border-border">
         <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold mr-4 text-foreground">My Apps</h1>
+          <div className="mr-4 flex flex-col justify-center">
+            <h1 className="text-xl font-bold leading-none text-foreground">My Apps</h1>
+            {isGuestMode && (
+              <button
+                type="button"
+                onClick={() => setIsWelcomeModalOpen(true)}
+                className="inline-flex items-center gap-1 text-[10px] font-medium text-primary tracking-wide mt-1 text-left hover:underline cursor-pointer focus:outline-none"
+                title="Click to view Guest Demo overview"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                Guest View
+              </button>
+            )}
+          </div>
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-2">
@@ -250,29 +310,61 @@ const Apps = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Desktop External Links */}
-          <Button variant="outline" size="icon" asChild className="hidden md:flex h-8 w-8">
-            <a href="https://github.com/vinayvp/portfolio_and_apps" target="_blank" rel="noopener noreferrer" title="GitHub">
-              <Github className="h-4 w-4" />
-            </a>
-          </Button>
-          <Button variant="outline" size="icon" asChild className="hidden md:flex h-8 w-8">
-            <a href="https://app.netlify.com/projects/vinayvp/overview" target="_blank" rel="noopener noreferrer" title="Netlify">
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M16.934 8.519a1.044 1.044 0 0 1 .303.23l2.349-1.045-2.192-2.171-.491 2.954zM12.06 6.546a1.305 1.305 0 0 1 .209.574l3.497 1.482a1.044 1.044 0 0 1 .366-.18l.575-3.455-2.13-.472-2.517 2.051zM11.2 8.292l-5.099 4.391.862 10.217 2.937-2.937-1.5-5.8 5.1-4.391-.8-1.48zm.053-1.016l.773 1.428 5.937-2.489.491-2.953-7.201 4.014zm.053 1.016l.8 1.48 4.2-1.76-1.503-3.234-3.497 1.514zm-5.099 4.391l1.5 5.8 6.1-5.252-.8-1.48-5.8 4.932-.862-10.217-4.591.491 4.453 5.726zm5.099-4.391l.8 1.48 5.099-4.391-7.599 2.091.8 1.48 5.099-4.391-.8-1.48-3.399 5.211z"/>
-              </svg>
-            </a>
-          </Button>
-          <Button variant="outline" size="icon" asChild className="hidden md:flex h-8 w-8">
-            <a href="https://cloud.umami.is/analytics/us/websites/37e82014-725b-465e-8bd0-a9fba2fe9e04" target="_blank" rel="noopener noreferrer" title="Umami Analytics">
-              <BarChart3 className="h-4 w-4" />
-            </a>
-          </Button>
-          {/* Desktop Logout */}
-          <Button variant="outline" size="sm" onClick={handleLogout} className="hidden md:flex">
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
+          {/* Desktop External Links (Owner Mode only) */}
+          {!isGuestMode && (
+            <>
+              <Button variant="outline" size="icon" asChild className="hidden md:flex h-8 w-8">
+                <a href="https://github.com/vinayvp/portfolio_and_apps" target="_blank" rel="noopener noreferrer" title="GitHub">
+                  <Github className="h-4 w-4" />
+                </a>
+              </Button>
+              <Button variant="outline" size="icon" asChild className="hidden md:flex h-8 w-8">
+                <a href="https://app.netlify.com/projects/vinayvp/overview" target="_blank" rel="noopener noreferrer" title="Netlify">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16.934 8.519a1.044 1.044 0 0 1 .303.23l2.349-1.045-2.192-2.171-.491 2.954zM12.06 6.546a1.305 1.305 0 0 1 .209.574l3.497 1.482a1.044 1.044 0 0 1 .366-.18l.575-3.455-2.13-.472-2.517 2.051zM11.2 8.292l-5.099 4.391.862 10.217 2.937-2.937-1.5-5.8 5.1-4.391-.8-1.48zm.053-1.016l.773 1.428 5.937-2.489.491-2.953-7.201 4.014zm.053 1.016l.8 1.48 4.2-1.76-1.503-3.234-3.497 1.514zm-5.099 4.391l1.5 5.8 6.1-5.252-.8-1.48-5.8 4.932-.862-10.217-4.591.491 4.453 5.726zm5.099-4.391l.8 1.48 5.099-4.391-7.599 2.091.8 1.48 5.099-4.391-.8-1.48-3.399 5.211z"/>
+                  </svg>
+                </a>
+              </Button>
+              <Button variant="outline" size="icon" asChild className="hidden md:flex h-8 w-8">
+                <a href="https://cloud.umami.is/analytics/us/websites/37e82014-725b-465e-8bd0-a9fba2fe9e04" target="_blank" rel="noopener noreferrer" title="Umami Analytics">
+                  <BarChart3 className="h-4 w-4" />
+                </a>
+              </Button>
+            </>
+          )}
+
+          {/* Tutorial Button (Guest Mode only) */}
+          {isGuestMode && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsTutorialOpen(true)}
+              className="hidden md:flex gap-1.5 text-xs h-8 border-primary/30 hover:bg-primary/5 text-primary"
+              title="Open Sub-App Tutorial & Guide"
+            >
+              <HelpCircle className="h-3.5 w-3.5" />
+              Tutorial
+            </Button>
+          )}
+
+          {/* Desktop Logout / Switch */}
+          {isGuestMode ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSwitchToOwner}
+              className="hidden md:flex gap-1.5 text-xs h-8"
+              title="Switch to Owner Login"
+            >
+              <LogIn className="mr-1 h-3.5 w-3.5" />
+              Owner Login
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={handleLogout} className="hidden md:flex">
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          )}
           
           {/* Mobile Menu Button */}
           <Button 
@@ -379,38 +471,90 @@ const Apps = () => {
               <Briefcase className="mr-2 h-4 w-4" />
               Job Tracker
             </Button>
-            <Button variant="outline" size="icon" asChild className="h-8 w-8">
-              <a href="https://github.com/vinayvp/portfolio_and_apps" target="_blank" rel="noopener noreferrer" title="GitHub">
-                <Github className="h-4 w-4" />
-              </a>
-            </Button>
-            <Button variant="outline" size="icon" asChild className="h-8 w-8">
-              <a href="https://app.netlify.com/projects/vinayvp/overview" target="_blank" rel="noopener noreferrer" title="Netlify">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M16.934 8.519a1.044 1.044 0 0 1 .303.23l2.349-1.045-2.192-2.171-.491 2.954zM12.06 6.546a1.305 1.305 0 0 1 .209.574l3.497 1.482a1.044 1.044 0 0 1 .366-.18l.575-3.455-2.13-.472-2.517 2.051zM11.2 8.292l-5.099 4.391.862 10.217 2.937-2.937-1.5-5.8 5.1-4.391-.8-1.48zm.053-1.016l.773 1.428 5.937-2.489.491-2.953-7.201 4.014zm.053 1.016l.8 1.48 4.2-1.76-1.503-3.234-3.497 1.514zm-5.099 4.391l1.5 5.8 6.1-5.252-.8-1.48-5.8 4.932-.862-10.217-4.591.491 4.453 5.726zm5.099-4.391l.8 1.48 5.099-4.391-7.599 2.091.8 1.48 5.099-4.391-.8-1.48-3.399 5.211z"/>
-                </svg>
-              </a>
-            </Button>
-            <Button variant="outline" size="icon" asChild className="h-8 w-8">
-              <a href="https://cloud.umami.is/analytics/us/websites/37e82014-725b-465e-8bd0-a9fba2fe9e04" target="_blank" rel="noopener noreferrer" title="Umami Analytics">
-                <BarChart3 className="h-4 w-4" />
-              </a>
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleLogout} 
-              className="w-full justify-start"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
-            </Button>
+            {/* Mobile External Links (Owner Mode only) */}
+            {!isGuestMode && (
+              <div className="flex items-center gap-2 pt-2 pb-1 border-t border-border/50">
+                <Button variant="outline" size="icon" asChild className="h-8 w-8">
+                  <a href="https://github.com/vinayvp/portfolio_and_apps" target="_blank" rel="noopener noreferrer" title="GitHub">
+                    <Github className="h-4 w-4" />
+                  </a>
+                </Button>
+                <Button variant="outline" size="icon" asChild className="h-8 w-8">
+                  <a href="https://app.netlify.com/projects/vinayvp/overview" target="_blank" rel="noopener noreferrer" title="Netlify">
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M16.934 8.519a1.044 1.044 0 0 1 .303.23l2.349-1.045-2.192-2.171-.491 2.954zM12.06 6.546a1.305 1.305 0 0 1 .209.574l3.497 1.482a1.044 1.044 0 0 1 .366-.18l.575-3.455-2.13-.472-2.517 2.051zM11.2 8.292l-5.099 4.391.862 10.217 2.937-2.937-1.5-5.8 5.1-4.391-.8-1.48zm.053-1.016l.773 1.428 5.937-2.489.491-2.953-7.201 4.014zm.053 1.016l.8 1.48 4.2-1.76-1.503-3.234-3.497 1.514zm-5.099 4.391l1.5 5.8 6.1-5.252-.8-1.48-5.8 4.932-.862-10.217-4.591.491 4.453 5.726zm5.099-4.391l.8 1.48 5.099-4.391-7.599 2.091.8 1.48 5.099-4.391-.8-1.48-3.399 5.211z"/>
+                    </svg>
+                  </a>
+                </Button>
+                <Button variant="outline" size="icon" asChild className="h-8 w-8">
+                  <a href="https://cloud.umami.is/analytics/us/websites/37e82014-725b-465e-8bd0-a9fba2fe9e04" target="_blank" rel="noopener noreferrer" title="Umami Analytics">
+                    <BarChart3 className="h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
+            )}
+
+            {/* Tutorial Button (Guest Mode only) */}
+            {isGuestMode && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsTutorialOpen(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full justify-start text-primary border-primary/30"
+              >
+                <HelpCircle className="mr-2 h-4 w-4" />
+                Sub-App Tutorial & Guide
+              </Button>
+            )}
+
+            {/* Mobile Logout / Switch */}
+            {isGuestMode ? (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSwitchToOwner} 
+                className="w-full justify-start"
+              >
+                <LogIn className="mr-2 h-4 w-4" />
+                Switch to Owner Login
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleLogout} 
+                className="w-full justify-start"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </Button>
+            )}
           </div>
         </div>
       </header>
       <main className="flex-1 overflow-y-auto">
-        {renderSelectedApp()}
+        <SubappErrorBoundary key={selectedApp} fallbackSubappName={selectedApp}>
+          {renderSelectedApp()}
+        </SubappErrorBoundary>
       </main>
+
+      {isGuestMode && (
+        <>
+          <GuestWelcomeModal
+            isOpen={isWelcomeModalOpen}
+            onClose={() => setIsWelcomeModalOpen(false)}
+            onOpenDetailedTutorial={() => setIsTutorialOpen(true)}
+          />
+          <SubappTutorialModal
+            isOpen={isTutorialOpen}
+            onClose={() => setIsTutorialOpen(false)}
+            defaultAppId={selectedApp}
+          />
+        </>
+      )}
     </div>
   );
 };

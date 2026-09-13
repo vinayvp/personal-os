@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Lock } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Lock, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { mainSupabase } from '@/integrations/supabase/client';
 // 1. Import the Biometric Plugin
 import { NativeBiometric } from 'capacitor-native-biometric';
 import { Capacitor } from '@capacitor/core';
@@ -19,32 +20,46 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingPassword, setIsLoadingPassword] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // 2. Wrap login logic in a reusable function for auto-fill
   const performLogin = useCallback(async (pwd: string) => {
-    const { data, error } = await supabase.functions.invoke('check-app-password', {
-      body: { password: pwd },
-    });
+    try {
+      const { data, error } = await mainSupabase.functions.invoke('check-app-password', {
+        body: { password: pwd },
+      });
 
-    if (data?.success) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('app_authenticated', 'true');
-      
-      // 3. Save to Secure Storage on successful manual login
-      if (Capacitor.getPlatform() === 'android') {
-        await NativeBiometric.setCredentials({
-          username: 'user',
-          password: pwd,
-          server: 'vinayak-app',
-        }).catch(e => console.error("Could not save credentials", e));
+      if (error) {
+        console.error('Error invoking check-app-password on main Supabase:', error);
+        return false;
       }
-      return true;
+
+      if (data?.success) {
+        setIsAuthenticated(true);
+        sessionStorage.setItem('app_authenticated', 'true');
+        sessionStorage.removeItem('app_mode');
+        
+        // 3. Save to Secure Storage on successful manual login
+        if (Capacitor.getPlatform() === 'android') {
+          await NativeBiometric.setCredentials({
+            username: 'user',
+            password: pwd,
+            server: 'vinayak-app',
+          }).catch(e => console.error("Could not save credentials", e));
+        }
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Login exception:', err);
+      return false;
     }
-    return false;
   }, []);
 
   useEffect(() => {
     const initAuth = async () => {
+      // Ensure guest mode flag is purged on owner route
+      sessionStorage.removeItem('app_mode');
       const isAuth = sessionStorage.getItem('app_authenticated') === 'true';
       setIsAuthenticated(isAuth);
 
@@ -152,6 +167,30 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
                 {isLoading ? 'Verifying...' : 'Access Applications'}
               </Button>
             </form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border/70" />
+              </div>
+              <div className="relative flex justify-center text-[10px] uppercase tracking-wider">
+                <span className="bg-card px-2 text-muted-foreground font-semibold">Or Explore Demo</span>
+              </div>
+            </div>
+
+            <div className="space-y-2.5 text-center">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/app/guest')}
+                className="w-full gap-2 border-primary/40 hover:bg-primary/5 hover:border-primary text-foreground font-medium h-10"
+              >
+                <Sparkles className="w-4 h-4 text-primary" />
+                Login as Guest
+              </Button>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Preview all 8 sub-apps with realistic sample data & interactive tutorials. No password required.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
