@@ -39,22 +39,42 @@ const EditRevisionElementModal: React.FC<Props> = ({ element, isOpen, onClose, o
 
     setIsSaving(true);
     try {
-      const updatedPayload = {
+      const updatedPayload: any = {
         name: name.trim(),
+        title: name.trim(),
         description: description.trim() || null,
+        content: description.trim() || null,
       };
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('revision_element')
         .update(updatedPayload)
         .eq('id', element.id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        const fallback = await (supabase as any)
+          .from('revision_elements')
+          .update(updatedPayload)
+          .eq('id', element.id)
+          .select()
+          .single();
+        if (fallback.error) throw fallback.error;
+        data = fallback.data;
+      }
+
+      const normalized: RevisionElement = {
+        id: (data as any)?.id || element.id,
+        category_id: (data as any)?.category_id || element.category_id,
+        name: (data as any)?.name || (data as any)?.title || name.trim(),
+        description: (data as any)?.description || (data as any)?.content || (description.trim() || null),
+        count: (data as any)?.count ?? (data as any)?.review_count ?? element.count,
+        created_at: (data as any)?.created_at || element.created_at,
+      };
 
       toast.success('Item updated successfully');
-      onSuccess(data as RevisionElement);
+      onSuccess(normalized);
       onClose();
     } catch (error: any) {
       toast.error(error.message || 'Failed to update item');

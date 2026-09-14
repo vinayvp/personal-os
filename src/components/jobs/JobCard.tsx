@@ -18,6 +18,7 @@ import {
   ScrollText,
   Target,
   Clock,
+  MessageSquare,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -241,6 +242,20 @@ const JobCard: React.FC<Props> = ({ job, onViewDetails, onEdit, onDelete }) => {
               </a>
             )}
 
+            {job.chatgpt_thread_link && (
+              <a
+                href={job.chatgpt_thread_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded-md transition-colors"
+                title="Open ChatGPT Resume Customization Thread"
+              >
+                <MessageSquare className="w-3 h-3" />
+                <span>ChatGPT Thread</span>
+              </a>
+            )}
+
             {job.found_in && (
               <span className="text-muted-foreground/80">via {job.found_in}</span>
             )}
@@ -275,6 +290,19 @@ const JobCard: React.FC<Props> = ({ job, onViewDetails, onEdit, onDelete }) => {
               <DropdownMenuItem onClick={handleDownloadCoverLetter} className="gap-2 text-emerald-400 focus:text-emerald-400">
                 <ScrollText className="h-4 w-4" />
                 Download Cover Letter
+              </DropdownMenuItem>
+            )}
+            {job.chatgpt_thread_link && (
+              <DropdownMenuItem asChild>
+                <a
+                  href={job.chatgpt_thread_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="gap-2 flex items-center text-emerald-400 focus:text-emerald-400"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  ChatGPT Thread
+                </a>
               </DropdownMenuItem>
             )}
             {job.application_link && (

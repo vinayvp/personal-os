@@ -47,6 +47,7 @@ export interface JobApplication {
   cover_letter_filename?: string | null;
   cover_letter_storage_path?: string | null;
   application_link?: string | null;
+  chatgpt_thread_link?: string | null;
   platform_id?: string | null;
   found_in?: string | null;
   job_description?: string | null;

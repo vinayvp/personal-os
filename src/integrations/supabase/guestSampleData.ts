@@ -535,6 +535,7 @@ def verify_replica_sync(primary, replica):
       salary_max_inr: 5200000,
       salary_currency: 'INR',
       application_link: 'https://stripe.com/jobs',
+      chatgpt_thread_link: 'https://chatgpt.com/c/670e1a2b-3c4d-5e6f-7a8b-9c0d1e2f3a4b',
       applied_date: new Date(Date.now() - 12 * 86400000).toISOString().split('T')[0],
       ats_score: 88,
       follow_ups: [
@@ -560,6 +561,7 @@ def verify_replica_sync(primary, replica):
       salary_max_inr: 6500000,
       salary_currency: 'INR',
       application_link: 'https://vercel.com/careers',
+      chatgpt_thread_link: 'https://chatgpt.com/c/671f2b3c-4d5e-6f7a-8b9c-0d1e2f3a4b5c',
       applied_date: new Date(Date.now() - 4 * 86400000).toISOString().split('T')[0],
       ats_score: 92,
       follow_ups: [

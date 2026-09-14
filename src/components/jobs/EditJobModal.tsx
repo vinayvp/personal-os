@@ -38,6 +38,7 @@ import {
   Trash2,
   Clock,
   Calculator,
+  MessageSquare,
 } from 'lucide-react';
 import { AtsCalculatorModal, AtsSourceEntry } from './AtsCalculatorModal';
 import {
@@ -95,6 +96,7 @@ const EditJobModal: React.FC<Props> = ({
   const [salaryMax, setSalaryMax] = useState('');
   const [salaryCurrency, setSalaryCurrency] = useState('USD');
   const [applicationLink, setApplicationLink] = useState('');
+  const [chatgptThreadLink, setChatgptThreadLink] = useState('');
   const [selectedPlatformId, setSelectedPlatformId] = useState('');
   const [isCustomFoundIn, setIsCustomFoundIn] = useState(false);
   const [customFoundIn, setCustomFoundIn] = useState('');
@@ -135,6 +137,7 @@ const EditJobModal: React.FC<Props> = ({
       setSalaryMax(job.salary_max != null ? String(job.salary_max) : '');
       setSalaryCurrency(job.salary_currency || 'USD');
       setApplicationLink(job.application_link || '');
+      setChatgptThreadLink(job.chatgpt_thread_link || '');
       setAtsScore(job.ats_score != null ? String(job.ats_score) : '');
       if (job.ats_scores && job.ats_scores.length > 0) {
         setAtsSources(
@@ -302,6 +305,11 @@ const EditJobModal: React.FC<Props> = ({
       cleanLink = `https://${cleanLink}`;
     }
 
+    let cleanChatgptLink: string | null = chatgptThreadLink.trim() || null;
+    if (cleanChatgptLink && !cleanChatgptLink.startsWith('http://') && !cleanChatgptLink.startsWith('https://')) {
+      cleanChatgptLink = `https://${cleanChatgptLink}`;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -364,6 +372,7 @@ const EditJobModal: React.FC<Props> = ({
         cover_letter_filename: coverLetterFilename,
         cover_letter_storage_path: coverLetterStoragePath,
         application_link: cleanLink,
+        chatgpt_thread_link: cleanChatgptLink,
         platform_id: finalPlatformId,
         found_in: finalFoundIn,
         job_description: jobDescription.trim() || null,
@@ -932,6 +941,25 @@ const EditJobModal: React.FC<Props> = ({
               type="url"
               value={applicationLink}
               onChange={(e) => setApplicationLink(e.target.value)}
+              className="h-9"
+            />
+          </div>
+
+          {/* ChatGPT Thread Link (for Resume Tailoring) */}
+          <div className="space-y-1.5">
+            <Label htmlFor="editChatgptThreadLink" className="text-xs font-semibold flex items-center justify-between">
+              <span className="flex items-center gap-1">
+                <MessageSquare className="w-3.5 h-3.5 text-emerald-500" />
+                ChatGPT Thread Link
+              </span>
+              <span className="text-[11px] text-muted-foreground font-normal">Resume tailoring conversation</span>
+            </Label>
+            <Input
+              id="editChatgptThreadLink"
+              type="url"
+              placeholder="https://chatgpt.com/c/... (used for customizing resume)"
+              value={chatgptThreadLink}
+              onChange={(e) => setChatgptThreadLink(e.target.value)}
               className="h-9"
             />
           </div>

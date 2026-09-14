@@ -18,6 +18,7 @@ import {
   FileText,
   ScrollText,
   Target,
+  MessageSquare,
 } from 'lucide-react';
 import { JobApplication, STATUS_CONFIG } from './types';
 import {
@@ -279,6 +280,26 @@ const JobTable: React.FC<Props> = ({ jobs, onViewDetails, onEdit }) => {
                 {/* Actions (NO Delete button here - deletion safely kept in full view modal) */}
                 <td className="py-3 px-4 whitespace-nowrap text-right">
                   <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                    {/* ChatGPT Thread link */}
+                    {job.chatgpt_thread_link && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        asChild
+                        className="h-7 w-7 text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10"
+                        title="Open ChatGPT Resume Customization Thread"
+                      >
+                        <a
+                          href={job.chatgpt_thread_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MessageSquare className="h-3.5 w-3.5" />
+                        </a>
+                      </Button>
+                    )}
+
                     {/* Single download button for resume / cover letter */}
                     {(job.resume_storage_path || job.cover_letter_storage_path) && (
                       <Button

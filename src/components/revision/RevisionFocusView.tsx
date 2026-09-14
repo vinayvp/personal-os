@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Check, SkipForward, RotateCcw, Plus, Loader2, Edit } from 'lucide-react';
+import { ArrowLeft, Check, SkipForward, RotateCcw, Plus, Loader2, Edit, Pencil, List } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { RevisionCategory, RevisionElement } from './types';
 import AddRevisionElementsModal from './AddRevisionElementsModal';
 import EditRevisionElementModal from './EditRevisionElementModal';
+import EditRevisionCategoryModal from './EditRevisionCategoryModal';
+import ManageRevisionItemsModal from './ManageRevisionItemsModal';
 import RevisionMarkdown from './RevisionMarkdown';
 
 interface Props {
@@ -24,6 +26,8 @@ const RevisionFocusView = ({ categoryId, onBack }: Props) => {
   const [isBusy, setIsBusy] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
+  const [isManageItemsOpen, setIsManageItemsOpen] = useState(false);
 
   const pickRandom = (els: RevisionElement[], excludeId: string | null) => {
     if (els.length === 0) return null;
@@ -168,18 +172,35 @@ const RevisionFocusView = ({ categoryId, onBack }: Props) => {
           <ArrowLeft className="h-4 w-4 mr-1" /> Categories
         </Button>
         {category && (
-          <Badge
-            variant="outline"
-            style={{ borderColor: category.color, color: category.color }}
-          >
-            {category.name}
-          </Badge>
+          <div className="flex items-center gap-1">
+            <Badge
+              variant="outline"
+              className="cursor-pointer hover:opacity-85 transition-opacity"
+              style={{ borderColor: category.color, color: category.color }}
+              onClick={() => setIsEditCategoryOpen(true)}
+              title="Click to edit category"
+            >
+              {category.name}
+            </Badge>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground hover:text-foreground"
+              onClick={() => setIsEditCategoryOpen(true)}
+              title="Edit Category"
+            >
+              <Pencil className="h-3 w-3" />
+            </Button>
+          </div>
         )}
         <Badge variant="secondary">Round {(category?.count ?? 0) + 1}</Badge>
         <Badge variant="outline">
           {done} / {total} done — {remaining} left
         </Badge>
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => setIsManageItemsOpen(true)}>
+            <List className="h-4 w-4 mr-1" /> Manage
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setIsAddOpen(true)}>
             <Plus className="h-4 w-4 mr-1" /> Items
           </Button>
@@ -265,6 +286,24 @@ const RevisionFocusView = ({ categoryId, onBack }: Props) => {
         }}
         categoryId={categoryId}
         categoryName={category?.name}
+      />
+
+      <EditRevisionCategoryModal
+        category={category}
+        isOpen={isEditCategoryOpen}
+        onClose={() => setIsEditCategoryOpen(false)}
+        onSuccess={(updated) => {
+          if (updated) setCategory(updated);
+          load();
+        }}
+      />
+
+      <ManageRevisionItemsModal
+        category={category}
+        isOpen={isManageItemsOpen}
+        onClose={() => setIsManageItemsOpen(false)}
+        onItemsUpdated={load}
+        onAddNewItems={() => setIsAddOpen(true)}
       />
 
       <EditRevisionElementModal

@@ -577,6 +577,7 @@ CREATE TABLE IF NOT EXISTS public.job_applications (
     cover_letter_filename TEXT DEFAULT NULL,
     cover_letter_storage_path TEXT DEFAULT NULL,
     application_link TEXT DEFAULT NULL,
+    chatgpt_thread_link TEXT DEFAULT NULL,
     platform_id UUID REFERENCES public.job_platforms(id) ON DELETE SET NULL,
     platform TEXT DEFAULT 'LinkedIn',
     found_in TEXT DEFAULT NULL,
@@ -611,6 +612,7 @@ ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS resume_storage_path
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS cover_letter_filename TEXT;
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS cover_letter_storage_path TEXT;
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS application_link TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS chatgpt_thread_link TEXT;
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS platform_id UUID REFERENCES public.job_platforms(id) ON DELETE SET NULL;
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS platform TEXT DEFAULT 'LinkedIn';
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS found_in TEXT;
@@ -1300,7 +1302,7 @@ DELETE FROM public.job_applications WHERE company_name IN ('Stripe', 'Vercel', '
 INSERT INTO public.job_applications (
     company_name, role_name, status, job_type, city, country,
     salary_min_inr, salary_max_inr, salary_currency, application_link,
-    applied_date, ats_score, follow_ups, notes, platform, platform_id
+    chatgpt_thread_link, applied_date, ats_score, follow_ups, notes, platform, platform_id
 )
 VALUES
     (
@@ -1314,6 +1316,7 @@ VALUES
         5200000,
         'INR',
         'https://stripe.com/jobs',
+        'https://chatgpt.com/c/670e1a2b-3c4d-5e6f-7a8b-9c0d1e2f3a4b',
         CURRENT_DATE - 12,
         88,
         '[{"id":"fu_1","date":"2026-09-08","type":"Email","notes":"Recruiter screen completed. Advanced to Technical Deep Dive round."},{"id":"fu_2","date":"2026-09-11","type":"Phone Call","notes":"Reviewed System Architecture expectations with hiring manager."}]'::jsonb,
@@ -1332,6 +1335,7 @@ VALUES
         6500000,
         'INR',
         'https://vercel.com/careers',
+        'https://chatgpt.com/c/671f2b3c-4d5e-6f7a-8b9c-0d1e2f3a4b5c',
         CURRENT_DATE - 4,
         92,
         '[{"id":"fu_3","date":"2026-09-10","type":"LinkedIn","notes":"Sent connection request and personalized note to the VP of Engineering."}]'::jsonb,
@@ -1350,6 +1354,7 @@ VALUES
         7500000,
         'INR',
         'https://figma.com/careers',
+        NULL,
         CURRENT_DATE - 28,
         85,
         '[{"id":"fu_4","date":"2026-09-05","type":"Email","notes":"Offer letter received! Reviewing compensation package and equity grants."}]'::jsonb,

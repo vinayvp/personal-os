@@ -546,6 +546,25 @@ const JobDetailModal: React.FC<Props> = ({ job, isOpen, onClose, onEdit, onDelet
             </div>
           )}
 
+          {/* ChatGPT Thread Link */}
+          {job.chatgpt_thread_link && (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs">
+              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-medium">
+                <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+                <span>ChatGPT Thread (Tailored Resume):</span>
+              </div>
+              <a
+                href={job.chatgpt_thread_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-medium truncate max-w-[240px] sm:max-w-[360px]"
+              >
+                <span>{job.chatgpt_thread_link}</span>
+                <ExternalLink className="w-3 h-3 shrink-0" />
+              </a>
+            </div>
+          )}
+
           {/* Recruiter Contact */}
           {(job.recruiter_email || job.recruiter_phone) && (
             <div className="p-3.5 rounded-xl border border-border/70 bg-card/60 space-y-2">

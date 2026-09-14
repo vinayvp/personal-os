@@ -37,6 +37,7 @@ import {
   Trash2,
   Clock,
   Calculator,
+  MessageSquare,
 } from 'lucide-react';
 import { AtsCalculatorModal, AtsSourceEntry } from './AtsCalculatorModal';
 import {
@@ -95,6 +96,7 @@ const CreateJobModal: React.FC<Props> = ({
   const [salaryMax, setSalaryMax] = useState('');
   const [salaryCurrency, setSalaryCurrency] = useState('USD');
   const [applicationLink, setApplicationLink] = useState('');
+  const [chatgptThreadLink, setChatgptThreadLink] = useState('');
   const [selectedPlatformId, setSelectedPlatformId] = useState('');
   const [isCustomFoundIn, setIsCustomFoundIn] = useState(false);
   const [customFoundIn, setCustomFoundIn] = useState('');
@@ -133,6 +135,7 @@ const CreateJobModal: React.FC<Props> = ({
     setSalaryMax('');
     setSalaryCurrency('USD');
     setApplicationLink('');
+    setChatgptThreadLink('');
     setSelectedPlatformId('');
     setIsCustomFoundIn(false);
     setCustomFoundIn('');
@@ -159,6 +162,7 @@ const CreateJobModal: React.FC<Props> = ({
         if (initialData.city) setCity(initialData.city);
         if (initialData.country) setCountry(initialData.country);
         if (initialData.application_link) setApplicationLink(initialData.application_link);
+        if (initialData.chatgpt_thread_link) setChatgptThreadLink(initialData.chatgpt_thread_link);
         if (initialData.follow_up_notes) setFollowUpNotes(initialData.follow_up_notes);
         if (initialData.ats_score != null) setAtsScore(String(initialData.ats_score));
         if (initialData.ats_scores && initialData.ats_scores.length > 0) {
@@ -244,6 +248,11 @@ const CreateJobModal: React.FC<Props> = ({
       cleanLink = `https://${cleanLink}`;
     }
 
+    let cleanChatgptLink: string | null = chatgptThreadLink.trim() || null;
+    if (cleanChatgptLink && !cleanChatgptLink.startsWith('http://') && !cleanChatgptLink.startsWith('https://')) {
+      cleanChatgptLink = `https://${cleanChatgptLink}`;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -307,6 +316,7 @@ const CreateJobModal: React.FC<Props> = ({
         cover_letter_filename: coverLetterFilename,
         cover_letter_storage_path: coverLetterStoragePath,
         application_link: cleanLink,
+        chatgpt_thread_link: cleanChatgptLink,
         platform_id: finalPlatformId,
         found_in: finalFoundIn,
         job_description: jobDescription.trim() || null,
@@ -791,6 +801,25 @@ const CreateJobModal: React.FC<Props> = ({
               placeholder="https://company.com/careers/job-id"
               value={applicationLink}
               onChange={(e) => setApplicationLink(e.target.value)}
+              className="h-9"
+            />
+          </div>
+
+          {/* ChatGPT Thread Link (for Resume Tailoring) */}
+          <div className="space-y-1.5">
+            <Label htmlFor="chatgptThreadLink" className="text-xs font-semibold flex items-center justify-between">
+              <span className="flex items-center gap-1">
+                <MessageSquare className="w-3.5 h-3.5 text-emerald-500" />
+                ChatGPT Thread Link
+              </span>
+              <span className="text-[11px] text-muted-foreground font-normal">Resume tailoring conversation</span>
+            </Label>
+            <Input
+              id="chatgptThreadLink"
+              type="url"
+              placeholder="https://chatgpt.com/c/... (used for customizing resume)"
+              value={chatgptThreadLink}
+              onChange={(e) => setChatgptThreadLink(e.target.value)}
               className="h-9"
             />
           </div>
