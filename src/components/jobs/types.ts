@@ -1,3 +1,16 @@
+export type TerminalStatus =
+  | 'accepted'
+  | 'withdrew'
+  | 'not-selected'
+  | 'not selected'
+  | 'no-response'
+  | 'no response';
+
+export type NonTerminalStatus =
+  | 'applied'
+  | 'interviewing'
+  | 'negotiating';
+
 export type JobStatus =
   | 'applied'
   | 'interviewing'
@@ -5,7 +18,31 @@ export type JobStatus =
   | 'accepted'
   | 'withdrew'
   | 'no response'
-  | 'not selected';
+  | 'no-response'
+  | 'not selected'
+  | 'not-selected';
+
+export const TERMINAL_STATUSES: JobStatus[] = [
+  'accepted',
+  'withdrew',
+  'not selected',
+  'not-selected',
+  'no response',
+  'no-response',
+];
+
+export const NON_TERMINAL_STATUSES: JobStatus[] = [
+  'applied',
+  'interviewing',
+  'negotiating',
+];
+
+export interface JobApplicationStatus {
+  id: string;
+  status: JobStatus;
+  created_at: string;
+  updated_at: string;
+}
 
 export type FollowUpType =
   | 'Email'
@@ -34,7 +71,10 @@ export interface JobApplication {
   city?: string | null;
   country?: string | null;
   job_type?: string | null;
+  status_id?: string | null;
   status: JobStatus;
+  status_record?: JobApplicationStatus | null;
+  status_updated_at?: string | null;
   salary_min?: number | null;
   salary_max?: number | null;
   salary_currency: string;
@@ -143,6 +183,92 @@ export const STATUS_CONFIG: Record<
     dotClass: 'bg-rose-400',
     description: 'Application rejected',
   },
+  'no-response': {
+    label: 'No Response',
+    badgeClass: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30',
+    dotClass: 'bg-zinc-400',
+    description: 'Awaiting response',
+  },
+  'not-selected': {
+    label: 'Not Selected',
+    badgeClass: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+    dotClass: 'bg-rose-400',
+    description: 'Application rejected',
+  },
+};
+
+export interface JobDurationInfo {
+  isTerminal: boolean;
+  days: number;
+  label: string;
+  tooltip: string;
+  statusLabel: string;
+}
+
+export const isTerminalStatus = (status?: string | null): boolean => {
+  if (!status) return false;
+  const s = status.trim().toLowerCase().replace(/_/g, '-');
+  return (
+    s === 'accepted' ||
+    s === 'withdrew' ||
+    s === 'not-selected' ||
+    s === 'not selected' ||
+    s === 'no-response' ||
+    s === 'no response'
+  );
+};
+
+export const calculateJobDuration = (job: JobApplication): JobDurationInfo => {
+  const isTerminal = isTerminalStatus(job.status);
+  const statusConfig = STATUS_CONFIG[job.status] || STATUS_CONFIG.applied;
+  const statusLabel = statusConfig.label;
+
+  const parseDate = (dStr?: string | null): Date => {
+    if (!dStr) return new Date();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) {
+      const [y, m, d] = dStr.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+    return new Date(dStr);
+  };
+
+  const startDateStr = job.applied_date || job.created_at;
+  const startDate = parseDate(startDateStr);
+
+  const getCalendarDays = (start: Date, end: Date): number => {
+    const utcStart = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+    const utcEnd = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+    return Math.max(0, Math.floor((utcEnd - utcStart) / (1000 * 60 * 60 * 24)));
+  };
+
+  if (isTerminal) {
+    const endDateStr =
+      job.status_updated_at ||
+      job.status_record?.updated_at ||
+      job.updated_at ||
+      new Date().toISOString();
+    const endDate = parseDate(endDateStr);
+    const days = getCalendarDays(startDate, endDate);
+
+    return {
+      isTerminal: true,
+      days,
+      label: `${days}d`,
+      tooltip: `Closed in ${days} day${days === 1 ? '' : 's'} (${statusLabel}). Applied on ${startDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}, moved to terminal state on ${endDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}.`,
+      statusLabel,
+    };
+  } else {
+    const now = new Date();
+    const days = getCalendarDays(startDate, now);
+
+    return {
+      isTerminal: false,
+      days,
+      label: `${days}d`,
+      tooltip: `${days} day${days === 1 ? '' : 's'} elapsed since applied on ${startDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}. Currently in ${statusLabel} phase.`,
+      statusLabel,
+    };
+  }
 };
 
 export const COMMON_CURRENCIES = [

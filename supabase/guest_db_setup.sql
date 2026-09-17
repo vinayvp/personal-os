@@ -557,11 +557,35 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
+CREATE TABLE IF NOT EXISTS public.job_applications_status (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    status TEXT NOT NULL DEFAULT 'applied',
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.job_applications_status ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'job_applications_status' AND policyname = 'Allow public read access to job_applications_status') THEN
+        CREATE POLICY "Allow public read access to job_applications_status" ON public.job_applications_status FOR SELECT USING (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'job_applications_status' AND policyname = 'Allow public insert to job_applications_status') THEN
+        CREATE POLICY "Allow public insert to job_applications_status" ON public.job_applications_status FOR INSERT WITH CHECK (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'job_applications_status' AND policyname = 'Allow public update to job_applications_status') THEN
+        CREATE POLICY "Allow public update to job_applications_status" ON public.job_applications_status FOR UPDATE USING (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'job_applications_status' AND policyname = 'Allow public delete to job_applications_status') THEN
+        CREATE POLICY "Allow public delete to job_applications_status" ON public.job_applications_status FOR DELETE USING (true);
+    END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS public.job_applications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    status_id UUID REFERENCES public.job_applications_status(id) ON DELETE SET NULL,
     company_name TEXT NOT NULL,
     role_name TEXT NOT NULL,
-    status TEXT DEFAULT 'applied',
     job_type TEXT DEFAULT 'Full-time',
     city TEXT DEFAULT 'Remote',
     country TEXT DEFAULT 'India',
@@ -594,9 +618,9 @@ CREATE TABLE IF NOT EXISTS public.job_applications (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS status_id UUID REFERENCES public.job_applications_status(id) ON DELETE SET NULL;
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS company_name TEXT;
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS role_name TEXT;
-ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'applied';
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS job_type TEXT DEFAULT 'Full-time';
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS city TEXT DEFAULT 'Remote';
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'India';
@@ -627,6 +651,73 @@ ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS notes TEXT;
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS user_id UUID;
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+
+-- Migration: populate job_applications_status for existing job_applications and link status_id
+DO $$
+DECLARE
+    r RECORD;
+    new_st_id UUID;
+    has_status_col BOOLEAN;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+          AND table_name = 'job_applications' 
+          AND column_name = 'status'
+    ) INTO has_status_col;
+
+    IF has_status_col THEN
+        FOR r IN EXECUTE 'SELECT id, COALESCE(status, ''applied'') as cur_status, 
+                          CASE 
+                            WHEN applied_date IS NOT NULL AND applied_date::text ~ ''^\d{4}-\d{2}-\d{2}'' THEN applied_date::timestamptz 
+                            ELSE COALESCE(created_at, now()) 
+                          END as st_created_at, 
+                          updated_at 
+                          FROM public.job_applications 
+                          WHERE status_id IS NULL'
+        LOOP
+            INSERT INTO public.job_applications_status (status, created_at, updated_at)
+            VALUES (r.cur_status, r.st_created_at, r.updated_at)
+            RETURNING id INTO new_st_id;
+
+            UPDATE public.job_applications
+            SET status_id = new_st_id
+            WHERE id = r.id;
+        END LOOP;
+    ELSE
+        FOR r IN SELECT id, 
+                        CASE 
+                          WHEN applied_date IS NOT NULL AND applied_date::text ~ '^\d{4}-\d{2}-\d{2}' THEN applied_date::timestamptz 
+                          ELSE COALESCE(created_at, now()) 
+                        END as st_created_at, 
+                        updated_at 
+                 FROM public.job_applications 
+                 WHERE status_id IS NULL
+        LOOP
+            INSERT INTO public.job_applications_status (status, created_at, updated_at)
+            VALUES ('applied', r.st_created_at, r.updated_at)
+            RETURNING id INTO new_st_id;
+
+            UPDATE public.job_applications
+            SET status_id = new_st_id
+            WHERE id = r.id;
+        END LOOP;
+    END IF;
+END $$;
+
+-- Sync status created_at with applied_date for any existing linked status records
+UPDATE public.job_applications_status jas
+SET created_at = ja.applied_date::timestamptz
+FROM public.job_applications ja
+WHERE ja.status_id = jas.id
+  AND ja.applied_date IS NOT NULL
+  AND ja.applied_date::text ~ '^\d{4}-\d{2}-\d{2}';
+
+-- Drop legacy index and column safely outside DO block with CASCADE
+DROP INDEX IF EXISTS public.idx_job_applications_status;
+ALTER TABLE public.job_applications DROP COLUMN IF EXISTS status CASCADE;
+CREATE INDEX IF NOT EXISTS idx_job_applications_status_id ON public.job_applications(status_id);
+CREATE INDEX IF NOT EXISTS idx_job_applications_status_status ON public.job_applications_status(status);
 
 CREATE TABLE IF NOT EXISTS public.saved_job_links (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1297,18 +1388,39 @@ INSERT INTO public.job_platforms (name, url, is_active) VALUES
     ('Indeed', 'https://indeed.com', true)
 ON CONFLICT (name) DO UPDATE SET url = EXCLUDED.url;
 
+DELETE FROM public.job_application_ats_scores WHERE job_id IN (
+    SELECT id FROM public.job_applications WHERE company_name IN ('Stripe', 'Vercel', 'Figma')
+) OR application_id IN (
+    SELECT id FROM public.job_applications WHERE company_name IN ('Stripe', 'Vercel', 'Figma')
+);
 DELETE FROM public.job_applications WHERE company_name IN ('Stripe', 'Vercel', 'Figma');
+DELETE FROM public.job_applications_status WHERE id IN (
+    '00000000-0000-0000-0000-0000000000a1'::uuid,
+    '00000000-0000-0000-0000-0000000000a2'::uuid,
+    '00000000-0000-0000-0000-0000000000a3'::uuid
+);
+
+INSERT INTO public.job_applications_status (id, status, created_at, updated_at)
+VALUES
+    ('00000000-0000-0000-0000-0000000000a1'::uuid, 'interviewing', now() - interval '12 days', now() - interval '3 days'),
+    ('00000000-0000-0000-0000-0000000000a2'::uuid, 'applied', now() - interval '4 days', now() - interval '4 days'),
+    ('00000000-0000-0000-0000-0000000000a3'::uuid, 'accepted', now() - interval '28 days', now() - interval '7 days')
+ON CONFLICT (id) DO UPDATE
+SET status = EXCLUDED.status,
+    created_at = EXCLUDED.created_at,
+    updated_at = EXCLUDED.updated_at;
 
 INSERT INTO public.job_applications (
-    company_name, role_name, status, job_type, city, country,
+    status_id, company_name, role_name, job_type, city, country,
     salary_min_inr, salary_max_inr, salary_currency, application_link,
-    chatgpt_thread_link, applied_date, ats_score, follow_ups, notes, platform, platform_id
+    chatgpt_thread_link, applied_date, ats_score, follow_ups, notes, platform, platform_id,
+    created_at, updated_at
 )
 VALUES
     (
+        '00000000-0000-0000-0000-0000000000a1'::uuid,
         'Stripe',
         'Senior Full Stack Engineer (Core Infra)',
-        'interviewing',
         'Remote',
         'Bengaluru',
         'India',
@@ -1322,12 +1434,14 @@ VALUES
         '[{"id":"fu_1","date":"2026-09-08","type":"Email","notes":"Recruiter screen completed. Advanced to Technical Deep Dive round."},{"id":"fu_2","date":"2026-09-11","type":"Phone Call","notes":"Reviewed System Architecture expectations with hiring manager."}]'::jsonb,
         'Tailored resume with emphasis on distributed ledger and payments transaction reliability.',
         'LinkedIn',
-        (SELECT id FROM public.job_platforms WHERE name = 'LinkedIn' LIMIT 1)
+        (SELECT id FROM public.job_platforms WHERE name = 'LinkedIn' LIMIT 1),
+        now() - interval '12 days',
+        now() - interval '3 days'
     ),
     (
+        '00000000-0000-0000-0000-0000000000a2'::uuid,
         'Vercel',
         'Staff Frontend Engineer (Developer Experience)',
-        'applied',
         'Remote',
         'San Francisco',
         'United States',
@@ -1341,12 +1455,14 @@ VALUES
         '[{"id":"fu_3","date":"2026-09-10","type":"LinkedIn","notes":"Sent connection request and personalized note to the VP of Engineering."}]'::jsonb,
         'Highlighted React performance optimization, next.js server components, and bundle analysis.',
         'Ashby',
-        (SELECT id FROM public.job_platforms WHERE name = 'Ashby' LIMIT 1)
+        (SELECT id FROM public.job_platforms WHERE name = 'Ashby' LIMIT 1),
+        now() - interval '4 days',
+        now() - interval '4 days'
     ),
     (
+        '00000000-0000-0000-0000-0000000000a3'::uuid,
         'Figma',
         'Lead Platform Engineer',
-        'offered',
         'Hybrid',
         'London',
         'United Kingdom',
@@ -1360,14 +1476,10 @@ VALUES
         '[{"id":"fu_4","date":"2026-09-05","type":"Email","notes":"Offer letter received! Reviewing compensation package and equity grants."}]'::jsonb,
         'Strong alignment with real-time multiplayer WebAssembly and CRDT synchronization.',
         'Wellfound (AngelList)',
-        (SELECT id FROM public.job_platforms WHERE name = 'Wellfound (AngelList)' LIMIT 1)
+        (SELECT id FROM public.job_platforms WHERE name = 'Wellfound (AngelList)' LIMIT 1),
+        now() - interval '28 days',
+        now() - interval '7 days'
     );
-
-DELETE FROM public.job_application_ats_scores WHERE job_id IN (
-    SELECT id FROM public.job_applications WHERE company_name IN ('Stripe', 'Vercel', 'Figma')
-) OR application_id IN (
-    SELECT id FROM public.job_applications WHERE company_name IN ('Stripe', 'Vercel', 'Figma')
-);
 
 INSERT INTO public.job_application_ats_scores (job_id, application_id, platform_id, platform_name, score) VALUES
     ((SELECT id FROM public.job_applications WHERE company_name = 'Stripe' LIMIT 1), (SELECT id FROM public.job_applications WHERE company_name = 'Stripe' LIMIT 1), (SELECT id FROM public.ats_platforms WHERE name = 'ChatGPT' LIMIT 1), 'ChatGPT', 90),

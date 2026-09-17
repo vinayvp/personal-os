@@ -115,6 +115,12 @@ const getLocalApplications = (): JobApplication[] => {
     return Array.isArray(parsed)
       ? parsed.map((app) => ({
           ...app,
+          status: app.status_record?.status || app.status || 'applied',
+          status_updated_at:
+            app.status_record?.updated_at ||
+            app.status_updated_at ||
+            app.updated_at ||
+            app.created_at,
           follow_ups: normalizeFollowUps(app.follow_ups),
           ats_score: normalizeAtsScore(app.ats_score),
         }))
@@ -279,23 +285,82 @@ export const downloadDocument = downloadResume;
 
 export const fetchJobApplications = async (): Promise<JobApplication[]> => {
   try {
-    const { data, error } = await (supabase
-      .from('job_applications' as any)
-      .select('*')
-      .order('applied_date', { ascending: false }) as any);
+    let rawList: any[] = [];
+    let loadSuccessful = false;
 
-    if (error) {
-      // If table does not exist yet, use localStorage cache
-      console.warn('job_applications table not ready, using local storage fallback:', error.message);
-      return getLocalApplications();
+    // 1. Attempt joined select with status_record
+    try {
+      const { data: joinedData, error: joinedError } = await (supabase
+        .from('job_applications' as any)
+        .select(`
+          *,
+          status_record:job_applications_status(*)
+        `)
+        .order('applied_date', { ascending: false }) as any);
+
+      if (!joinedError && Array.isArray(joinedData)) {
+        rawList = joinedData;
+        loadSuccessful = true;
+      }
+    } catch {
+      // Ignore join failure and fall back
     }
 
-    const rawList: any[] = data || [];
-    const applications: JobApplication[] = rawList.map((app) => ({
-      ...app,
-      follow_ups: normalizeFollowUps(app.follow_ups),
-      ats_score: normalizeAtsScore(app.ats_score),
-    }));
+    // 2. Fallback: select job_applications and query status table separately
+    if (!loadSuccessful) {
+      const { data: appsData, error: appsError } = await (supabase
+        .from('job_applications' as any)
+        .select('*')
+        .order('applied_date', { ascending: false }) as any);
+
+      if (appsError) {
+        console.warn('job_applications table not ready, using local storage fallback:', appsError.message);
+        return getLocalApplications();
+      }
+
+      rawList = appsData || [];
+
+      // Attempt to merge status records
+      try {
+        const { data: statusList, error: statusErr } = await (supabase
+          .from('job_applications_status' as any)
+          .select('*') as any);
+
+        if (!statusErr && Array.isArray(statusList) && statusList.length > 0) {
+          const statusMap = new Map(statusList.map((s: any) => [s.id, s]));
+          rawList = rawList.map((app: any) => ({
+            ...app,
+            status_record: app.status_id ? statusMap.get(app.status_id) : app.status_record,
+          }));
+        }
+      } catch {
+        // Continue with app-level values
+      }
+    }
+
+    const applications: JobApplication[] = rawList.map((app) => {
+      const statusRecord = Array.isArray(app.status_record)
+        ? app.status_record[0]
+        : app.status_record;
+
+      const resolvedStatus = statusRecord?.status || app.status || 'applied';
+      const resolvedStatusUpdatedAt =
+        statusRecord?.updated_at ||
+        app.status_updated_at ||
+        app.updated_at ||
+        app.created_at;
+
+      return {
+        ...app,
+        status_id: app.status_id || statusRecord?.id || null,
+        status: resolvedStatus,
+        status_record: statusRecord || null,
+        status_updated_at: resolvedStatusUpdatedAt,
+        follow_ups: normalizeFollowUps(app.follow_ups),
+        ats_score: normalizeAtsScore(app.ats_score),
+      };
+    });
+
     saveLocalApplications(applications);
     return applications;
   } catch (err) {
@@ -309,11 +374,44 @@ export const createJobApplication = async (
 ): Promise<JobApplication> => {
   const timestamp = new Date().toISOString();
   const id = crypto.randomUUID ? crypto.randomUUID() : `job_${Date.now()}`;
-  const { ats_scores: newAtsScores, ...jobData } = newJob;
+  const statusId = crypto.randomUUID ? crypto.randomUUID() : `st_${Date.now()}`;
+  const { ats_scores: newAtsScores, status: inputStatus, ...jobData } = newJob;
+  const initialStatus = inputStatus || 'applied';
+
+  // 1. Create status record in job_applications_status
+  let createdStatusId = statusId;
+  const statusCreatedAt = newJob.applied_date
+    ? (newJob.applied_date.includes('T') ? newJob.applied_date : `${newJob.applied_date}T00:00:00.000Z`)
+    : timestamp;
+  let statusRecord: any = {
+    id: statusId,
+    status: initialStatus,
+    created_at: statusCreatedAt,
+    updated_at: timestamp,
+  };
+
+  try {
+    const { data: statusData, error: statusErr } = await (supabase
+      .from('job_applications_status' as any)
+      .insert([statusRecord])
+      .select()
+      .single() as any);
+
+    if (!statusErr && statusData?.id) {
+      createdStatusId = statusData.id;
+      statusRecord = statusData;
+    }
+  } catch (err) {
+    console.warn('Could not insert to job_applications_status, using local fallback:', err);
+  }
 
   const payload: JobApplication = {
     ...jobData,
     id,
+    status_id: createdStatusId,
+    status: initialStatus,
+    status_record: statusRecord,
+    status_updated_at: timestamp,
     created_at: timestamp,
     updated_at: timestamp,
     follow_ups: normalizeFollowUps(newJob.follow_ups),
@@ -321,24 +419,37 @@ export const createJobApplication = async (
   };
 
   try {
+    const dbPayload: any = { ...payload };
+    delete dbPayload.status_record;
+    delete dbPayload.status_updated_at;
+    delete dbPayload.status;
+
     let { data, error } = await (supabase
       .from('job_applications' as any)
-      .insert([payload])
+      .insert([dbPayload])
       .select()
       .single() as any);
 
-    // If Supabase table does not yet have ats_score or follow_ups columns, retry without them
+    // If Supabase table does not yet have certain columns or is on legacy schema
     if (error && (error.message?.includes('column') || error.code === '42703')) {
-      const fallbackPayload = { ...payload };
+      const fallbackPayload = { ...dbPayload };
       delete (fallbackPayload as any).ats_score;
       delete (fallbackPayload as any).follow_ups;
+      delete (fallbackPayload as any).status_id;
+      // In case legacy table expects status column
+      fallbackPayload.status = initialStatus;
       const retry = await (supabase
         .from('job_applications' as any)
         .insert([fallbackPayload])
         .select()
         .single() as any);
       if (!retry.error && retry.data) {
-        data = { ...retry.data, ats_score: payload.ats_score, follow_ups: payload.follow_ups };
+        data = {
+          ...retry.data,
+          status_id: payload.status_id,
+          ats_score: payload.ats_score,
+          follow_ups: payload.follow_ups,
+        };
         error = null;
       }
     }
@@ -356,6 +467,10 @@ export const createJobApplication = async (
 
     const result: JobApplication = {
       ...(data || payload),
+      status_id: createdStatusId,
+      status: initialStatus,
+      status_record: statusRecord,
+      status_updated_at: timestamp,
       follow_ups: normalizeFollowUps(data?.follow_ups ?? payload.follow_ups),
       ats_score: normalizeAtsScore(data?.ats_score ?? payload.ats_score),
     };
@@ -384,10 +499,100 @@ export const updateJobApplication = async (
   id: string,
   updates: Partial<JobApplication>
 ): Promise<JobApplication> => {
-  const { ats_scores: updatedAtsScores, ...jobUpdates } = updates;
-  const payload = {
+  const { 
+    ats_scores: updatedAtsScores, 
+    status_record: _, 
+    status_updated_at: __, 
+    status: inputStatus, 
+    ...jobUpdates 
+  } = updates;
+  const nowTimestamp = new Date().toISOString();
+  const current = getLocalApplications();
+  const existing = current.find(item => item.id === id);
+
+  let statusRecord = existing?.status_record;
+
+  // 1. If status or applied_date is being updated, update or create the status record in job_applications_status
+  if (inputStatus !== undefined || jobUpdates.applied_date !== undefined) {
+    const targetStatusId = existing?.status_id || statusRecord?.id;
+    const resolvedAppliedDate = jobUpdates.applied_date ?? existing?.applied_date;
+    const resolvedCreatedAt = resolvedAppliedDate
+      ? (resolvedAppliedDate.includes('T') ? resolvedAppliedDate : `${resolvedAppliedDate}T00:00:00.000Z`)
+      : (statusRecord?.created_at || existing?.created_at || nowTimestamp);
+
+    if (targetStatusId) {
+      const statusPatch: any = {
+        updated_at: inputStatus !== undefined ? nowTimestamp : (statusRecord?.updated_at || nowTimestamp),
+      };
+      if (inputStatus !== undefined) {
+        statusPatch.status = inputStatus;
+      }
+      if (jobUpdates.applied_date !== undefined) {
+        statusPatch.created_at = resolvedCreatedAt;
+      }
+
+      try {
+        const { data: updatedStatus, error: statusUpdateErr } = await (supabase
+          .from('job_applications_status' as any)
+          .update(statusPatch)
+          .eq('id', targetStatusId)
+          .select()
+          .single() as any);
+
+        if (!statusUpdateErr && updatedStatus) {
+          statusRecord = updatedStatus;
+        } else {
+          statusRecord = {
+            id: targetStatusId,
+            status: inputStatus !== undefined ? inputStatus : (statusRecord?.status || 'applied'),
+            created_at: resolvedCreatedAt,
+            updated_at: statusPatch.updated_at,
+          };
+        }
+      } catch {
+        statusRecord = {
+          id: targetStatusId,
+          status: inputStatus !== undefined ? inputStatus : (statusRecord?.status || 'applied'),
+          created_at: resolvedCreatedAt,
+          updated_at: statusPatch.updated_at,
+        };
+      }
+      (jobUpdates as any).status_id = targetStatusId;
+    } else {
+      // Create new status record if application had none
+      const newStatusId = crypto.randomUUID ? crypto.randomUUID() : `st_${Date.now()}`;
+      const statusCreatedAt = resolvedCreatedAt;
+      try {
+        const { data: createdStatus } = await (supabase
+          .from('job_applications_status' as any)
+          .insert([{
+            id: newStatusId,
+            status: inputStatus !== undefined ? inputStatus : (existing?.status || 'applied'),
+            created_at: statusCreatedAt,
+            updated_at: nowTimestamp,
+          }])
+          .select()
+          .single() as any);
+
+        if (createdStatus) {
+          statusRecord = createdStatus;
+          (jobUpdates as any).status_id = createdStatus.id;
+        }
+      } catch {
+        statusRecord = {
+          id: newStatusId,
+          status: inputStatus !== undefined ? inputStatus : (existing?.status || 'applied'),
+          created_at: statusCreatedAt,
+          updated_at: nowTimestamp,
+        };
+        (jobUpdates as any).status_id = newStatusId;
+      }
+    }
+  }
+
+  const payload: any = {
     ...jobUpdates,
-    updated_at: new Date().toISOString(),
+    updated_at: nowTimestamp,
   };
 
   try {
@@ -398,11 +603,15 @@ export const updateJobApplication = async (
       .select()
       .single() as any);
 
-    // If Supabase table does not yet have ats_score or follow_ups columns, retry without them
+    // If Supabase table does not yet have certain columns or is on legacy schema
     if (error && (error.message?.includes('column') || error.code === '42703')) {
       const fallbackPayload = { ...payload };
       delete (fallbackPayload as any).ats_score;
       delete (fallbackPayload as any).follow_ups;
+      delete (fallbackPayload as any).status_id;
+      if (inputStatus !== undefined) {
+        (fallbackPayload as any).status = inputStatus;
+      }
       const retry = await (supabase
         .from('job_applications' as any)
         .update(fallbackPayload)
@@ -423,6 +632,10 @@ export const updateJobApplication = async (
       const updatedApp: JobApplication = {
         ...(existing || ({} as JobApplication)),
         ...payload,
+        status: updates.status ?? existing?.status ?? 'applied',
+        status_id: statusRecord?.id ?? existing?.status_id ?? null,
+        status_record: statusRecord ?? existing?.status_record ?? null,
+        status_updated_at: statusRecord?.updated_at ?? existing?.status_updated_at ?? existing?.updated_at,
         follow_ups: normalizeFollowUps(payload.follow_ups ?? existing?.follow_ups),
         ats_score: normalizeAtsScore(payload.ats_score ?? existing?.ats_score),
       };
@@ -437,6 +650,10 @@ export const updateJobApplication = async (
     const result: JobApplication = {
       ...(data || existing || {}),
       ...payload,
+      status: updates.status ?? existing?.status ?? 'applied',
+      status_id: statusRecord?.id ?? existing?.status_id ?? null,
+      status_record: statusRecord ?? existing?.status_record ?? null,
+      status_updated_at: statusRecord?.updated_at ?? existing?.status_updated_at ?? existing?.updated_at,
       follow_ups: normalizeFollowUps(data?.follow_ups ?? payload.follow_ups ?? existing?.follow_ups),
       ats_score: normalizeAtsScore(data?.ats_score ?? payload.ats_score ?? existing?.ats_score),
     };
@@ -455,6 +672,10 @@ export const updateJobApplication = async (
     const fallbackApp: JobApplication = {
       ...(existing || ({} as JobApplication)),
       ...payload,
+      status: updates.status ?? existing?.status ?? 'applied',
+      status_id: statusRecord?.id ?? existing?.status_id ?? null,
+      status_record: statusRecord ?? existing?.status_record ?? null,
+      status_updated_at: statusRecord?.updated_at ?? existing?.status_updated_at ?? existing?.updated_at,
       follow_ups: normalizeFollowUps(payload.follow_ups ?? existing?.follow_ups),
       ats_score: normalizeAtsScore(payload.ats_score ?? existing?.ats_score),
     };
@@ -468,8 +689,13 @@ export const updateJobApplication = async (
 };
 
 export const deleteJobApplication = async (id: string): Promise<void> => {
+  const current = getLocalApplications();
+  const existing = current.find(item => item.id === id);
   try {
     await (supabase.from('job_applications' as any).delete().eq('id', id) as any);
+    if (existing?.status_id) {
+      await (supabase.from('job_applications_status' as any).delete().eq('id', existing.status_id) as any);
+    }
   } catch (e) {
     console.error('Delete from Supabase failed:', e);
   } finally {
@@ -535,9 +761,11 @@ export const calculateJobStats = (applications: JobApplication[]): JobStatsData 
         stats.accepted++;
         break;
       case 'no response':
+      case 'no-response':
         stats.noResponse++;
         break;
       case 'not selected':
+      case 'not-selected':
         stats.notSelected++;
         break;
       case 'withdrew':
@@ -586,9 +814,11 @@ export const calculateCountryStats = (applications: JobApplication[]): CountrySt
         stat.accepted++;
         break;
       case 'no response':
+      case 'no-response':
         stat.noResponse++;
         break;
       case 'not selected':
+      case 'not-selected':
         stat.notSelected++;
         break;
       case 'withdrew':

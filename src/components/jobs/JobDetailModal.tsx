@@ -43,7 +43,7 @@ import {
   Send,
   MessageSquare,
 } from 'lucide-react';
-import { JobApplication, STATUS_CONFIG, JobFollowUp, FollowUpType, JobAtsScore } from './types';
+import { JobApplication, STATUS_CONFIG, JobFollowUp, FollowUpType, JobAtsScore, calculateJobDuration } from './types';
 import {
   getResumeSignedUrl,
   downloadResume,
@@ -288,6 +288,24 @@ const JobDetailModal: React.FC<Props> = ({ job, isOpen, onClose, onEdit, onDelet
                 <span className={`w-2 h-2 rounded-full mr-2 ${config.dotClass}`} />
                 {config.label}
               </Badge>
+
+              {(() => {
+                const duration = calculateJobDuration(job);
+                return (
+                  <Badge
+                    variant="outline"
+                    className={`text-xs px-2.5 py-1 border ${
+                      duration.isTerminal
+                        ? 'bg-slate-500/10 text-slate-300 border-slate-500/30'
+                        : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                    }`}
+                    title={duration.tooltip}
+                  >
+                    <Clock className="w-3 h-3 mr-1.5" />
+                    {duration.isTerminal ? `${duration.days}d to ${duration.statusLabel}` : `${duration.days}d active`}
+                  </Badge>
+                );
+              })()}
 
               {job.job_type && (
                 <Badge variant="secondary" className="text-xs px-2.5 py-1 font-medium bg-muted/80 text-foreground/90 border border-border/50">

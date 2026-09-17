@@ -27,7 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { JobApplication, STATUS_CONFIG } from './types';
+import { JobApplication, STATUS_CONFIG, calculateJobDuration } from './types';
 import {
   downloadResume,
   formatSalaryInLakhs,
@@ -170,6 +170,23 @@ const JobCard: React.FC<Props> = ({ job, onViewDetails, onEdit, onDelete }) => {
               <Calendar className="w-3 h-3 text-muted-foreground" />
               Applied {formattedDate}
             </span>
+            {(() => {
+              const duration = calculateJobDuration(job);
+              return (
+                <>
+                  <span>•</span>
+                  <span
+                    className={`inline-flex items-center gap-1 font-medium text-[11px] ${
+                      duration.isTerminal ? 'text-slate-400' : 'text-blue-400'
+                    }`}
+                    title={duration.tooltip}
+                  >
+                    <Clock className="w-3 h-3" />
+                    {duration.isTerminal ? `${duration.days}d to ${duration.statusLabel}` : `${duration.days}d active`}
+                  </span>
+                </>
+              );
+            })()}
           </div>
 
           {/* Secondary metadata pills */}
