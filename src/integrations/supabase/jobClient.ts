@@ -352,6 +352,7 @@ export const fetchJobApplications = async (): Promise<JobApplication[]> => {
 
       return {
         ...app,
+        visa_sponsorship: app.visa_sponsorship || 'no',
         status_id: app.status_id || statusRecord?.id || null,
         status: resolvedStatus,
         status_record: statusRecord || null,
@@ -408,6 +409,7 @@ export const createJobApplication = async (
   const payload: JobApplication = {
     ...jobData,
     id,
+    visa_sponsorship: newJob.visa_sponsorship || 'no',
     status_id: createdStatusId,
     status: initialStatus,
     status_record: statusRecord,
@@ -436,6 +438,7 @@ export const createJobApplication = async (
       delete (fallbackPayload as any).ats_score;
       delete (fallbackPayload as any).follow_ups;
       delete (fallbackPayload as any).status_id;
+      delete (fallbackPayload as any).visa_sponsorship;
       // In case legacy table expects status column
       fallbackPayload.status = initialStatus;
       const retry = await (supabase
@@ -609,6 +612,7 @@ export const updateJobApplication = async (
       delete (fallbackPayload as any).ats_score;
       delete (fallbackPayload as any).follow_ups;
       delete (fallbackPayload as any).status_id;
+      delete (fallbackPayload as any).visa_sponsorship;
       if (inputStatus !== undefined) {
         (fallbackPayload as any).status = inputStatus;
       }
@@ -747,6 +751,12 @@ export const calculateJobStats = (applications: JobApplication[]): JobStatsData 
     noResponse: 0,
     notSelected: 0,
     withdrew: 0,
+    visaSponsorship: {
+      yes: 0,
+      maybeYes: 0,
+      maybeNo: 0,
+      no: 0,
+    },
   };
 
   applications.forEach(app => {
@@ -771,6 +781,17 @@ export const calculateJobStats = (applications: JobApplication[]): JobStatsData 
       case 'withdrew':
         stats.withdrew++;
         break;
+    }
+
+    const visa = (app.visa_sponsorship || 'no').trim().toLowerCase();
+    if (visa === 'yes') {
+      stats.visaSponsorship.yes++;
+    } else if (visa === 'maybe yes' || visa === 'maybe-yes') {
+      stats.visaSponsorship.maybeYes++;
+    } else if (visa === 'maybe no' || visa === 'maybe-no') {
+      stats.visaSponsorship.maybeNo++;
+    } else {
+      stats.visaSponsorship.no++;
     }
   });
 

@@ -8,7 +8,13 @@ import {
   Clock,
   CheckCircle2,
 } from 'lucide-react';
-import { JobApplication, STATUS_CONFIG, calculateJobDuration } from './types';
+import {
+  JobApplication,
+  STATUS_CONFIG,
+  calculateJobDuration,
+  VISA_SPONSORSHIP_CONFIG,
+  VisaSponsorship,
+} from './types';
 import {
   formatSalaryInLakhs,
   normalizeAtsScore,
@@ -34,6 +40,7 @@ const JobTable: React.FC<Props> = ({ jobs, onViewDetails }) => {
             <th className="py-3 px-3">ATS Score</th>
             <th className="py-3 px-3">Status</th>
             <th className="py-3 px-3">Platform</th>
+            <th className="py-3 px-3 whitespace-nowrap">Visa</th>
             <th className="py-3 px-4 whitespace-nowrap">Days</th>
           </tr>
         </thead>
@@ -171,6 +178,20 @@ const JobTable: React.FC<Props> = ({ jobs, onViewDetails }) => {
                   ) : (
                     <span>—</span>
                   )}
+                </td>
+
+                {/* Visa Sponsorship */}
+                <td className="py-3 px-3 whitespace-nowrap">
+                  {(() => {
+                    const visaKey = (job.visa_sponsorship || 'no') as VisaSponsorship;
+                    const vConfig = VISA_SPONSORSHIP_CONFIG[visaKey] || VISA_SPONSORSHIP_CONFIG.no;
+                    return (
+                      <Badge variant="outline" className={`text-xs border ${vConfig.badgeClass}`} title={vConfig.description}>
+                        <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${vConfig.dotClass}`} />
+                        {vConfig.label}
+                      </Badge>
+                    );
+                  })()}
                 </td>
 
                 {/* Days / Timeline */}

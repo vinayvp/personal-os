@@ -648,6 +648,7 @@ ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS ats_score NUMERIC;
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS follow_ups JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS follow_up_notes TEXT;
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS visa_sponsorship TEXT DEFAULT 'no';
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS user_id UUID;
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 ALTER TABLE public.job_applications ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
@@ -718,6 +719,7 @@ DROP INDEX IF EXISTS public.idx_job_applications_status;
 ALTER TABLE public.job_applications DROP COLUMN IF EXISTS status CASCADE;
 CREATE INDEX IF NOT EXISTS idx_job_applications_status_id ON public.job_applications(status_id);
 CREATE INDEX IF NOT EXISTS idx_job_applications_status_status ON public.job_applications_status(status);
+CREATE INDEX IF NOT EXISTS idx_job_applications_visa_sponsorship ON public.job_applications(visa_sponsorship);
 
 CREATE TABLE IF NOT EXISTS public.saved_job_links (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1389,29 +1391,31 @@ INSERT INTO public.job_platforms (name, url, is_active) VALUES
 ON CONFLICT (name) DO UPDATE SET url = EXCLUDED.url;
 
 DELETE FROM public.job_application_ats_scores WHERE job_id IN (
-    SELECT id FROM public.job_applications WHERE company_name IN ('Stripe', 'Vercel', 'Figma')
+    SELECT id FROM public.job_applications WHERE company_name IN ('Stripe', 'Vercel', 'Figma', 'Canva')
 ) OR application_id IN (
-    SELECT id FROM public.job_applications WHERE company_name IN ('Stripe', 'Vercel', 'Figma')
+    SELECT id FROM public.job_applications WHERE company_name IN ('Stripe', 'Vercel', 'Figma', 'Canva')
 );
-DELETE FROM public.job_applications WHERE company_name IN ('Stripe', 'Vercel', 'Figma');
+DELETE FROM public.job_applications WHERE company_name IN ('Stripe', 'Vercel', 'Figma', 'Canva');
 DELETE FROM public.job_applications_status WHERE id IN (
     '00000000-0000-0000-0000-0000000000a1'::uuid,
     '00000000-0000-0000-0000-0000000000a2'::uuid,
-    '00000000-0000-0000-0000-0000000000a3'::uuid
+    '00000000-0000-0000-0000-0000000000a3'::uuid,
+    '00000000-0000-0000-0000-0000000000a4'::uuid
 );
 
 INSERT INTO public.job_applications_status (id, status, created_at, updated_at)
 VALUES
     ('00000000-0000-0000-0000-0000000000a1'::uuid, 'interviewing', now() - interval '12 days', now() - interval '3 days'),
     ('00000000-0000-0000-0000-0000000000a2'::uuid, 'applied', now() - interval '4 days', now() - interval '4 days'),
-    ('00000000-0000-0000-0000-0000000000a3'::uuid, 'accepted', now() - interval '28 days', now() - interval '7 days')
+    ('00000000-0000-0000-0000-0000000000a3'::uuid, 'accepted', now() - interval '28 days', now() - interval '7 days'),
+    ('00000000-0000-0000-0000-0000000000a4'::uuid, 'negotiating', now() - interval '18 days', now() - interval '2 days')
 ON CONFLICT (id) DO UPDATE
 SET status = EXCLUDED.status,
     created_at = EXCLUDED.created_at,
     updated_at = EXCLUDED.updated_at;
 
 INSERT INTO public.job_applications (
-    status_id, company_name, role_name, job_type, city, country,
+    status_id, company_name, role_name, job_type, city, country, visa_sponsorship,
     salary_min_inr, salary_max_inr, salary_currency, application_link,
     chatgpt_thread_link, applied_date, ats_score, follow_ups, notes, platform, platform_id,
     created_at, updated_at
@@ -1424,6 +1428,7 @@ VALUES
         'Remote',
         'Bengaluru',
         'India',
+        'maybe yes',
         4200000,
         5200000,
         'INR',
@@ -1445,6 +1450,7 @@ VALUES
         'Remote',
         'San Francisco',
         'United States',
+        'yes',
         5000000,
         6500000,
         'INR',
@@ -1466,6 +1472,7 @@ VALUES
         'Hybrid',
         'London',
         'United Kingdom',
+        'no',
         6000000,
         7500000,
         'INR',
@@ -1479,6 +1486,28 @@ VALUES
         (SELECT id FROM public.job_platforms WHERE name = 'Wellfound (AngelList)' LIMIT 1),
         now() - interval '28 days',
         now() - interval '7 days'
+    ),
+    (
+        '00000000-0000-0000-0000-0000000000a4'::uuid,
+        'Canva',
+        'Senior Frontend Infrastructure Engineer',
+        'Hybrid',
+        'Sydney',
+        'Australia',
+        'maybe no',
+        5500000,
+        6800000,
+        'INR',
+        'https://canva.com/careers',
+        NULL,
+        CURRENT_DATE - 18,
+        87,
+        '[{"id":"fu_5","date":"2026-09-08","type":"Email","notes":"Final interview passed. Discussing visa limitations and relocation requirements."}]'::jsonb,
+        'Focused on large-scale web canvas rendering and asset pipeline optimization.',
+        'LinkedIn',
+        (SELECT id FROM public.job_platforms WHERE name = 'LinkedIn' LIMIT 1),
+        now() - interval '18 days',
+        now() - interval '2 days'
     );
 
 INSERT INTO public.job_application_ats_scores (job_id, application_id, platform_id, platform_name, score) VALUES
@@ -1487,7 +1516,8 @@ INSERT INTO public.job_application_ats_scores (job_id, application_id, platform_
     ((SELECT id FROM public.job_applications WHERE company_name = 'Vercel' LIMIT 1), (SELECT id FROM public.job_applications WHERE company_name = 'Vercel' LIMIT 1), (SELECT id FROM public.ats_platforms WHERE name = 'ChatGPT' LIMIT 1), 'ChatGPT', 94),
     ((SELECT id FROM public.job_applications WHERE company_name = 'Vercel' LIMIT 1), (SELECT id FROM public.job_applications WHERE company_name = 'Vercel' LIMIT 1), (SELECT id FROM public.ats_platforms WHERE name = 'Jobscan' LIMIT 1), 'Jobscan', 90),
     ((SELECT id FROM public.job_applications WHERE company_name = 'Figma' LIMIT 1), (SELECT id FROM public.job_applications WHERE company_name = 'Figma' LIMIT 1), (SELECT id FROM public.ats_platforms WHERE name = 'ChatGPT' LIMIT 1), 'ChatGPT', 88),
-    ((SELECT id FROM public.job_applications WHERE company_name = 'Figma' LIMIT 1), (SELECT id FROM public.job_applications WHERE company_name = 'Figma' LIMIT 1), (SELECT id FROM public.ats_platforms WHERE name = 'Resume Worded' LIMIT 1), 'Resume Worded', 82);
+    ((SELECT id FROM public.job_applications WHERE company_name = 'Figma' LIMIT 1), (SELECT id FROM public.job_applications WHERE company_name = 'Figma' LIMIT 1), (SELECT id FROM public.ats_platforms WHERE name = 'Resume Worded' LIMIT 1), 'Resume Worded', 82),
+    ((SELECT id FROM public.job_applications WHERE company_name = 'Canva' LIMIT 1), (SELECT id FROM public.job_applications WHERE company_name = 'Canva' LIMIT 1), (SELECT id FROM public.ats_platforms WHERE name = 'ChatGPT' LIMIT 1), 'ChatGPT', 89);
 
 DELETE FROM public.saved_job_links WHERE company_name IN ('Datadog', 'Linear');
 

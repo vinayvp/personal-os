@@ -42,8 +42,18 @@ import {
   Plus,
   Send,
   MessageSquare,
+  ShieldCheck,
 } from 'lucide-react';
-import { JobApplication, STATUS_CONFIG, JobFollowUp, FollowUpType, JobAtsScore, calculateJobDuration } from './types';
+import {
+  JobApplication,
+  STATUS_CONFIG,
+  JobFollowUp,
+  FollowUpType,
+  JobAtsScore,
+  calculateJobDuration,
+  VISA_SPONSORSHIP_CONFIG,
+  VisaSponsorship,
+} from './types';
 import {
   getResumeSignedUrl,
   downloadResume,
@@ -381,6 +391,29 @@ const JobDetailModal: React.FC<Props> = ({ job, isOpen, onClose, onEdit, onDelet
                   </div>
                 </div>
               )}
+
+              {/* Visa Sponsorship */}
+              <div className="flex-1 p-3.5 space-y-1">
+                <span className="text-muted-foreground text-[11px] font-medium flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+                  Visa Sponsorship
+                </span>
+                <div className="pt-0.5">
+                  {(() => {
+                    const visaKey = (job.visa_sponsorship || 'no') as VisaSponsorship;
+                    const vConfig = VISA_SPONSORSHIP_CONFIG[visaKey] || VISA_SPONSORSHIP_CONFIG.no;
+                    return (
+                      <span
+                        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-md border ${vConfig.badgeClass}`}
+                        title={vConfig.description}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${vConfig.dotClass}`} />
+                        <span>{vConfig.label}</span>
+                      </span>
+                    );
+                  })()}
+                </div>
+              </div>
 
               {job.found_in && (
                 <div className="flex-1 p-3.5 space-y-1">

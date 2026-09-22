@@ -38,6 +38,7 @@ import {
   Clock,
   Calculator,
   MessageSquare,
+  ShieldCheck,
 } from 'lucide-react';
 import { AtsCalculatorModal, AtsSourceEntry } from './AtsCalculatorModal';
 import {
@@ -49,6 +50,8 @@ import {
   COMMON_CURRENCIES,
   JOB_TYPE_OPTIONS,
   JobPlatform,
+  VisaSponsorship,
+  VISA_SPONSORSHIP_OPTIONS,
 } from './types';
 import {
   uploadResume,
@@ -91,6 +94,7 @@ const CreateJobModal: React.FC<Props> = ({
   const [jobType, setJobType] = useState('Full-time');
   const [isCustomJobType, setIsCustomJobType] = useState(false);
   const [customJobType, setCustomJobType] = useState('');
+  const [visaSponsorship, setVisaSponsorship] = useState<VisaSponsorship>('no');
   const [status, setStatus] = useState<JobStatus>('applied');
   const [salaryMin, setSalaryMin] = useState('');
   const [salaryMax, setSalaryMax] = useState('');
@@ -130,6 +134,7 @@ const CreateJobModal: React.FC<Props> = ({
     setJobType('Full-time');
     setIsCustomJobType(false);
     setCustomJobType('');
+    setVisaSponsorship('no');
     setStatus('applied');
     setSalaryMin('');
     setSalaryMax('');
@@ -161,6 +166,7 @@ const CreateJobModal: React.FC<Props> = ({
         if (initialData.role_name) setRoleName(initialData.role_name);
         if (initialData.city) setCity(initialData.city);
         if (initialData.country) setCountry(initialData.country);
+        if (initialData.visa_sponsorship) setVisaSponsorship(initialData.visa_sponsorship as VisaSponsorship);
         if (initialData.application_link) setApplicationLink(initialData.application_link);
         if (initialData.chatgpt_thread_link) setChatgptThreadLink(initialData.chatgpt_thread_link);
         if (initialData.follow_up_notes) setFollowUpNotes(initialData.follow_up_notes);
@@ -303,6 +309,7 @@ const CreateJobModal: React.FC<Props> = ({
         city: city.trim() || null,
         country: country.trim() || null,
         job_type: (isCustomJobType ? customJobType.trim() : jobType) || null,
+        visa_sponsorship: visaSponsorship,
         status,
         salary_min: numMin,
         salary_max: numMax,
@@ -512,8 +519,8 @@ const CreateJobModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Location & Job Type */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+          {/* Location, Job Type & Visa Sponsorship */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             <div className="space-y-1.5">
               <Label htmlFor="city" className="text-xs font-semibold flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
@@ -592,6 +599,31 @@ const CreateJobModal: React.FC<Props> = ({
                   </SelectContent>
                 </Select>
               )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="visaSponsorship" className="text-xs font-semibold flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground" />
+                Visa Sponsorship
+              </Label>
+              <Select
+                value={visaSponsorship}
+                onValueChange={(val) => setVisaSponsorship(val as VisaSponsorship)}
+              >
+                <SelectTrigger id="visaSponsorship" className="h-9 text-xs">
+                  <SelectValue placeholder="Visa Sponsorship" />
+                </SelectTrigger>
+                <SelectContent>
+                  {VISA_SPONSORSHIP_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      <span className="flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${opt.dotClass}`} />
+                        <span>{opt.label}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

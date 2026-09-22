@@ -541,6 +541,12 @@ def verify_replica_sync(primary, replica):
       created_at: new Date(Date.now() - 28 * 86400000).toISOString(),
       updated_at: new Date(Date.now() - 7 * 86400000).toISOString(),
     },
+    {
+      id: 'jas_4',
+      status: 'negotiating',
+      created_at: new Date(Date.now() - 18 * 86400000).toISOString(),
+      updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+    },
   ],
 
   job_applications: [
@@ -556,6 +562,7 @@ def verify_replica_sync(primary, replica):
       job_type: 'Remote',
       city: 'Bengaluru',
       country: 'India',
+      visa_sponsorship: 'maybe yes',
       salary_min_inr: 4200000,
       salary_max_inr: 5200000,
       salary_currency: 'INR',
@@ -586,6 +593,7 @@ def verify_replica_sync(primary, replica):
       job_type: 'Remote',
       city: 'San Francisco',
       country: 'United States',
+      visa_sponsorship: 'yes',
       salary_min_inr: 5000000,
       salary_max_inr: 6500000,
       salary_currency: 'INR',
@@ -615,6 +623,7 @@ def verify_replica_sync(primary, replica):
       job_type: 'Hybrid',
       city: 'London',
       country: 'United Kingdom',
+      visa_sponsorship: 'no',
       salary_min_inr: 6000000,
       salary_max_inr: 7500000,
       salary_currency: 'INR',
@@ -631,6 +640,34 @@ def verify_replica_sync(primary, replica):
         { id: 'sc_6', job_id: 'j3', platform_name: 'Resume Worded', score: 82 },
       ],
     },
+    {
+      id: 'j4',
+      company_name: 'Canva',
+      role_name: 'Senior Frontend Infrastructure Engineer',
+      status_id: 'jas_4',
+      status: 'negotiating',
+      status_updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+      created_at: new Date(Date.now() - 18 * 86400000).toISOString(),
+      updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+      job_type: 'Hybrid',
+      city: 'Sydney',
+      country: 'Australia',
+      visa_sponsorship: 'maybe no',
+      salary_min_inr: 5500000,
+      salary_max_inr: 6800000,
+      salary_currency: 'INR',
+      application_link: 'https://canva.com/careers',
+      applied_date: new Date(Date.now() - 18 * 86400000).toISOString().split('T')[0],
+      ats_score: 87,
+      follow_ups: [
+        { id: 'fu_5', date: new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0], type: 'Email', notes: 'Final interview passed. Discussing visa limitations and relocation requirements.' },
+      ],
+      notes: 'Focused on large-scale web canvas rendering and asset pipeline optimization.',
+      platform: 'LinkedIn',
+      ats_scores: [
+        { id: 'sc_7', job_id: 'j4', platform_name: 'ChatGPT', score: 89 },
+      ],
+    },
   ],
 
   job_application_ats_scores: [
@@ -640,6 +677,7 @@ def verify_replica_sync(primary, replica):
     { id: 'sc_4', job_id: 'j2', platform_id: 'ats2', platform_name: 'Jobscan', score: 90 },
     { id: 'sc_5', job_id: 'j3', platform_id: 'ats1', platform_name: 'ChatGPT', score: 88 },
     { id: 'sc_6', job_id: 'j3', platform_id: 'ats3', platform_name: 'Resume Worded', score: 82 },
+    { id: 'sc_7', job_id: 'j4', platform_id: 'ats1', platform_name: 'ChatGPT', score: 89 },
   ],
 
   saved_job_links: [

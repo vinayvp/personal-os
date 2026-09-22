@@ -94,12 +94,83 @@ export interface JobApplication {
   recruiter_email?: string | null;
   recruiter_phone?: string | null;
   follow_up_notes?: string | null;
+  visa_sponsorship?: VisaSponsorship | null;
   ats_score?: number | null;
   follow_ups?: JobFollowUp[] | null;
   ats_scores?: JobAtsScore[] | null;
 }
 
+export type VisaSponsorship = 'no' | 'maybe no' | 'maybe yes' | 'yes';
+
+export interface VisaSponsorshipConfigItem {
+  value: VisaSponsorship;
+  label: string;
+  badgeClass: string;
+  dotClass: string;
+  bgClass: string;
+  borderClass: string;
+  textColor: string;
+  description: string;
+}
+
+export const VISA_SPONSORSHIP_OPTIONS: VisaSponsorshipConfigItem[] = [
+  {
+    value: 'no',
+    label: 'No',
+    badgeClass: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+    dotClass: 'bg-rose-400',
+    bgClass: 'bg-rose-500/10',
+    borderClass: 'border-rose-500/30',
+    textColor: 'text-rose-400',
+    description: 'No visa sponsorship provided',
+  },
+  {
+    value: 'maybe no',
+    label: 'Maybe No',
+    badgeClass: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+    dotClass: 'bg-amber-400',
+    bgClass: 'bg-amber-500/10',
+    borderClass: 'border-amber-500/30',
+    textColor: 'text-amber-400',
+    description: 'Unlikely or strict limitations',
+  },
+  {
+    value: 'maybe yes',
+    label: 'Maybe Yes',
+    badgeClass: 'bg-teal-500/15 text-teal-400 border-teal-500/30',
+    dotClass: 'bg-teal-400',
+    bgClass: 'bg-teal-500/10',
+    borderClass: 'border-teal-500/30',
+    textColor: 'text-teal-400',
+    description: 'Case-by-case or dependent on role',
+  },
+  {
+    value: 'yes',
+    label: 'Yes',
+    badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    dotClass: 'bg-emerald-400',
+    bgClass: 'bg-emerald-500/10',
+    borderClass: 'border-emerald-500/30',
+    textColor: 'text-emerald-400',
+    description: 'Visa sponsorship supported',
+  },
+];
+
+export const VISA_SPONSORSHIP_CONFIG: Record<VisaSponsorship, VisaSponsorshipConfigItem> = {
+  no: VISA_SPONSORSHIP_OPTIONS[0],
+  'maybe no': VISA_SPONSORSHIP_OPTIONS[1],
+  'maybe yes': VISA_SPONSORSHIP_OPTIONS[2],
+  yes: VISA_SPONSORSHIP_OPTIONS[3],
+};
+
 export type NewJobApplication = Omit<JobApplication, 'id' | 'created_at' | 'updated_at'>;
+
+export interface VisaSponsorshipStats {
+  yes: number;
+  maybeYes: number;
+  maybeNo: number;
+  no: number;
+}
 
 export interface JobStatsData {
   totalApplied: number;
@@ -109,6 +180,7 @@ export interface JobStatsData {
   noResponse: number;
   notSelected: number;
   withdrew: number;
+  visaSponsorship: VisaSponsorshipStats;
 }
 
 export interface CountryStat {
@@ -128,6 +200,7 @@ export interface JobFilters {
   searchQuery: string;
   status: JobStatus | 'all';
   country: string | 'all';
+  visa: VisaSponsorship | 'all';
   sortBy: 'applied_date' | 'company_name' | 'salary_max';
   sortOrder: 'asc' | 'desc';
 }

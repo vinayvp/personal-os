@@ -19,6 +19,7 @@ import {
   Target,
   Clock,
   MessageSquare,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -27,7 +28,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { JobApplication, STATUS_CONFIG, calculateJobDuration } from './types';
+import {
+  JobApplication,
+  STATUS_CONFIG,
+  calculateJobDuration,
+  VISA_SPONSORSHIP_CONFIG,
+  VisaSponsorship,
+} from './types';
 import {
   downloadResume,
   formatSalaryInLakhs,
@@ -207,6 +214,20 @@ const JobCard: React.FC<Props> = ({ job, onViewDetails, onEdit, onDelete }) => {
                 <span>{job.job_type}</span>
               </span>
             )}
+
+            {(() => {
+              const visaKey = (job.visa_sponsorship || 'no') as VisaSponsorship;
+              const vConfig = VISA_SPONSORSHIP_CONFIG[visaKey] || VISA_SPONSORSHIP_CONFIG.no;
+              return (
+                <span
+                  className={`flex items-center gap-1 border px-2 py-0.5 rounded-md font-medium text-[11px] ${vConfig.badgeClass}`}
+                  title={`Visa Sponsorship: ${vConfig.label} (${vConfig.description})`}
+                >
+                  <ShieldCheck className="w-3 h-3" />
+                  <span>Visa: {vConfig.label}</span>
+                </span>
+              );
+            })()}
 
             {followUpsList.length > 0 && (
               <span

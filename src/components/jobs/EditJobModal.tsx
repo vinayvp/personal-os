@@ -39,6 +39,7 @@ import {
   Clock,
   Calculator,
   MessageSquare,
+  ShieldCheck,
 } from 'lucide-react';
 import { AtsCalculatorModal, AtsSourceEntry } from './AtsCalculatorModal';
 import {
@@ -50,6 +51,8 @@ import {
   COMMON_CURRENCIES,
   JOB_TYPE_OPTIONS,
   JobPlatform,
+  VisaSponsorship,
+  VISA_SPONSORSHIP_OPTIONS,
 } from './types';
 import {
   uploadResume,
@@ -91,6 +94,7 @@ const EditJobModal: React.FC<Props> = ({
   const [jobType, setJobType] = useState('Full-time');
   const [isCustomJobType, setIsCustomJobType] = useState(false);
   const [customJobType, setCustomJobType] = useState('');
+  const [visaSponsorship, setVisaSponsorship] = useState<VisaSponsorship>('no');
   const [status, setStatus] = useState<JobStatus>('applied');
   const [salaryMin, setSalaryMin] = useState('');
   const [salaryMax, setSalaryMax] = useState('');
@@ -132,6 +136,7 @@ const EditJobModal: React.FC<Props> = ({
       setRoleName(job.role_name || '');
       setCity(job.city || '');
       setCountry(job.country || '');
+      setVisaSponsorship((job.visa_sponsorship as VisaSponsorship) || 'no');
       setStatus(job.status || 'applied');
       setSalaryMin(job.salary_min != null ? String(job.salary_min) : '');
       setSalaryMax(job.salary_max != null ? String(job.salary_max) : '');
@@ -360,6 +365,7 @@ const EditJobModal: React.FC<Props> = ({
         city: city.trim() || null,
         country: country.trim() || null,
         job_type: (isCustomJobType ? customJobType.trim() : jobType) || null,
+        visa_sponsorship: visaSponsorship,
         status,
         salary_min: numMin,
         salary_max: numMax,
@@ -565,8 +571,8 @@ const EditJobModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Location & Job Type */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+          {/* Location, Job Type & Visa Sponsorship */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             <div className="space-y-1.5">
               <Label htmlFor="editCity" className="text-xs font-semibold flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
@@ -645,6 +651,31 @@ const EditJobModal: React.FC<Props> = ({
                   </SelectContent>
                 </Select>
               )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="editVisaSponsorship" className="text-xs font-semibold flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground" />
+                Visa Sponsorship
+              </Label>
+              <Select
+                value={visaSponsorship}
+                onValueChange={(val) => setVisaSponsorship(val as VisaSponsorship)}
+              >
+                <SelectTrigger id="editVisaSponsorship" className="h-9 text-xs">
+                  <SelectValue placeholder="Visa Sponsorship" />
+                </SelectTrigger>
+                <SelectContent>
+                  {VISA_SPONSORSHIP_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      <span className="flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${opt.dotClass}`} />
+                        <span>{opt.label}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

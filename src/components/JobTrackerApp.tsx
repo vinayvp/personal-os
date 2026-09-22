@@ -46,6 +46,9 @@ import {
   STATUS_CONFIG,
   SavedJobLink,
   JobPlatform,
+  VisaSponsorship,
+  VISA_SPONSORSHIP_CONFIG,
+  VISA_SPONSORSHIP_OPTIONS,
 } from './jobs/types';
 import {
   fetchJobApplications,
@@ -88,6 +91,7 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<JobStatus | 'all'>('all');
   const [countryFilter, setCountryFilter] = useState<string | 'all'>('all');
+  const [visaFilter, setVisaFilter] = useState<VisaSponsorship | 'all'>('all');
   const isMobile = useIsMobile();
   const [userSelectedMode, setUserSelectedMode] = useState<'cards' | 'table' | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>(() => {
@@ -200,9 +204,17 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
         }
       }
 
+      // Visa sponsorship filter
+      if (visaFilter !== 'all') {
+        const visa = (app.visa_sponsorship || 'no').trim().toLowerCase();
+        if (visa !== visaFilter) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [applications, searchQuery, statusFilter, countryFilter]);
+  }, [applications, searchQuery, statusFilter, countryFilter, visaFilter]);
 
   // CRUD Handlers
   const handleCreate = async (newJob: NewJobApplication, fromSavedLinkId?: string) => {
@@ -304,10 +316,11 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
     setSearchQuery('');
     setStatusFilter('all');
     setCountryFilter('all');
+    setVisaFilter('all');
   };
 
   const hasActiveFilters =
-    searchQuery.trim() !== '' || statusFilter !== 'all' || countryFilter !== 'all';
+    searchQuery.trim() !== '' || statusFilter !== 'all' || countryFilter !== 'all' || visaFilter !== 'all';
 
   const pendingSavedLinksCount = useMemo(
     () => savedLinks.filter((l) => l.status === 'saved').length,
@@ -431,6 +444,8 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
           onSelectStatus={(status) => setStatusFilter(status)}
           selectedCountry={countryFilter}
           onSelectCountry={(country) => setCountryFilter(country)}
+          selectedVisa={visaFilter}
+          onSelectVisa={(visa) => setVisaFilter(visa)}
         />
 
         {/* ======================================================== */}
@@ -457,14 +472,14 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
             )}
           </div>
 
-          {/* Filters: Status & Country */}
+          {/* Filters: Status, Country, Visa */}
           <div className="flex items-center gap-2 flex-wrap">
             {/* Status Dropdown */}
             <Select
               value={statusFilter}
               onValueChange={(val) => setStatusFilter(val as JobStatus | 'all')}
             >
-              <SelectTrigger className="w-[140px] h-9 text-xs">
+              <SelectTrigger className="w-[130px] h-9 text-xs">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
@@ -479,7 +494,7 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
 
             {/* Country Dropdown */}
             <Select value={countryFilter} onValueChange={setCountryFilter}>
-              <SelectTrigger className="w-[140px] h-9 text-xs">
+              <SelectTrigger className="w-[130px] h-9 text-xs">
                 <SelectValue placeholder="All Countries" />
               </SelectTrigger>
               <SelectContent>
@@ -487,6 +502,27 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
                 {uniqueCountries.map((c) => (
                   <SelectItem key={c} value={c}>
                     {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Visa Sponsorship Dropdown */}
+            <Select
+              value={visaFilter}
+              onValueChange={(val) => setVisaFilter(val as VisaSponsorship | 'all')}
+            >
+              <SelectTrigger className="w-[130px] h-9 text-xs">
+                <SelectValue placeholder="All Visa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Visa</SelectItem>
+                {VISA_SPONSORSHIP_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    <span className="flex items-center gap-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${opt.dotClass}`} />
+                      Visa: {opt.label}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -536,7 +572,7 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
 
         {/* Filter Summary Banner */}
         {hasActiveFilters && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground px-1 flex-wrap">
             <span>
               Showing {filteredApplications.length} of {applications.length} applications
             </span>
@@ -548,6 +584,11 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
             {countryFilter !== 'all' && (
               <span className="bg-muted px-2 py-0.5 rounded-md font-medium text-foreground">
                 Country: {countryFilter}
+              </span>
+            )}
+            {visaFilter !== 'all' && (
+              <span className="bg-muted px-2 py-0.5 rounded-md font-medium text-foreground">
+                Visa: {VISA_SPONSORSHIP_CONFIG[visaFilter]?.label || visaFilter}
               </span>
             )}
           </div>
