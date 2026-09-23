@@ -9,13 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { X, Save, Eye, Edit, Image, Upload, HelpCircle, ListTree } from 'lucide-react';
+import { X, Save, Eye, Edit, Image, Upload, HelpCircle, ListTree, ArrowDown, ArrowUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { Note, Tag } from './types';
 import { MarkdownImage } from './MarkdownImage';
 import { NoteHeadingsOutline, extractHeadings, getNodeText, slugify } from './NoteHeadingsOutline';
+import { smoothScrollElement } from './scrollUtils';
 import 'highlight.js/styles/github-dark.css';
 
 interface NoteEditorProps {
@@ -36,6 +37,32 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
 
   const headings = useMemo(() => extractHeadings(content || ''), [content]);
   const headingOccurrences = useRef<Record<string, number>>({});
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const cancelScrollRef = useRef<(() => void) | null>(null);
+
+  const scrollToBottom = useCallback(() => {
+    cancelScrollRef.current?.();
+    if (textareaRef.current) {
+      const el = textareaRef.current;
+      const target = Math.max(0, el.scrollHeight - el.clientHeight);
+      cancelScrollRef.current = smoothScrollElement(el, target, 450, () => {
+        const len = el.value.length;
+        el.setSelectionRange(len, len);
+        el.focus();
+      });
+    }
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    cancelScrollRef.current?.();
+    if (textareaRef.current) {
+      const el = textareaRef.current;
+      cancelScrollRef.current = smoothScrollElement(el, 0, 450, () => {
+        el.setSelectionRange(0, 0);
+        el.focus();
+      });
+    }
+  }, []);
 
   const getRenderHeadingId = (text: string) => {
     const baseSlug = slugify(text);
@@ -267,52 +294,78 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
             />
 
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Select onValueChange={addTag} value="">
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Add tags..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border border-border shadow-md">
-                    {tags
-                      .filter(tag => !selectedTags.find(t => t.id === tag.id))
-                      .map(tag => (
-                        <SelectItem key={tag.id} value={tag.id}>
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-3 h-3 rounded-full" 
-                              style={{ backgroundColor: tag.color }}
-                            />
-                            {tag.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Select onValueChange={addTag} value="">
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Add tags..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border border-border shadow-md">
+                      {tags
+                        .filter(tag => !selectedTags.find(t => t.id === tag.id))
+                        .map(tag => (
+                          <SelectItem key={tag.id} value={tag.id}>
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-3 h-3 rounded-full" 
+                                style={{ backgroundColor: tag.color }}
+                              />
+                              {tag.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
 
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="image-upload"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => document.getElementById('image-upload')?.click()}
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload Images
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => window.open('https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax', '_blank')}
-                  title="Markdown syntax help"
-                >
-                  <HelpCircle className="w-4 h-4" />
-                </Button>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="image-upload"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('image-upload')?.click()}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Images
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => window.open('https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax', '_blank')}
+                    title="Markdown syntax help"
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-1 ml-auto flex-shrink-0">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={scrollToTop}
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    title="Scroll to top"
+                  >
+                    <ArrowUp className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={scrollToBottom}
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    title="Scroll to bottom"
+                  >
+                    <ArrowDown className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -358,8 +411,9 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
 
       <CardContent className="flex-1">
         <Tabs value={isEditing ? 'edit' : 'preview'} className="h-full">
-          <TabsContent value="edit" className="h-full mt-0">
+          <TabsContent value="edit" className="h-full mt-0 relative">
             <Textarea
+              ref={textareaRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               onDrop={handleImageDrop}

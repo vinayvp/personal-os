@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { X, Save, Eye, Edit, Upload, HelpCircle, GripVertical, Pin } from 'lucide-react';
+import { X, Save, Eye, Edit, Upload, HelpCircle, GripVertical, Pin, ArrowDown, ArrowUp } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import ReactMarkdown from 'react-markdown';
@@ -19,6 +19,7 @@ import rehypeHighlight from 'rehype-highlight';
 import { Note, Tag } from './types';
 import { MarkdownImage } from './MarkdownImage';
 import { NoteHeadingsOutline, extractHeadings, getNodeText, slugify } from './NoteHeadingsOutline';
+import { smoothScrollElement } from './scrollUtils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import 'highlight.js/styles/github-dark.css';
 
@@ -51,6 +52,60 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
 
   const headings = useMemo(() => extractHeadings(content || ''), [content]);
   const headingOccurrences = useRef<Record<string, number>>({});
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const cancelScrollRef = useRef<(() => void) | null>(null);
+
+  const scrollToBottom = useCallback(() => {
+    cancelScrollRef.current?.();
+    const cleanups: (() => void)[] = [];
+
+    if (textareaRef.current) {
+      const el = textareaRef.current;
+      const target = Math.max(0, el.scrollHeight - el.clientHeight);
+      const cancel = smoothScrollElement(el, target, 450, () => {
+        const len = el.value.length;
+        el.setSelectionRange(len, len);
+        el.focus();
+      });
+      cleanups.push(cancel);
+    }
+
+    if (scrollAreaRef.current) {
+      const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null;
+      if (viewport) {
+        const target = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+        const cancel = smoothScrollElement(viewport, target, 450);
+        cleanups.push(cancel);
+      }
+    }
+
+    cancelScrollRef.current = () => cleanups.forEach(c => c());
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    cancelScrollRef.current?.();
+    const cleanups: (() => void)[] = [];
+
+    if (textareaRef.current) {
+      const el = textareaRef.current;
+      const cancel = smoothScrollElement(el, 0, 450, () => {
+        el.setSelectionRange(0, 0);
+        el.focus();
+      });
+      cleanups.push(cancel);
+    }
+
+    if (scrollAreaRef.current) {
+      const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null;
+      if (viewport) {
+        const cancel = smoothScrollElement(viewport, 0, 450);
+        cleanups.push(cancel);
+      }
+    }
+
+    cancelScrollRef.current = () => cleanups.forEach(c => c());
+  }, []);
 
   const getRenderHeadingId = (text: string) => {
     const baseSlug = slugify(text);
@@ -330,54 +385,79 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
                 />
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <Select onValueChange={addTag} value="">
-                  <SelectTrigger className="w-32 sm:w-40 h-8">
-                    <SelectValue placeholder="Add tags..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border border-border shadow-md z-50">
-                    {tags
-                      .filter(tag => !selectedTags.find(t => t.id === tag.id))
-                      .map(tag => (
-                        <SelectItem key={tag.id} value={tag.id}>
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-3 h-3 rounded-full" 
-                              style={{ backgroundColor: tag.color }}
-                            />
-                            {tag.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select onValueChange={addTag} value="">
+                    <SelectTrigger className="w-32 sm:w-40 h-8">
+                      <SelectValue placeholder="Add tags..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border border-border shadow-md z-50">
+                      {tags
+                        .filter(tag => !selectedTags.find(t => t.id === tag.id))
+                        .map(tag => (
+                          <SelectItem key={tag.id} value={tag.id}>
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-3 h-3 rounded-full" 
+                                style={{ backgroundColor: tag.color }}
+                              />
+                              {tag.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
 
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="modal-image-upload"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => document.getElementById('modal-image-upload')?.click()}
-                  className="h-8 px-2 sm:px-3"
-                >
-                  <Upload className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-1">Images</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => window.open('https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax', '_blank')}
-                  title="Markdown syntax help"
-                >
-                  <HelpCircle className="w-4 h-4" />
-                </Button>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="modal-image-upload"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('modal-image-upload')?.click()}
+                    className="h-8 px-2 sm:px-3"
+                  >
+                    <Upload className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1">Images</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => window.open('https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax', '_blank')}
+                    title="Markdown syntax help"
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-1 ml-auto flex-shrink-0">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={scrollToTop}
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    title="Scroll to top"
+                  >
+                    <ArrowUp className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={scrollToBottom}
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    title="Scroll to bottom"
+                  >
+                    <ArrowDown className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
 
               {selectedTags.length > 0 && (
@@ -422,7 +502,7 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
           )}
         </DialogHeader>
 
-        <ScrollArea className="flex-1 p-4 sm:p-6 pt-4" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+        <ScrollArea ref={scrollAreaRef} className="flex-1 p-4 sm:p-6 pt-4" style={{ maxHeight: 'calc(90vh - 200px)' }}>
           {embedNotion ? (
             notionUrl.trim() ? (
               <iframe
@@ -438,8 +518,9 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
             )
           ) : (
           <Tabs value={isEditing ? 'edit' : 'preview'} className="h-full">
-            <TabsContent value="edit" className="mt-0">
+            <TabsContent value="edit" className="mt-0 relative">
               <Textarea
+                ref={textareaRef}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 onDrop={handleImageDrop}

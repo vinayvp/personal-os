@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, X, Save, Eye, Edit, Upload, Image, HelpCircle, Pin } from 'lucide-react';
+import { Plus, X, Save, Eye, Edit, Upload, Image, HelpCircle, Pin, ArrowDown, ArrowUp } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import ReactMarkdown from 'react-markdown';
@@ -18,6 +18,7 @@ import rehypeHighlight from 'rehype-highlight';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tag } from './types';
 import { MarkdownImage } from './MarkdownImage';
+import { smoothScrollElement } from './scrollUtils';
 import 'highlight.js/styles/github-dark.css';
 
 interface CreateNoteModalProps {
@@ -37,7 +38,33 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
   const [activeTab, setActiveTab] = useState('edit');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const cancelScrollRef = useRef<(() => void) | null>(null);
   const { toast } = useToast();
+
+  const scrollToBottom = () => {
+    cancelScrollRef.current?.();
+    if (textareaRef.current) {
+      const el = textareaRef.current;
+      const target = Math.max(0, el.scrollHeight - el.clientHeight);
+      cancelScrollRef.current = smoothScrollElement(el, target, 450, () => {
+        const len = el.value.length;
+        el.setSelectionRange(len, len);
+        el.focus();
+      });
+    }
+  };
+
+  const scrollToTop = () => {
+    cancelScrollRef.current?.();
+    if (textareaRef.current) {
+      const el = textareaRef.current;
+      cancelScrollRef.current = smoothScrollElement(el, 0, 450, () => {
+        el.setSelectionRange(0, 0);
+        el.focus();
+      });
+    }
+  };
 
   const resetForm = () => {
     setTitle('');
@@ -267,55 +294,81 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
           </div>
 
           <div className="space-y-2">
-            <div className="flex gap-2">
-              <Select onValueChange={addTag} value="">
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Add tags..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {tags
-                    .filter(tag => !selectedTags.find(t => t.id === tag.id))
-                    .map(tag => (
-                      <SelectItem key={tag.id} value={tag.id}>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: tag.color }}
-                          />
-                          {tag.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className="flex items-center gap-2"
-              >
-                <Image className="w-4 h-4" />
-                {isUploading ? 'Uploading...' : 'Upload Image'}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => window.open('https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax', '_blank')}
-                title="Markdown syntax help"
-              >
-                <HelpCircle className="w-4 h-4" />
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Select onValueChange={addTag} value="">
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Add tags..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tags
+                      .filter(tag => !selectedTags.find(t => t.id === tag.id))
+                      .map(tag => (
+                        <SelectItem key={tag.id} value={tag.id}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: tag.color }}
+                            />
+                            {tag.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="flex items-center gap-2"
+                >
+                  <Image className="w-4 h-4" />
+                  {isUploading ? 'Uploading...' : 'Upload Image'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => window.open('https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax', '_blank')}
+                  title="Markdown syntax help"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </div>
+
+              <div className="flex items-center gap-1 ml-auto flex-shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={scrollToTop}
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  title="Scroll to top"
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={scrollToBottom}
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  title="Scroll to bottom"
+                >
+                  <ArrowDown className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -349,14 +402,15 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="edit" className="h-full mt-2">
-              <div className="h-full space-y-2">
+            <TabsContent value="edit" className="h-full mt-2 relative">
+              <div className="h-full space-y-2 relative">
                 <div className="flex gap-2">
                   <span className="text-sm text-muted-foreground flex items-center">
                     Drag & drop or paste images directly into the editor
                   </span>
                 </div>
                 <Textarea
+                  ref={textareaRef}
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   onDrop={handleImageDrop}
