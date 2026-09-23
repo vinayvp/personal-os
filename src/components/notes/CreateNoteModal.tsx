@@ -17,6 +17,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tag } from './types';
+import { MarkdownImage } from './MarkdownImage';
 import 'highlight.js/styles/github-dark.css';
 
 interface CreateNoteModalProps {
@@ -153,8 +154,8 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
       setContent(prev => prev + '\n\n' + imageMarkdown);
 
       toast({
-        title: "Success",
-        description: "Image uploaded successfully!",
+        title: "Image uploaded successfully!",
+        description: "Tip: Add |width to resize, e.g. ![alt|400](url) or ![alt|50%](url)",
       });
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -361,7 +362,7 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
                   onDrop={handleImageDrop}
                   onDragOver={(e) => e.preventDefault()}
                   onPaste={handleImagePaste}
-                  placeholder="Start writing your note... You can use Markdown syntax!&#10;&#10;Try checkboxes:&#10;- [ ] Unchecked item&#10;- [x] Checked item&#10;&#10;You can also drag & drop or paste images directly!"
+                  placeholder="Start writing your note... You can use Markdown syntax!&#10;&#10;Try checkboxes:&#10;- [ ] Unchecked item&#10;- [x] Checked item&#10;&#10;Resize images: ![image.png|400](url) or ![image.png|50%](url)"
                   className="flex-1 resize-none font-mono"
                   style={{ height: 'calc(100% - 40px)' }}
                 />
@@ -408,7 +409,8 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ tags, onNoteCreated }
                         );
                       }
                       return <input type={type} checked={checked} {...props} />;
-                    }
+                    },
+                    img: MarkdownImage
                   }}
                 >
                   {content || '*No content yet. Switch to edit mode to start writing.*'}

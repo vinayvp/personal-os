@@ -14,6 +14,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { Note, Tag } from './types';
+import { MarkdownImage } from './MarkdownImage';
 import 'highlight.js/styles/github-dark.css';
 
 interface NoteEditorProps {
@@ -183,8 +184,8 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
       setContent(prev => prev + imageMarkdown);
 
       toast({
-        title: "Success",
-        description: "Image uploaded successfully!",
+        title: "Image uploaded successfully!",
+        description: "Tip: Add |width to resize, e.g. ![alt|400](url) or ![alt|50%](url)",
       });
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -349,7 +350,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
               onChange={(e) => setContent(e.target.value)}
               onDrop={handleImageDrop}
               onPaste={handleImagePaste}
-              placeholder="Start writing your note... You can use Markdown syntax and drag & drop images!&#10;&#10;Try checkboxes:&#10;- [ ] Unchecked item&#10;- [x] Checked item"
+              placeholder="Start writing your note... You can use Markdown syntax and drag & drop images!&#10;&#10;Try checkboxes:&#10;- [ ] Unchecked item&#10;- [x] Checked item&#10;&#10;Resize images: ![image.png|400](url) or ![image.png|50%](url)"
               className="min-h-[500px] resize-none font-mono"
             />
           </TabsContent>
@@ -429,7 +430,8 @@ const NoteEditor: React.FC<NoteEditorProps> = ({ note, tags, onSave }) => {
                       );
                     }
                     return <input type={type} checked={checked} {...props} />;
-                  }
+                  },
+                  img: MarkdownImage
                 }}
               >
                 {content || '*No content yet. Switch to edit mode to start writing.*'}

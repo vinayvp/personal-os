@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { Checkbox } from '@/components/ui/checkbox';
+import { MarkdownImage } from '@/components/notes/MarkdownImage';
 import 'highlight.js/styles/github-dark.css';
 
 interface RevisionMarkdownProps {
@@ -72,7 +73,8 @@ export const RevisionMarkdown: React.FC<RevisionMarkdownProps> = ({ content, cla
               return <Checkbox checked={checked || false} className="mr-2 inline align-middle pointer-events-none" disabled />;
             }
             return <input type={type} checked={checked} {...props} />;
-          }
+          },
+          img: MarkdownImage
         }}
       >
         {content}

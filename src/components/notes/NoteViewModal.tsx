@@ -12,6 +12,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Note, Tag } from './types';
+import { MarkdownImage } from './MarkdownImage';
 import 'highlight.js/styles/github-dark.css';
 
 interface NoteViewModalProps {
@@ -243,7 +244,8 @@ const NoteViewModal: React.FC<NoteViewModalProps> = ({ note, onClose, onEdit, on
                     );
                   }
                   return <input type={type} checked={checked} {...props} />;
-                }
+                },
+                img: MarkdownImage
               }}
             >
               {note.markdown_content || note.content || '*No content available.*'}
