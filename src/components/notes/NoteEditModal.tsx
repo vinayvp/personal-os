@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { Note, Tag } from './types';
 import { MarkdownImage } from './MarkdownImage';
+import { NoteHeadingsOutline, extractHeadings, getNodeText, slugify } from './NoteHeadingsOutline';
 import { useIsMobile } from '@/hooks/use-mobile';
 import 'highlight.js/styles/github-dark.css';
 
@@ -43,8 +44,21 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
   const [isSaving, setSaving] = useState(false);
   const [modalWidth, setModalWidth] = useState(DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
+  const [isOutlineOpen, setIsOutlineOpen] = useState(true);
+  const [activeHeadingId, setActiveHeadingId] = useState<string | undefined>();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  const headings = useMemo(() => extractHeadings(content || ''), [content]);
+  const headingOccurrences = useRef<Record<string, number>>({});
+
+  const getRenderHeadingId = (text: string) => {
+    const baseSlug = slugify(text);
+    if (!baseSlug) return 'heading';
+    const count = headingOccurrences.current[baseSlug] || 0;
+    headingOccurrences.current[baseSlug] = count + 1;
+    return count === 0 ? baseSlug : `${baseSlug}-${count}`;
+  };
 
   useEffect(() => {
     if (note) {
@@ -436,86 +450,119 @@ const NoteEditModal: React.FC<NoteEditModalProps> = ({ note, tags, onSave, onClo
             </TabsContent>
 
             <TabsContent value="preview" className="mt-0">
-              <div className="min-h-[300px] sm:min-h-[400px] p-4 border rounded-md bg-background overflow-auto prose prose-sm max-w-none dark:prose-invert">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  rehypePlugins={[rehypeHighlight]}
-                  components={{
-                    h1: ({children, ...props}) => <h1 className="text-2xl font-bold mb-4 mt-6 first:mt-0" {...props}>{children}</h1>,
-                    h2: ({children, ...props}) => <h2 className="text-xl font-semibold mb-3 mt-5" {...props}>{children}</h2>,
-                    h3: ({children, ...props}) => <h3 className="text-lg font-medium mb-2 mt-4" {...props}>{children}</h3>,
-                    h4: ({children, ...props}) => <h4 className="text-base font-medium mb-2 mt-3" {...props}>{children}</h4>,
-                    h5: ({children, ...props}) => <h5 className="text-sm font-medium mb-2 mt-3" {...props}>{children}</h5>,
-                    h6: ({children, ...props}) => <h6 className="text-sm font-medium mb-2 mt-3" {...props}>{children}</h6>,
-                    p: ({children, ...props}) => <p className="mb-4 leading-relaxed" {...props}>{children}</p>,
-                    ul: ({children, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-2" {...props}>{children}</ul>,
-                    ol: ({children, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-2" {...props}>{children}</ol>,
-                    li: ({children, ...props}) => <li className="mb-1" {...props}>{children}</li>,
-                    blockquote: ({children, ...props}) => (
-                      <blockquote className="border-l-4 border-primary/20 pl-4 italic my-6 bg-muted/50 py-2 rounded-r" {...props}>
-                        {children}
-                      </blockquote>
-                    ),
-                    code: ({className, children, ...props}) => {
-                      const match = /language-(\w+)/.exec(className || '');
-                      return match ? (
-                        <code className={`${className} block bg-muted p-4 rounded-md overflow-auto text-sm`} {...props}>
-                          {children}
-                        </code>
-                      ) : (
-                        <code className="bg-muted px-2 py-1 rounded text-sm font-mono" {...props}>
-                          {children}
-                        </code>
-                      );
-                    },
-                    pre: ({children, ...props}) => (
-                      <pre className="bg-muted p-4 rounded-md overflow-auto mb-4 text-sm" {...props}>
-                        {children}
-                      </pre>
-                    ),
-                    table: ({children, ...props}) => (
-                      <div className="overflow-auto mb-6">
-                        <table className="border-collapse border border-border w-full text-sm" {...props}>
-                          {children}
-                        </table>
-                      </div>
-                    ),
-                    th: ({children, ...props}) => (
-                      <th className="border border-border px-4 py-2 bg-muted font-semibold text-left" {...props}>
-                        {children}
-                      </th>
-                    ),
-                    td: ({children, ...props}) => (
-                      <td className="border border-border px-4 py-2" {...props}>
-                        {children}
-                      </td>
-                    ),
-                    hr: ({...props}) => (
-                      <hr className="my-8 border-border" {...props} />
-                    ),
-                    strong: ({children, ...props}) => (
-                      <strong className="font-semibold" {...props}>{children}</strong>
-                    ),
-                    em: ({children, ...props}) => (
-                      <em className="italic" {...props}>{children}</em>
-                    ),
-                    input: ({type, checked, ...props}) => {
-                      if (type === 'checkbox') {
-                        return (
-                          <Checkbox
-                            checked={checked || false}
-                            className="mr-2 mt-0.5"
-                            disabled
-                          />
-                        );
-                      }
-                      return <input type={type} checked={checked} {...props} />;
-                    },
-                    img: MarkdownImage
-                  }}
-                >
-                  {content || '*No content yet. Switch to edit mode to start writing.*'}
-                </ReactMarkdown>
+              <div className="min-h-[300px] sm:min-h-[400px] border rounded-md bg-background overflow-hidden flex">
+                <NoteHeadingsOutline
+                  headings={headings}
+                  isOpen={isOutlineOpen}
+                  onToggle={() => setIsOutlineOpen(!isOutlineOpen)}
+                  activeId={activeHeadingId}
+                  onHeadingClick={(id) => setActiveHeadingId(id)}
+                />
+
+                <div className="flex-1 p-4 overflow-auto prose prose-sm max-w-none dark:prose-invert">
+                  {(() => {
+                    headingOccurrences.current = {};
+                    return (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeHighlight]}
+                        components={{
+                          h1: ({children, ...props}) => {
+                            const id = getRenderHeadingId(getNodeText(children));
+                            return <h1 id={id} className="text-2xl font-bold mb-4 mt-6 first:mt-0 scroll-mt-6" {...props}>{children}</h1>;
+                          },
+                          h2: ({children, ...props}) => {
+                            const id = getRenderHeadingId(getNodeText(children));
+                            return <h2 id={id} className="text-xl font-semibold mb-3 mt-5 scroll-mt-6" {...props}>{children}</h2>;
+                          },
+                          h3: ({children, ...props}) => {
+                            const id = getRenderHeadingId(getNodeText(children));
+                            return <h3 id={id} className="text-lg font-medium mb-2 mt-4 scroll-mt-6" {...props}>{children}</h3>;
+                          },
+                          h4: ({children, ...props}) => {
+                            const id = getRenderHeadingId(getNodeText(children));
+                            return <h4 id={id} className="text-base font-medium mb-2 mt-3 scroll-mt-6" {...props}>{children}</h4>;
+                          },
+                          h5: ({children, ...props}) => {
+                            const id = getRenderHeadingId(getNodeText(children));
+                            return <h5 id={id} className="text-sm font-medium mb-2 mt-3 scroll-mt-6" {...props}>{children}</h5>;
+                          },
+                          h6: ({children, ...props}) => {
+                            const id = getRenderHeadingId(getNodeText(children));
+                            return <h6 id={id} className="text-sm font-medium mb-2 mt-3 scroll-mt-6" {...props}>{children}</h6>;
+                          },
+                          p: ({children, ...props}) => <p className="mb-4 leading-relaxed" {...props}>{children}</p>,
+                          ul: ({children, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-2" {...props}>{children}</ul>,
+                          ol: ({children, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-2" {...props}>{children}</ol>,
+                          li: ({children, ...props}) => <li className="mb-1" {...props}>{children}</li>,
+                          blockquote: ({children, ...props}) => (
+                            <blockquote className="border-l-4 border-primary/20 pl-4 italic my-6 bg-muted/50 py-2 rounded-r" {...props}>
+                              {children}
+                            </blockquote>
+                          ),
+                          code: ({className, children, ...props}) => {
+                            const match = /language-(\w+)/.exec(className || '');
+                            return match ? (
+                              <code className={`${className} block bg-muted p-4 rounded-md overflow-auto text-sm`} {...props}>
+                                {children}
+                              </code>
+                            ) : (
+                              <code className="bg-muted px-2 py-1 rounded text-sm font-mono" {...props}>
+                                {children}
+                              </code>
+                            );
+                          },
+                          pre: ({children, ...props}) => (
+                            <pre className="bg-muted p-4 rounded-md overflow-auto mb-4 text-sm" {...props}>
+                              {children}
+                            </pre>
+                          ),
+                          table: ({children, ...props}) => (
+                            <div className="overflow-auto mb-6">
+                              <table className="border-collapse border border-border w-full text-sm" {...props}>
+                                {children}
+                              </table>
+                            </div>
+                          ),
+                          th: ({children, ...props}) => (
+                            <th className="border border-border px-4 py-2 bg-muted font-semibold text-left" {...props}>
+                              {children}
+                            </th>
+                          ),
+                          td: ({children, ...props}) => (
+                            <td className="border border-border px-4 py-2" {...props}>
+                              {children}
+                            </td>
+                          ),
+                          hr: ({...props}) => (
+                            <hr className="my-8 border-border" {...props} />
+                          ),
+                          strong: ({children, ...props}) => (
+                            <strong className="font-semibold" {...props}>{children}</strong>
+                          ),
+                          em: ({children, ...props}) => (
+                            <em className="italic" {...props}>{children}</em>
+                          ),
+                          input: ({type, checked, ...props}) => {
+                            if (type === 'checkbox') {
+                              return (
+                                <Checkbox
+                                  checked={checked || false}
+                                  className="mr-2 mt-0.5"
+                                  disabled
+                                />
+                              );
+                            }
+                            return <input type={type} checked={checked} {...props} />;
+                          },
+                          img: MarkdownImage
+                        }}
+                      >
+                        {content || '*No content yet. Switch to edit mode to start writing.*'}
+                      </ReactMarkdown>
+                    );
+                  })()}
+                </div>
               </div>
             </TabsContent>
           </Tabs>
