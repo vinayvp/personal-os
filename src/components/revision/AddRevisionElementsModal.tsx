@@ -87,19 +87,23 @@ const AddRevisionElementsModal = ({ isOpen, onClose, onSuccess, categoryId, cate
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from('revision_element').insert(
-        validEntries.map((entry) => ({
-          category_id: categoryId,
-          name: entry.name.trim(),
-          description: entry.description.trim() || null,
-        }))
-      );
-      if (error) throw error;
+      const payload = validEntries.map((entry) => ({
+        category_id: categoryId,
+        name: entry.name.trim(),
+        description: entry.description.trim() || null,
+      }));
+
+      let { error } = await supabase.from('revision_element').insert(payload);
+      if (error) {
+        const fallback = await (supabase as any).from('revision_elements').insert(payload);
+        if (fallback.error) throw error;
+      }
       setEntries([{ name: '', description: '' }]);
       setPreviewMap({});
       toast.success(`Added ${validEntries.length} item${validEntries.length > 1 ? 's' : ''}`);
       onSuccess();
     } catch (error: any) {
+      console.error('Failed to add revision items:', error);
       toast.error(error.message || 'Failed to add items');
     } finally {
       setIsSubmitting(false);

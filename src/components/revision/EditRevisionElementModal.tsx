@@ -39,31 +39,55 @@ const EditRevisionElementModal: React.FC<Props> = ({ element, isOpen, onClose, o
 
     setIsSaving(true);
     try {
-      const updatedPayload: any = {
-        name: name.trim(),
-        title: name.trim(),
-        description: description.trim() || null,
-        content: description.trim() || null,
-      };
-
-      let { data, error } = await supabase
+      // 1. Try primary schema: table revision_element with standard columns (name, description)
+      let updateRes = await supabase
         .from('revision_element')
-        .update(updatedPayload)
+        .update({
+          name: name.trim(),
+          description: description.trim() || null,
+        })
         .eq('id', element.id)
         .select()
         .single();
 
-      if (error) {
-        const fallback = await (supabase as any)
+      // 2. Fallbacks if needed (e.g. plural table name or alternative schema columns)
+      if (updateRes.error) {
+        console.warn('Primary revision_element update failed, attempting fallbacks...', updateRes.error);
+
+        // Fallback A: plural table 'revision_elements' with (name, description)
+        const pluralRes = await (supabase as any)
           .from('revision_elements')
-          .update(updatedPayload)
+          .update({
+            name: name.trim(),
+            description: description.trim() || null,
+          })
           .eq('id', element.id)
           .select()
           .single();
-        if (fallback.error) throw fallback.error;
-        data = fallback.data;
+
+        if (!pluralRes.error) {
+          updateRes = pluralRes;
+        } else {
+          // Fallback B: legacy schema with (title, content)
+          const legacyRes = await (supabase as any)
+            .from('revision_element')
+            .update({
+              title: name.trim(),
+              content: description.trim() || null,
+            })
+            .eq('id', element.id)
+            .select()
+            .single();
+
+          if (!legacyRes.error) {
+            updateRes = legacyRes;
+          } else {
+            throw updateRes.error || pluralRes.error || legacyRes.error;
+          }
+        }
       }
 
+      const data = updateRes.data;
       const normalized: RevisionElement = {
         id: (data as any)?.id || element.id,
         category_id: (data as any)?.category_id || element.category_id,
@@ -77,6 +101,7 @@ const EditRevisionElementModal: React.FC<Props> = ({ element, isOpen, onClose, o
       onSuccess(normalized);
       onClose();
     } catch (error: any) {
+      console.error('Failed to update revision element:', error);
       toast.error(error.message || 'Failed to update item');
     } finally {
       setIsSaving(false);

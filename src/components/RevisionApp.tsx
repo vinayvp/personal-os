@@ -68,7 +68,10 @@ const RevisionApp = () => {
 
   if (activeCategoryId) {
     return (
-      <div className="p-4 md:p-6 max-w-3xl mx-auto">
+      <div 
+        className="h-[calc(100vh-4.25rem)] max-w-3xl mx-auto p-4 md:p-6 flex flex-col"
+        style={{ height: 'calc(100dvh - 4.25rem)' }}
+      >
         <RevisionFocusView
           categoryId={activeCategoryId}
           onBack={() => {

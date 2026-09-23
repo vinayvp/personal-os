@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Check, SkipForward, RotateCcw, Plus, Loader2, Edit, Pencil, List } from 'lucide-react';
@@ -166,114 +166,145 @@ const RevisionFocusView = ({ categoryId, onBack }: Props) => {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-1" /> Categories
-        </Button>
-        {category && (
-          <div className="flex items-center gap-1">
-            <Badge
-              variant="outline"
-              className="cursor-pointer hover:opacity-85 transition-opacity"
-              style={{ borderColor: category.color, color: category.color }}
-              onClick={() => setIsEditCategoryOpen(true)}
-              title="Click to edit category"
-            >
-              {category.name}
-            </Badge>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-foreground"
-              onClick={() => setIsEditCategoryOpen(true)}
-              title="Edit Category"
-            >
-              <Pencil className="h-3 w-3" />
+    <div className="flex flex-col h-full min-h-0">
+      {/* Pinned Category Navigation & Progress Header */}
+      <div className="shrink-0 space-y-3 pb-3 border-b border-border/40">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Categories
+          </Button>
+          {category && (
+            <div className="flex items-center gap-1">
+              <Badge
+                variant="outline"
+                className="cursor-pointer hover:opacity-85 transition-opacity"
+                style={{ borderColor: category.color, color: category.color }}
+                onClick={() => setIsEditCategoryOpen(true)}
+                title="Click to edit category"
+              >
+                {category.name}
+              </Badge>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                onClick={() => setIsEditCategoryOpen(true)}
+                title="Edit Category"
+              >
+                <Pencil className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+          <Badge variant="secondary">Round {(category?.count ?? 0) + 1}</Badge>
+          <Badge variant="outline">
+            {done} / {total} done — {remaining} left
+          </Badge>
+          <div className="ml-auto flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsManageItemsOpen(true)}>
+              <List className="h-4 w-4 mr-1" /> Manage
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setIsAddOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Items
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleReset} disabled={isBusy}>
+              <RotateCcw className="h-4 w-4 mr-1" /> Reset
             </Button>
           </div>
-        )}
-        <Badge variant="secondary">Round {(category?.count ?? 0) + 1}</Badge>
-        <Badge variant="outline">
-          {done} / {total} done — {remaining} left
-        </Badge>
-        <div className="ml-auto flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => setIsManageItemsOpen(true)}>
-            <List className="h-4 w-4 mr-1" /> Manage
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setIsAddOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Items
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleReset} disabled={isBusy}>
-            <RotateCcw className="h-4 w-4 mr-1" /> Reset
-          </Button>
         </div>
+
+        <Progress value={progress} className="h-2" />
       </div>
 
-      <Progress value={progress} className="h-2" />
-
-      <Card className="min-h-[220px] flex items-center justify-center overflow-hidden">
-        <CardContent className="w-full p-6 text-center">
-          <AnimatePresence mode="wait">
-            {currentElement ? (
-              <motion.div
-                key={currentElement.id}
-                initial={{ opacity: 0, y: 16, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -16, scale: 0.97 }}
-                transition={{ duration: 0.22, ease: 'easeOut' }}
-                className="space-y-4"
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <h2 className="text-2xl md:text-3xl font-bold text-foreground break-words">
+      {/* Flashcard Card with Internal Content Scrolling */}
+      <Card className="flex-1 min-h-0 flex flex-col overflow-hidden shadow-sm my-3 border border-border/80">
+        <AnimatePresence mode="wait">
+          {currentElement ? (
+            <motion.div
+              key={currentElement.id}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="flex-1 flex flex-col min-h-0 overflow-hidden"
+            >
+              {/* Pinned Card Header: Title, Count & Edit */}
+              <div className="shrink-0 px-4 py-3 sm:px-6 sm:py-3.5 border-b border-border/60 bg-muted/15 flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-xl sm:text-2xl font-bold text-foreground break-words leading-tight">
                     {currentElement.name}
                   </h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground shrink-0 rounded-full"
-                    onClick={() => setIsEditOpen(true)}
-                    title="Edit item notes"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Completed {currentElement.count} time{currentElement.count === 1 ? '' : 's'}
+                  </p>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground shrink-0 rounded-md"
+                  onClick={() => setIsEditOpen(true)}
+                  title="Edit item notes"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </div>
 
-                {currentElement.description && (
-                  <div className="w-full max-w-2xl mx-auto text-left p-4 sm:p-5 rounded-lg bg-muted/30 border border-border/70 shadow-sm overflow-hidden">
-                    <RevisionMarkdown content={currentElement.description} />
+              {/* Scrollable Card Body: Content area scrolls internally */}
+              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto p-4 sm:p-6 text-left">
+                {currentElement.description ? (
+                  <RevisionMarkdown content={currentElement.description} />
+                ) : (
+                  <div className="h-full min-h-[140px] flex flex-col items-center justify-center text-center p-6 text-muted-foreground/60 text-sm">
+                    <p className="italic">No additional notes for this item.</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3 text-xs"
+                      onClick={() => setIsEditOpen(true)}
+                    >
+                      <Edit className="h-3.5 w-3.5 mr-1.5" /> Add notes
+                    </Button>
                   </div>
                 )}
-
-                <p className="text-xs text-muted-foreground">
-                  Completed {currentElement.count} time{currentElement.count === 1 ? '' : 's'}
-                </p>
-              </motion.div>
-            ) : (
-              <motion.p
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-muted-foreground"
-              >
-                No items yet — add some to start revising.
-              </motion.p>
-            )}
-          </AnimatePresence>
-        </CardContent>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex-1 flex items-center justify-center p-6 text-center text-muted-foreground"
+            >
+              <div className="space-y-3">
+                <p className="text-base font-medium">No items yet</p>
+                <p className="text-sm">Add some items to this category to start revising.</p>
+                <Button size="sm" onClick={() => setIsAddOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1.5" /> Add Items
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Card>
 
-      <div className="flex gap-2">
-        <Button className="flex-1" onClick={handleDone} disabled={!currentElement || isBusy}>
-          <Check className="h-4 w-4 mr-2" /> Mark as Done
+      {/* Integrated Action Buttons at the Bottom of Subapp */}
+      <div className="shrink-0 pt-3 border-t border-border/60 bg-background flex items-center gap-3">
+        <Button
+          size="lg"
+          className="flex-1 h-11 sm:h-12 text-sm sm:text-base font-semibold shadow-sm"
+          onClick={handleDone}
+          disabled={!currentElement || isBusy}
+        >
+          <Check className="h-5 w-5 mr-2" /> Mark as Done
         </Button>
         <Button
+          size="lg"
           variant="outline"
-          className="flex-1"
+          className="flex-1 h-11 sm:h-12 text-sm sm:text-base font-semibold bg-background hover:bg-muted"
           onClick={handleSkip}
           disabled={!currentElement || isBusy || elements.length < 2}
         >
-          <SkipForward className="h-4 w-4 mr-2" /> Skip / Next
+          <SkipForward className="h-5 w-5 mr-2" /> Next
         </Button>
       </div>
 
