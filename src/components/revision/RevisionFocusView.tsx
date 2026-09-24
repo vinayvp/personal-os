@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Check, SkipForward, RotateCcw, Plus, Loader2, Edit, Pencil, List } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import { toast } from 'sonner';
 import { RevisionCategory, RevisionElement } from './types';
 import AddRevisionElementsModal from './AddRevisionElementsModal';

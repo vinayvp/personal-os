@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Save, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import { toast } from 'sonner';
 import { RevisionElement } from './types';
 import MarkdownToolbar from './MarkdownToolbar';

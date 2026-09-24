@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Lock, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { mainSupabase } from '@/integrations/supabase/client';
+import { mainSupabase } from '@/integrations/supabase/appClient';
 // 1. Import the Biometric Plugin
 import { NativeBiometric } from 'capacitor-native-biometric';
 import { Capacitor } from '@capacitor/core';

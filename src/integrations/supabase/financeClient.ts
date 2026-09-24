@@ -1,4 +1,4 @@
-import { supabase, getIsGuestMode } from './client';
+import { supabase, getIsGuestMode } from './appClient';
 import { createGuestMockClient } from './guestMockClient';
 
 const guestMock = createGuestMockClient();

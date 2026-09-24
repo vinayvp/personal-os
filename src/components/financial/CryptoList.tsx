@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { financeDb } from "@/integrations/supabase/financeClient";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/appClient";
 import { format } from "date-fns";
 import { InvestmentWithLatest, InvestmentTransaction, InvestmentValuation } from "./types";
 import { calculateXIRR, buildCashFlows } from "./xirr";

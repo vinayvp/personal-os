@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Wallet, Receipt, Briefcase, PieChart, TrendingUp, AlertCircle } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { getIsGuestMode } from "@/integrations/supabase/client";
+import { getIsGuestMode } from "@/integrations/supabase/appClient";
 import { getGuestTableData } from "@/integrations/supabase/guestMockClient";
 import { financeDb } from "@/integrations/supabase/financeClient";
 import { useToast } from "@/hooks/use-toast";

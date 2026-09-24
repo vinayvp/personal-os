@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, FileText, AlertCircle, CheckCircle, X, Type } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/appClient";
 import { useToast } from "@/hooks/use-toast";
 import { extractImdbId } from "./AddMovieModal";
 

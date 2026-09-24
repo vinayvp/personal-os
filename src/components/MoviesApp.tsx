@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Filter, Grid, List, Play, Check, FolderPlus, Upload, ChevronUp, ChevronDown } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/appClient";
 import { useToast } from "@/hooks/use-toast";
 import AddMovieModal from "@/components/movies/AddMovieModal";
 import MovieCard from "@/components/movies/MovieCard";
