@@ -1,10 +1,1 @@
-project_id = "clnjqpawethblkeziehb"
-
-[functions.check-journal-pin]
-verify_jwt = false
-
-[functions.search-movie]
-verify_jwt = false
-
-[functions.get-crypto-price]
-verify_jwt = false
+project_id = "ahimeqyalmdilecqaoca"
