@@ -31,7 +31,7 @@ import JobTrackerApp from '@/components/JobTrackerApp';
 import { SubappTutorialModal } from '@/components/tutorials/SubappTutorialModal';
 import { GuestWelcomeModal } from '@/components/tutorials/GuestWelcomeModal';
 import { SubappErrorBoundary } from '@/components/common/SubappErrorBoundary';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/appClient';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 
