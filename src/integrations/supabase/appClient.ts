@@ -2,18 +2,28 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './appTypes';
 import { createGuestMockClient } from './guestMockClient';
 
-// Main Production Supabase Database
-// NOTE: reads VITE_MAIN_SUPABASE_* (not the Lovable Cloud VITE_SUPABASE_* vars,
-// which point at the separate managed backend).
-const MAIN_SUPABASE_URL =
-  import.meta.env.VITE_MAIN_SUPABASE_URL || 'https://clnjqpawethblkeziehb.supabase.co';
-const MAIN_SUPABASE_PUBLISHABLE_KEY =
+// Main Production Supabase Database (Loaded strictly from environment variables)
+// Supports both VITE_MAIN_SUPABASE_* and standard VITE_SUPABASE_*
+const MAIN_SUPABASE_URL = (
+  import.meta.env.VITE_MAIN_SUPABASE_URL ||
+  import.meta.env.VITE_SUPABASE_URL ||
+  ''
+).trim();
+const MAIN_SUPABASE_PUBLISHABLE_KEY = (
   import.meta.env.VITE_MAIN_SUPABASE_PUBLISHABLE_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsbmpxcGF3ZXRoYmxrZXppZWhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0MzM0MzQsImV4cCI6MjA2NTAwOTQzNH0.DFsb5MgV3Dz8gFqg6NXK0040c9XG7e3zIJIdG-qt7oQ';
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  ''
+).trim();
 
+export const isMainDatabaseConfigured = Boolean(
+  MAIN_SUPABASE_URL && MAIN_SUPABASE_PUBLISHABLE_KEY
+);
+
+// Fallback to placeholder if environment variables are not set (e.g. during build / initial setup)
 export const mainSupabase = createClient<Database>(
-  MAIN_SUPABASE_URL,
-  MAIN_SUPABASE_PUBLISHABLE_KEY
+  MAIN_SUPABASE_URL || 'https://placeholder.supabase.co',
+  MAIN_SUPABASE_PUBLISHABLE_KEY || 'placeholder-anon-key'
 );
 
 // Guest Supabase Database (Configured via VITE_GUEST_SUPABASE_URL)
@@ -39,6 +49,7 @@ export const guestSupabase: SupabaseClient<Database> = isGuestDatabaseConfigured
 export const getIsGuestMode = (): boolean => {
   if (typeof window === 'undefined') return false;
   return (
+    window.location.pathname.startsWith('/guest') ||
     window.location.pathname.startsWith('/app/guest') ||
     sessionStorage.getItem('app_mode') === 'guest'
   );

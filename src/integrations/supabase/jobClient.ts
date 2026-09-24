@@ -862,8 +862,7 @@ export const calculateCountryStats = (applications: JobApplication[]): CountrySt
 // Fast Forex API Currency Conversion & Lakhs Formatter
 // =========================================================
 
-const FAST_FOREX_API_KEY =
-  (import.meta as any).env?.VITE_FASTFOREX_API_KEY || '64d1e7c7fa-86e02203bc-tktz09';
+const FAST_FOREX_API_KEY = (import.meta as any).env?.VITE_FASTFOREX_API_KEY || '';
 
 // In-memory cache for exchange rates to avoid redundant network hits
 const rateCache: Record<string, { rate: number; timestamp: number }> = {};
@@ -881,19 +880,22 @@ export const getInrExchangeRate = async (currency: string): Promise<number> => {
     return cached.rate;
   }
 
-  try {
-    const url = `https://api.fastforex.io/fetch-one?from=${curr}&to=INR&api_key=${FAST_FOREX_API_KEY}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Forex API error: ${res.statusText}`);
-    const json = await res.json();
-    const inrRate = json?.result?.INR;
-    if (typeof inrRate === 'number' && inrRate > 0) {
-      rateCache[curr] = { rate: inrRate, timestamp: Date.now() };
-      return inrRate;
+  if (FAST_FOREX_API_KEY) {
+    try {
+      const url = `https://api.fastforex.io/fetch-one?from=${curr}&to=INR&api_key=${FAST_FOREX_API_KEY}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Forex API error: ${res.statusText}`);
+      const json = await res.json();
+      const inrRate = json?.result?.INR;
+      if (typeof inrRate === 'number' && inrRate > 0) {
+        rateCache[curr] = { rate: inrRate, timestamp: Date.now() };
+        return inrRate;
+      }
+    } catch (err) {
+      console.warn(`FastForex rate fetch failed for ${curr}, using fallback:`, err);
     }
-  } catch (err) {
-    console.warn(`FastForex rate fetch failed for ${curr}, using fallback:`, err);
   }
+
 
   // Sensible fallback exchange rates if offline or API limit reached
   const fallbackRates: Record<string, number> = {
