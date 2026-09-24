@@ -1,7 +1,9 @@
 <div align="center">
   <img src="logo.png" alt="Personal OS Logo" width="140" />
 
-  # 🌐 Personal OS
+  # Personal OS
+
+  <p><code>"$ sudo organise my-life"</code></p>
 
   <p><strong>A modern, private, and extensible all-in-one personal operating system and life management dashboard.</strong><br />
   Built with <strong>React 18</strong>, <strong>TypeScript</strong>, <strong>Tailwind CSS</strong>, <strong>shadcn/ui</strong>, <strong>Supabase</strong>, and <strong>Capacitor</strong> for native Android support.</p>
@@ -15,6 +17,10 @@
     <a href="https://capacitorjs.com/"><img src="https://img.shields.io/badge/Capacitor-8.0%20(Android)-119EFF.svg?logo=capacitor" alt="Capacitor" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
   </p>
+
+  <p>
+    🚀 <strong>Live Demo:</strong> Experience Personal OS in Guest Mode at <strong><a href="https://vinayvp.netlify.app/app">vinayvp.netlify.app/app</a></strong> (click <em>"Login as Guest"</em>)
+  </p>
 </div>
 
 ---
@@ -22,6 +28,8 @@
 ## 📖 Overview
 
 **Personal OS** centralizes your daily productivity, financial tracking, habits, career search, and personal knowledge management into a unified, lightning-fast dashboard. Designed for privacy, cross-device accessibility, and keyboard-first navigation, it functions both as a desktop/mobile web application and as a native Android app with biometric authentication and system share-sheet integration.
+
+> 🎮 **Live Interactive Demo:** Want to see how it looks and works right away? Head over to **[https://vinayvp.netlify.app/app](https://vinayvp.netlify.app/app)** and click **"Login as Guest"** to immediately explore all 9 sub-applications with realistic sample data without signing in!
 
 ---
 
