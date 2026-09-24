@@ -1,14 +1,21 @@
-# 🌐 Personal OS
+<div align="center">
+  <img src="logo.png" alt="Personal OS Logo" width="140" />
 
-A modern, private, and extensible all-in-one personal operating system and life management dashboard. Built with **React 18**, **TypeScript**, **Tailwind CSS**, **shadcn/ui**, **Supabase**, and **Capacitor** for native Android support.
+  # 🌐 Personal OS
 
-[![React](https://img.shields.io/badge/React-18-blue.svg?logo=react)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue.svg?logo=typescript)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.4-purple.svg?logo=vite)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC.svg?logo=tailwind-css)](https://tailwindcss.com/)
-[![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Edge%20Functions-3ECF8E.svg?logo=supabase)](https://supabase.com/)
-[![Capacitor](https://img.shields.io/badge/Capacitor-8.0%20(Android)-119EFF.svg?logo=capacitor)](https://capacitorjs.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+  <p><strong>A modern, private, and extensible all-in-one personal operating system and life management dashboard.</strong><br />
+  Built with <strong>React 18</strong>, <strong>TypeScript</strong>, <strong>Tailwind CSS</strong>, <strong>shadcn/ui</strong>, <strong>Supabase</strong>, and <strong>Capacitor</strong> for native Android support.</p>
+
+  <p>
+    <a href="https://reactjs.org/"><img src="https://img.shields.io/badge/React-18-blue.svg?logo=react" alt="React" /></a>
+    <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.5-blue.svg?logo=typescript" alt="TypeScript" /></a>
+    <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-5.4-purple.svg?logo=vite" alt="Vite" /></a>
+    <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC.svg?logo=tailwind-css" alt="Tailwind CSS" /></a>
+    <a href="https://supabase.com/"><img src="https://img.shields.io/badge/Supabase-Database%20%26%20Edge%20Functions-3ECF8E.svg?logo=supabase" alt="Supabase" /></a>
+    <a href="https://capacitorjs.com/"><img src="https://img.shields.io/badge/Capacitor-8.0%20(Android)-119EFF.svg?logo=capacitor" alt="Capacitor" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
+  </p>
+</div>
 
 ---
 
