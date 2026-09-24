@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { ExternalLink, ImageOff } from 'lucide-react';
 
 export interface MarkdownImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
-  node?: unknown;
+  // hast node from react-markdown; typed as any so propTypes remain compatible
+  node?: any;
 }
 
 export const parseImageDimensions = (alt?: string, src?: string) => {
