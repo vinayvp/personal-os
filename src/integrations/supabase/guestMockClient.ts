@@ -12,17 +12,30 @@ const TABLE_ALIASES: Record<string, string> = {
 
 export const getGuestTableData = (table: string): any[] => {
   const resolved = TABLE_ALIASES[table] || table;
-  if (typeof window === 'undefined') return GUEST_SAMPLE_DATA[resolved] || GUEST_SAMPLE_DATA[table] || [];
+  const sample = GUEST_SAMPLE_DATA[resolved] || GUEST_SAMPLE_DATA[table] || [];
+  if (typeof window === 'undefined') return sample;
   try {
     const raw = localStorage.getItem(GUEST_STORAGE_PREFIX + resolved);
     if (!raw) {
-      const initial = GUEST_SAMPLE_DATA[resolved] || GUEST_SAMPLE_DATA[table] || [];
-      localStorage.setItem(GUEST_STORAGE_PREFIX + resolved, JSON.stringify(initial));
-      return initial;
+      localStorage.setItem(GUEST_STORAGE_PREFIX + resolved, JSON.stringify(sample));
+      return sample;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    // Auto-sync if sample data has changed or expanded
+    if (
+      Array.isArray(parsed) &&
+      (
+        ((table.includes('valuation') || table.includes('transaction')) &&
+          (sample.length !== parsed.length || (sample.length > 0 && sample[sample.length - 1]?.current_value !== parsed[parsed.length - 1]?.current_value))) ||
+        (table.includes('revision') && sample.length > 0 && parsed.length > 0 && !parsed[0]?.description && !!sample[0]?.description)
+      )
+    ) {
+      localStorage.setItem(GUEST_STORAGE_PREFIX + resolved, JSON.stringify(sample));
+      return sample;
+    }
+    return parsed;
   } catch {
-    return GUEST_SAMPLE_DATA[resolved] || GUEST_SAMPLE_DATA[table] || [];
+    return sample;
   }
 };
 

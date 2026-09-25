@@ -1,7 +1,52 @@
-/**
- * Default sample data seeded for Guest Mode.
- * Used by the Guest client fallback if a dedicated guest Supabase database is not yet plugged in.
- */
+const daysAgo = (days: number): string => {
+  return new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
+};
+
+const daysAgoIso = (days: number): string => {
+  return new Date(Date.now() - days * 86400000).toISOString();
+};
+
+const VALUATION_CHECKPOINTS = [180, 150, 120, 90, 60, 45, 30, 15, 0];
+const ASSET_VALUATION_TRAJECTORIES: Record<string, number[]> = {
+  // inv_1: UTI Nifty 50 Index Fund (Solid compounding, +43.3% gain)
+  inv_1: [168000, 174000, 183500, 181000, 194000, 202000, 208500, 212000, 215000],
+  // inv_2: Parag Parikh Flexi Cap Fund (Consistent global growth, +45.4% gain)
+  inv_2: [134000, 141000, 148500, 146000, 157000, 163500, 169000, 172000, 174500],
+  // inv_3: Midcap High-Beta Momentum Basket (Rallied early, corrected, recovered to +3.0%)
+  inv_3: [48000, 55000, 64000, 59000, 56500, 58000, 60200, 61100, 61800],
+  // inv_4: Clean Energy & Solar Thematic ETF (Cyclical clean-tech dip, -12.0%)
+  inv_4: [78000, 75000, 72000, 68500, 66000, 67500, 69000, 69800, 70400],
+  // inv_5: HDFC Bank Fixed Deposit (Linear compounding accrual at 7.25% p.a., +7.25%)
+  inv_5: [101200, 102400, 103600, 104800, 105700, 106200, 106700, 107000, 107250],
+  // inv_6: Employee Provident Fund (Steady monthly statutory accrual at 8.25%, +13.0%)
+  inv_6: [246000, 250500, 255000, 259500, 264000, 266500, 268800, 270000, 271200],
+  // inv_7: Sovereign Gold Bond 2023 Series III (Precious metals secular bull run, +45.0%)
+  inv_7: [74000, 77500, 81000, 84500, 88000, 90200, 92400, 93500, 94250],
+  // inv_8: Ethereum Staking Vault (Classic crypto volatility cycle recovery, +13.0%)
+  inv_8: [95000, 112000, 128000, 105000, 111000, 117000, 121500, 123000, 124300],
+  // inv_9: Brookfield India REIT (Stable commercial office cash flows & yield, +11.7%)
+  inv_9: [76500, 77800, 79000, 80200, 81500, 82200, 82900, 83400, 83800],
+  // inv_10: Emergency Cash Reserve (Compounding liquid interest at 3.5%, +3.3%)
+  inv_10: [150800, 151500, 152200, 153000, 153800, 154200, 154500, 154800, 155000],
+};
+
+const buildHistoricalValuations = () => {
+  const result: any[] = [];
+  for (const [invId, values] of Object.entries(ASSET_VALUATION_TRAJECTORIES)) {
+    VALUATION_CHECKPOINTS.forEach((days, idx) => {
+      result.push({
+        id: `val_${invId}_${days}`,
+        investment_id: invId,
+        transaction_id: null,
+        valuation_date: daysAgo(days),
+        current_value: values[idx],
+        metadata: null,
+        created_at: daysAgoIso(days),
+      });
+    });
+  }
+  return result;
+};
 
 export const GUEST_SAMPLE_DATA: Record<string, any[]> = {
   habits: [
@@ -365,7 +410,9 @@ def verify_replica_sync(primary, replica):
     {
       id: 're1',
       title: 'Consistent Hashing & Virtual Nodes',
+      name: 'Consistent Hashing & Virtual Nodes',
       content: 'Consistent hashing maps both keys and nodes to a circular hash ring (0 to 2^32-1). Virtual nodes (vnodes) assign multiple points per physical server to ensure uniform key distribution and minimize hotspotting when nodes join or fail.',
+      description: 'Consistent hashing maps both keys and nodes to a circular hash ring (0 to 2^32-1). Virtual nodes (vnodes) assign multiple points per physical server to ensure uniform key distribution and minimize hotspotting when nodes join or fail.',
       category_id: 'rc1',
       difficulty: 'easy',
       next_review_date: new Date(Date.now() + 3 * 86400000).toISOString(),
@@ -375,7 +422,9 @@ def verify_replica_sync(primary, replica):
     {
       id: 're2',
       title: 'Database Isolation Levels: Phantom vs Non-Repeatable Reads',
+      name: 'Database Isolation Levels: Phantom vs Non-Repeatable Reads',
       content: 'Non-repeatable read occurs when row data changes between reads within a transaction. Phantom read occurs when the set of rows matching a WHERE clause changes (due to INSERT/DELETE by another transaction). Serializable isolation prevents both using predicate locks or snapshot isolation.',
+      description: 'Non-repeatable read occurs when row data changes between reads within a transaction. Phantom read occurs when the set of rows matching a WHERE clause changes (due to INSERT/DELETE by another transaction). Serializable isolation prevents both using predicate locks or snapshot isolation.',
       category_id: 'rc2',
       difficulty: 'medium',
       next_review_date: new Date(Date.now() + 86400000).toISOString(),
@@ -385,7 +434,9 @@ def verify_replica_sync(primary, replica):
     {
       id: 're3',
       title: 'React Fiber Reconciler & Concurrent Rendering',
+      name: 'React Fiber Reconciler & Concurrent Rendering',
       content: 'React Fiber decomposes reconciliation into fine-grained units of work (fibers). It decouples the work phase (interruptible, priority-based lanes) from the commit phase (synchronous DOM mutations), enabling features like useTransition and selective hydration.',
+      description: 'React Fiber decomposes reconciliation into fine-grained units of work (fibers). It decouples the work phase (interruptible, priority-based lanes) from the commit phase (synchronous DOM mutations), enabling features like useTransition and selective hydration.',
       category_id: 'rc3',
       difficulty: 'hard',
       next_review_date: new Date(Date.now() + 2 * 86400000).toISOString(),
@@ -395,7 +446,9 @@ def verify_replica_sync(primary, replica):
     {
       id: 're4',
       title: 'Raft Consensus: Leader Election & Log Replication',
+      name: 'Raft Consensus: Leader Election & Log Replication',
       content: 'Raft decomposes consensus into 3 subproblems: Leader Election (randomized election timers between 150-300ms to avoid split votes), Log Replication (leader appends entries and commits upon quorum ACK), and Safety (leader completeness guarantees committed entries are never overridden).',
+      description: 'Raft decomposes consensus into 3 subproblems: Leader Election (randomized election timers between 150-300ms to avoid split votes), Log Replication (leader appends entries and commits upon quorum ACK), and Safety (leader completeness guarantees committed entries are never overridden).',
       category_id: 'rc1',
       difficulty: 'hard',
       next_review_date: new Date(Date.now() + 86400000).toISOString(),
@@ -405,7 +458,9 @@ def verify_replica_sync(primary, replica):
     {
       id: 're5',
       title: 'LSM Trees vs B+ Trees: Write vs Read Amplification',
+      name: 'LSM Trees vs B+ Trees: Write vs Read Amplification',
       content: 'LSM Trees (RocksDB, Cassandra) optimize for sequential write throughput via append-only MemTable and SSTables, trading read performance (compaction, bloom filters). B+ Trees (PostgreSQL, InnoDB) optimize for fast reads with fixed-size pages and in-place updates, paying higher write amplification.',
+      description: 'LSM Trees (RocksDB, Cassandra) optimize for sequential write throughput via append-only MemTable and SSTables, trading read performance (compaction, bloom filters). B+ Trees (PostgreSQL, InnoDB) optimize for fast reads with fixed-size pages and in-place updates, paying higher write amplification.',
       category_id: 'rc2',
       difficulty: 'medium',
       next_review_date: new Date(Date.now() + 5 * 86400000).toISOString(),
@@ -415,7 +470,9 @@ def verify_replica_sync(primary, replica):
     {
       id: 're6',
       title: 'TLS 1.3 0-RTT & TCP Connection Termination',
+      name: 'TLS 1.3 0-RTT & TCP Connection Termination',
       content: 'TLS 1.3 reduces the handshake to 1 round-trip (1-RTT) by combining crypto parameter negotiation with key exchange. Pre-shared keys enable 0-RTT resumption (with replay attack trade-offs). TCP closes gracefully with a 4-way FIN/ACK handshake and TIME_WAIT (2*MSL) to drain lingering segments.',
+      description: 'TLS 1.3 reduces the handshake to 1 round-trip (1-RTT) by combining crypto parameter negotiation with key exchange. Pre-shared keys enable 0-RTT resumption (with replay attack trade-offs). TCP closes gracefully with a 4-way FIN/ACK handshake and TIME_WAIT (2*MSL) to drain lingering segments.',
       category_id: 'rc4',
       difficulty: 'medium',
       next_review_date: new Date(Date.now() + 4 * 86400000).toISOString(),
@@ -425,7 +482,9 @@ def verify_replica_sync(primary, replica):
     {
       id: 're7',
       title: 'Actor Model vs CSP (Communicating Sequential Processes)',
+      name: 'Actor Model vs CSP (Communicating Sequential Processes)',
       content: 'Actor Model (Erlang, Akka) communicates via mailbox-addressed asynchronous messages with dynamic topology. CSP (Go channels) communicates via first-class rendezvous channels where sender and receiver synchronize over the channel itself without direct actor knowledge.',
+      description: 'Actor Model (Erlang, Akka) communicates via mailbox-addressed asynchronous messages with dynamic topology. CSP (Go channels) communicates via first-class rendezvous channels where sender and receiver synchronize over the channel itself without direct actor knowledge.',
       category_id: 'rc5',
       difficulty: 'hard',
       next_review_date: new Date(Date.now() + 86400000).toISOString(),
@@ -467,40 +526,58 @@ def verify_replica_sync(primary, replica):
   ],
 
   investment_transactions: [
-    { id: 'tx_1', investment_id: 'inv_1', transaction_date: '2023-01-15', amount_invested: 150000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: new Date().toISOString() },
-    { id: 'tx_2', investment_id: 'inv_2', transaction_date: '2023-03-10', amount_invested: 120000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: new Date().toISOString() },
-    { id: 'tx_3', investment_id: 'inv_3', transaction_date: '2023-09-01', amount_invested: 60000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: new Date().toISOString() },
-    { id: 'tx_4', investment_id: 'inv_4', transaction_date: '2023-08-15', amount_invested: 80000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: new Date().toISOString() },
-    { id: 'tx_5', investment_id: 'inv_5', transaction_date: '2023-07-01', amount_invested: 100000, tenure_months: 18, interest_rate: 7.25, maturity_date: '2025-01-01', created_at: new Date().toISOString() },
-    { id: 'tx_6', investment_id: 'inv_6', transaction_date: '2022-10-01', amount_invested: 240000, tenure_months: null, interest_rate: 8.25, maturity_date: null, created_at: new Date().toISOString() },
-    { id: 'tx_7', investment_id: 'inv_7', transaction_date: '2023-06-20', amount_invested: 65000, tenure_months: 96, interest_rate: 2.5, maturity_date: '2031-06-20', created_at: new Date().toISOString() },
-    { id: 'tx_8', investment_id: 'inv_8', transaction_date: '2023-11-10', amount_invested: 110000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: new Date().toISOString() },
-    { id: 'tx_9', investment_id: 'inv_9', transaction_date: '2023-10-05', amount_invested: 75000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: new Date().toISOString() },
-    { id: 'tx_10', investment_id: 'inv_10', transaction_date: '2023-01-01', amount_invested: 150000, tenure_months: null, interest_rate: 3.5, maturity_date: null, created_at: new Date().toISOString() },
+    // inv_1: UTI Nifty 50 Index Fund (Total 150k)
+    { id: 'tx_1_1', investment_id: 'inv_1', transaction_date: daysAgo(180), amount_invested: 90000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(180) },
+    { id: 'tx_1_2', investment_id: 'inv_1', transaction_date: daysAgo(150), amount_invested: 15000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(150) },
+    { id: 'tx_1_3', investment_id: 'inv_1', transaction_date: daysAgo(120), amount_invested: 15000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(120) },
+    { id: 'tx_1_4', investment_id: 'inv_1', transaction_date: daysAgo(90), amount_invested: 15000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(90) },
+    { id: 'tx_1_5', investment_id: 'inv_1', transaction_date: daysAgo(30), amount_invested: 15000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(30) },
+
+    // inv_2: Parag Parikh Flexi Cap Fund (Total 120k)
+    { id: 'tx_2_1', investment_id: 'inv_2', transaction_date: daysAgo(180), amount_invested: 80000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(180) },
+    { id: 'tx_2_2', investment_id: 'inv_2', transaction_date: daysAgo(150), amount_invested: 10000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(150) },
+    { id: 'tx_2_3', investment_id: 'inv_2', transaction_date: daysAgo(120), amount_invested: 10000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(120) },
+    { id: 'tx_2_4', investment_id: 'inv_2', transaction_date: daysAgo(90), amount_invested: 10000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(90) },
+    { id: 'tx_2_5', investment_id: 'inv_2', transaction_date: daysAgo(30), amount_invested: 10000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(30) },
+
+    // inv_3: Midcap Momentum (Total 60k)
+    { id: 'tx_3_1', investment_id: 'inv_3', transaction_date: daysAgo(180), amount_invested: 40000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(180) },
+    { id: 'tx_3_2', investment_id: 'inv_3', transaction_date: daysAgo(120), amount_invested: 20000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(120) },
+
+    // inv_4: Clean Energy ETF (Total 80k)
+    { id: 'tx_4_1', investment_id: 'inv_4', transaction_date: daysAgo(180), amount_invested: 50000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(180) },
+    { id: 'tx_4_2', investment_id: 'inv_4', transaction_date: daysAgo(90), amount_invested: 30000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(90) },
+
+    // inv_5: HDFC Bank Fixed Deposit (Total 100k)
+    { id: 'tx_5_1', investment_id: 'inv_5', transaction_date: daysAgo(180), amount_invested: 100000, tenure_months: 18, interest_rate: 7.25, maturity_date: daysAgo(-365), created_at: daysAgoIso(180) },
+
+    // inv_6: EPF (Total 240k)
+    { id: 'tx_6_1', investment_id: 'inv_6', transaction_date: daysAgo(180), amount_invested: 200000, tenure_months: null, interest_rate: 8.25, maturity_date: null, created_at: daysAgoIso(180) },
+    { id: 'tx_6_2', investment_id: 'inv_6', transaction_date: daysAgo(150), amount_invested: 8000, tenure_months: null, interest_rate: 8.25, maturity_date: null, created_at: daysAgoIso(150) },
+    { id: 'tx_6_3', investment_id: 'inv_6', transaction_date: daysAgo(120), amount_invested: 8000, tenure_months: null, interest_rate: 8.25, maturity_date: null, created_at: daysAgoIso(120) },
+    { id: 'tx_6_4', investment_id: 'inv_6', transaction_date: daysAgo(90), amount_invested: 8000, tenure_months: null, interest_rate: 8.25, maturity_date: null, created_at: daysAgoIso(90) },
+    { id: 'tx_6_5', investment_id: 'inv_6', transaction_date: daysAgo(60), amount_invested: 8000, tenure_months: null, interest_rate: 8.25, maturity_date: null, created_at: daysAgoIso(60) },
+    { id: 'tx_6_6', investment_id: 'inv_6', transaction_date: daysAgo(30), amount_invested: 8000, tenure_months: null, interest_rate: 8.25, maturity_date: null, created_at: daysAgoIso(30) },
+
+    // inv_7: Sovereign Gold Bond (Total 65k)
+    { id: 'tx_7_1', investment_id: 'inv_7', transaction_date: daysAgo(180), amount_invested: 65000, tenure_months: 96, interest_rate: 2.5, maturity_date: daysAgo(-2700), created_at: daysAgoIso(180) },
+
+    // inv_8: Ethereum ETH Vault (Total 110k)
+    { id: 'tx_8_1', investment_id: 'inv_8', transaction_date: daysAgo(180), amount_invested: 70000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(180) },
+    { id: 'tx_8_2', investment_id: 'inv_8', transaction_date: daysAgo(120), amount_invested: 40000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(120) },
+
+    // inv_9: Brookfield REIT (Total 75k)
+    { id: 'tx_9_1', investment_id: 'inv_9', transaction_date: daysAgo(180), amount_invested: 75000, tenure_months: null, interest_rate: null, maturity_date: null, created_at: daysAgoIso(180) },
+
+    // inv_10: Emergency Cash Reserve (Total 150k)
+    { id: 'tx_10_1', investment_id: 'inv_10', transaction_date: daysAgo(180), amount_invested: 130000, tenure_months: null, interest_rate: 3.5, maturity_date: null, created_at: daysAgoIso(180) },
+    { id: 'tx_10_2', investment_id: 'inv_10', transaction_date: daysAgo(150), amount_invested: 5000, tenure_months: null, interest_rate: 3.5, maturity_date: null, created_at: daysAgoIso(150) },
+    { id: 'tx_10_3', investment_id: 'inv_10', transaction_date: daysAgo(120), amount_invested: 5000, tenure_months: null, interest_rate: 3.5, maturity_date: null, created_at: daysAgoIso(120) },
+    { id: 'tx_10_4', investment_id: 'inv_10', transaction_date: daysAgo(90), amount_invested: 5000, tenure_months: null, interest_rate: 3.5, maturity_date: null, created_at: daysAgoIso(90) },
+    { id: 'tx_10_5', investment_id: 'inv_10', transaction_date: daysAgo(30), amount_invested: 5000, tenure_months: null, interest_rate: 3.5, maturity_date: null, created_at: daysAgoIso(30) },
   ],
 
-  investment_valuations: [
-    // Positive (+24.3%)
-    { id: 'val_1', investment_id: 'inv_1', transaction_id: null, valuation_date: new Date().toISOString().split('T')[0], current_value: 186500, metadata: null, created_at: new Date().toISOString() },
-    // Positive (+23.5%)
-    { id: 'val_2', investment_id: 'inv_2', transaction_id: null, valuation_date: new Date().toISOString().split('T')[0], current_value: 148200, metadata: null, created_at: new Date().toISOString() },
-    // Negative (-11.5%)
-    { id: 'val_3', investment_id: 'inv_3', transaction_id: null, valuation_date: new Date().toISOString().split('T')[0], current_value: 53100, metadata: null, created_at: new Date().toISOString() },
-    // Negative (-14.5%)
-    { id: 'val_4', investment_id: 'inv_4', transaction_id: null, valuation_date: new Date().toISOString().split('T')[0], current_value: 68400, metadata: null, created_at: new Date().toISOString() },
-    // Positive (+7.25%)
-    { id: 'val_5', investment_id: 'inv_5', transaction_id: null, valuation_date: new Date().toISOString().split('T')[0], current_value: 107250, metadata: null, created_at: new Date().toISOString() },
-    // Positive (+12.0%)
-    { id: 'val_6', investment_id: 'inv_6', transaction_id: null, valuation_date: new Date().toISOString().split('T')[0], current_value: 268800, metadata: null, created_at: new Date().toISOString() },
-    // Positive (+26.8%)
-    { id: 'val_7', investment_id: 'inv_7', transaction_id: null, valuation_date: new Date().toISOString().split('T')[0], current_value: 82400, metadata: null, created_at: new Date().toISOString() },
-    // Negative (-14.0%)
-    { id: 'val_8', investment_id: 'inv_8', transaction_id: null, valuation_date: new Date().toISOString().split('T')[0], current_value: 94600, metadata: null, created_at: new Date().toISOString() },
-    // Positive (+6.4%)
-    { id: 'val_9', investment_id: 'inv_9', transaction_id: null, valuation_date: new Date().toISOString().split('T')[0], current_value: 79800, metadata: null, created_at: new Date().toISOString() },
-    // Positive (+3.0%)
-    { id: 'val_10', investment_id: 'inv_10', transaction_id: null, valuation_date: new Date().toISOString().split('T')[0], current_value: 154500, metadata: null, created_at: new Date().toISOString() },
-  ],
+  investment_valuations: buildHistoricalValuations(),
 
   sip_configs: [
     { id: 'sc_1', investment_id: 'inv_1', amount: 15000, sip_day: 5, is_active: true, start_date: '2023-01-05', end_date: null, last_executed_date: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
