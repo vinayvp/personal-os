@@ -1037,28 +1037,264 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- -- 3. Seed Notes & Tags
+-- -- 3. Seed Notes & Tags
 INSERT INTO public.tags (name, color) VALUES
     ('Architecture', '#6366F1'),
     ('Productivity', '#10B981'),
-    ('Distributed Systems', '#F59E0B')
+    ('Distributed Systems', '#F59E0B'),
+    ('Frontend', '#3B82F6'),
+    ('Engineering', '#8B5CF6'),
+    ('Performance', '#EC4899')
 ON CONFLICT (name) DO UPDATE SET color = EXCLUDED.color;
 
 INSERT INTO public.notes (id, title, content, tags, category, is_pinned)
 VALUES
     (
         '00000000-0000-0000-0000-000000000010',
-        'Distributed Systems: CAP Theorem & Consistency Models',
-        '### Core Principles of Distributed Storage\n\n- **Consistency**: Every read receives the most recent write or an error.\n- **Availability**: Every request receives a non-error response, without guarantee that it contains the most recent write.\n- **Partition Tolerance**: The system continues to operate despite an arbitrary number of messages being dropped or delayed.\n\n> In practice, modern systems tune PACELC trade-offs (e.g. latency vs consistency under normal operation).',
+        'Distributed Systems: Architecture Blueprint & Consensus',
+        '# Distributed Systems: Architecture Blueprint & Consensus
+
+A comprehensive engineering reference for building resilient, fault-tolerant distributed services with high availability and partition tolerance.
+
+---
+
+## 1. Core Principles: CAP & PACELC Theorems
+
+Distributed data systems inherently make trade-offs between consistency, availability, and latency under network partitions.
+
+### The CAP Theorem
+According to Eric Brewer''s CAP Theorem, a distributed data store can simultaneously provide at most two of the following guarantees:
+
+1. **Consistency (Linearizability)**: Every read receives the most recent write or an error.
+2. **Availability**: Every non-failing node returns a non-error response for every request (without guarantee that it contains the most recent write).
+3. **Partition Tolerance**: The network can drop or delay arbitrary messages without crashing the cluster.
+
+> **Important Note:** In physical networks, partitions (*P*) are inevitable due to fiber cuts, switch failures, or GC pauses. Therefore, distributed architectures must choose between **CP** and **AP**.
+
+### The PACELC Model
+If there is a **P**artition, how does the system trade off **A**vailability and **C**onsistency? **E**lse, how does the system trade off **L**atency and **C**onsistency?
+
+| System | Partition Mode | Normal Mode | Target Use Case |
+| :--- | :---: | :---: | :--- |
+| **CockroachDB / Spanner** | CP | PC | Financial Ledgers & ACID Transactions |
+| **Apache Cassandra** | AP | PA | Time-Series & High-Ingest Logs |
+| **MongoDB (Default)** | CP | PC | Document Catalog with Strong Primary |
+| **Amazon DynamoDB** | AP / CP | Configurable | Global Key-Value Storage |
+
+---
+
+## 2. Replication & Consensus Protocol
+
+Consensus algorithms like **Raft** and **Paxos** ensure state machine safety across replicated nodes.
+
+### Raft Consensus State Machine
+
+```typescript
+interface RaftNodeState {
+  term: number;
+  role: ''Leader'' | ''Candidate'' | ''Follower'';
+  votedFor: string | null;
+  log: Array<{ index: number; term: number; command: string }>;
+  commitIndex: number;
+  lastApplied: number;
+}
+
+// Heartbeat & AppendEntries verification
+function handleAppendEntries(state: RaftNodeState, leaderTerm: number): boolean {
+  if (leaderTerm < state.term) {
+    return false; // Reject stale leader
+  }
+  state.term = leaderTerm;
+  state.role = ''Follower'';
+  return true;
+}
+```
+
+---
+
+## 3. High-Throughput Caching Strategies
+
+Optimizing read latency requires deliberate cache invalidation and write patterns:
+
+- **Cache-Aside (Lazy Loading)**:
+  - App reads cache first; on miss, queries DB and populates cache.
+  - *Best for*: Read-heavy workloads with intermittent updates.
+- **Write-Through**:
+  - Writes update cache and DB synchronously.
+  - *Best for*: Critical data where cache consistency is paramount.
+- **Write-Behind (Write-Back)**:
+  - Writes update cache immediately and asynchronously flush to DB in batches.
+
+---
+
+## 4. Production Readiness Checklist
+
+Pre-launch verification for distributed microservices:
+
+- [x] Configure automated health probes (`/healthz` and `/livez`)
+- [x] Enable circuit breakers (e.g., resilience4j or envoy retries)
+- [x] Implement distributed tracing with OpenTelemetry trace contexts
+- [ ] Conduct chaos engineering game-day with simulated network partitions
+- [ ] Configure p99 latency alerts with automated runbook links',
         ARRAY['distributed-systems', 'architecture', 'backend'],
         'Architecture',
         true
     ),
     (
         '00000000-0000-0000-0000-000000000020',
-        'Productivity: The 4-Hour Deep Work Block Framework',
-        '### Deep Work Protocol\n\n1. **Morning Block (08:30 - 11:30)**: Zero notifications, zero email, uninterrupted complex problem solving.\n2. **Break (11:30 - 13:00)**: Physical movement, nutrition, disconnection.\n3. **Afternoon Block (13:30 - 15:30)**: Collaborative meetings, PR reviews, documentation.\n\n*Results: 3x output with dramatically reduced cognitive fatigue.*',
+        'Engineering Productivity: The 4-Hour Deep Work Protocol',
+        '# Engineering Productivity: The 4-Hour Deep Work Protocol
+
+A structured mental performance system designed to eliminate distractions, maximize high-leverage cognitive focus, and build sustainable momentum.
+
+---
+
+## 1. The Core Philosophy
+
+High-impact engineering output is not a function of hours logged in front of a monitor; it is a function of focused intensity:
+
+> "High-Quality Work Produced = (Time Spent) x (Intensity of Focus). If you don''t produce, you won''t thrive—and producing requires mastering the ability to quickly master hard things." — *Cal Newport, Deep Work*
+
+---
+
+## 2. Daily Schedule Architecture
+
+Structuring the day into distinct physiological and cognitive phases:
+
+### Phase 1: Morning Deep Focus Block (08:30 – 11:30)
+- **Rules**:
+  - Phone in another room on Do Not Disturb.
+  - Slack, Discord, and email applications closed.
+  - Work exclusively on the single highest-priority engineering challenge of the day.
+- **Activities**: Writing core algorithms, refactoring complex modules, architectural RFCs.
+
+### Phase 2: Recharge & Physical Reset (11:30 – 13:00)
+- Nutrient-dense meal.
+- 30-minute outdoor walk or zone 2 aerobic cardio.
+- Disconnection from all backlit screens.
+
+### Phase 3: Collaborative & Shallow Execution (13:30 – 16:30)
+- Code reviews and GitHub PR approvals.
+- Architecture syncs and team standups.
+- Triage Jira tickets and customer bug reports.
+
+---
+
+## 3. Tooling & Workspace Setup
+
+| Category | Tool / Setup | Purpose |
+| :--- | :--- | :--- |
+| **Terminal & IDE** | Neovim / VS Code + Tmux | Keystroke-driven uninterrupted editing |
+| **Window Manager** | Tiling (i3 / Aerospace / Rectangle) | Rapid context navigation without mouse |
+| **Audio** | Noise-cancelling headphones + Brown Noise | Dampens conversational audio distractions |
+| **Task Management** | Personal OS Tracker + Markdown | Low-friction daily agenda and scratchpads |
+
+---
+
+## 4. Daily Habit Checklist
+
+- [x] Review calendar and decline low-value optional meetings
+- [x] Complete morning 90-minute uninterrupted coding block
+- [x] Submit code reviews before 14:00 to unblock team members
+- [ ] Log key technical decisions and learnings in daily journal
+- [ ] Zero unread inbox processing at end of day',
         ARRAY['productivity', 'habits', 'deep-work'],
         'Self-Improvement',
+        false
+    ),
+    (
+        '00000000-0000-0000-0000-000000000030',
+        'Modern Web Performance & React 19 Architecture',
+        '# Modern Web Performance & React 19 Architecture
+
+A practical guide to rendering performance, optimistic UI mutations, concurrent mode features, and bundle optimization.
+
+---
+
+## 1. Core Web Vitals (CWV) Reference
+
+Google''s Core Web Vitals define the technical benchmarks for high-performing user experiences:
+
+### The Essential Metrics
+1. **Largest Contentful Paint (LCP)**:
+   - Measures perceived loading speed.
+   - *Target*: `<= 2.5 seconds`
+2. **Interaction to Next Paint (INP)**:
+   - Measures overall page responsiveness to user interactions.
+   - *Target*: `<= 200 milliseconds`
+3. **Cumulative Layout Shift (CLS)**:
+   - Measures visual stability and unexpected layout jumping.
+   - *Target*: `<= 0.1`
+
+---
+
+## 2. React 19: Server Actions & Optimistic State
+
+React 19 introduces native hooks for form handling and optimistic transitions without external state management boilerplate.
+
+### Optimistic UI Implementation
+
+```typescript
+import { useOptimistic, useTransition } from ''react'';
+
+interface Todo {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+export function TodoItem({ todo, onToggle }: { todo: Todo; onToggle: (id: string) => Promise<void> }) {
+  const [isPending, startTransition] = useTransition();
+  const [optimisticTodo, setOptimisticTodo] = useOptimistic(
+    todo,
+    (state, update: boolean) => ({ ...state, completed: update })
+  );
+
+  const handleClick = () => {
+    startTransition(async () => {
+      setOptimisticTodo(!optimisticTodo.completed);
+      await onToggle(todo.id);
+    });
+  };
+
+  return (
+    <div className={`todo-item ${optimisticTodo.completed ? ''done'' : ''''}`}>
+      <input type="checkbox" checked={optimisticTodo.completed} onChange={handleClick} />
+      <span>{optimisticTodo.title}</span>
+      {isPending && <span className="syncing-indicator">Syncing...</span>}
+    </div>
+  );
+}
+```
+
+---
+
+## 3. Performance Optimization Strategies
+
+Key levers for speeding up client-side applications:
+
+- **Code Splitting & Dynamic Imports**:
+  - Lazily import heavyweight modals, chart libraries, and data grids using `React.lazy()`:
+  ```typescript
+  const AnalyticsChart = React.lazy(() => import(''/AnalyticsChart''));
+  ```
+- **Asset Optimization**:
+  - Convert hero images to WebP/AVIF formats with explicit width/height to avoid CLS.
+  - Preload critical fonts with `<link rel="preload" as="font" ... crossOrigin="anonymous">`.
+- **Memoization Rules of Thumb**:
+  - Avoid premature `useMemo` / `useCallback` on cheap calculations.
+  - Apply `useMemo` when passing complex objects as dependencies to custom effects or virtualized lists.
+
+---
+
+## 4. Performance Audit Checklist
+
+- [x] Run Lighthouse audit in incognito mode with mobile throttling
+- [x] Verify production bundle size with `vite-plugin-visualizer`
+- [ ] Profile expensive re-renders using React DevTools Profiler
+- [ ] Configure Cache-Control headers with immutable hashing for static chunks',
+        ARRAY['frontend', 'react', 'performance'],
+        'Engineering',
         false
     )
 ON CONFLICT (id) DO UPDATE SET
@@ -1071,7 +1307,8 @@ ON CONFLICT (id) DO UPDATE SET
 -- Clean and re-link note tags using dynamic lookup by tag name
 DELETE FROM public.note_tags WHERE note_id IN (
     '00000000-0000-0000-0000-000000000010',
-    '00000000-0000-0000-0000-000000000020'
+    '00000000-0000-0000-0000-000000000020',
+    '00000000-0000-0000-0000-000000000030'
 );
 
 INSERT INTO public.note_tags (note_id, tag_id)
@@ -1079,9 +1316,14 @@ SELECT n.id, t.id
 FROM public.notes n
 JOIN public.tags t ON (
     (n.title LIKE 'Distributed Systems%' AND t.name IN ('Architecture', 'Distributed Systems'))
-    OR (n.title LIKE 'Productivity%' AND t.name = 'Productivity')
+    OR (n.title LIKE 'Engineering Productivity%' AND t.name = 'Productivity')
+    OR (n.title LIKE 'Modern Web Performance%' AND t.name IN ('Frontend', 'Engineering', 'Performance'))
 )
-WHERE n.id IN ('00000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000020')
+WHERE n.id IN (
+    '00000000-0000-0000-0000-000000000010',
+    '00000000-0000-0000-0000-000000000020',
+    '00000000-0000-0000-0000-000000000030'
+)
 ON CONFLICT (note_id, tag_id) DO NOTHING;
 
 -- 4. Seed Journal
