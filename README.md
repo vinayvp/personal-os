@@ -19,7 +19,7 @@
   </p>
 
   <p>
-    🚀 <strong>Live Demo:</strong> Experience Personal OS in Guest Mode at <strong><a href="https://vinayvp.netlify.app/app">vinayvp.netlify.app/app</a></strong> (click <em>"Login as Guest"</em>)
+    🚀 <strong>Live Demo:</strong> Experience Personal OS in Guest Mode directly at <strong><a href="https://vinayvp.netlify.app/app/guest">vinayvp.netlify.app/app/guest</a></strong>
   </p>
 </div>
 
@@ -29,7 +29,7 @@
 
 **Personal OS** centralizes your daily productivity, financial tracking, habits, career search, and personal knowledge management into a unified, lightning-fast dashboard. Designed for privacy, cross-device accessibility, and keyboard-first navigation, it functions both as a desktop/mobile web application and as a native Android app with biometric authentication and system share-sheet integration.
 
-> 🎮 **Live Interactive Demo:** Want to see how it looks and works right away? Head over to **[https://vinayvp.netlify.app/app](https://vinayvp.netlify.app/app)** and click **"Login as Guest"** to immediately explore all 9 sub-applications with realistic sample data without signing in!
+> 🎮 **Live Interactive Demo:** Want to see how it looks and works right away? Head over to **[https://vinayvp.netlify.app/app/guest](https://vinayvp.netlify.app/app/guest)** to immediately explore all 9 sub-applications with realistic sample data without signing in!
 
 ---
 
