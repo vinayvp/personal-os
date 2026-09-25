@@ -21,15 +21,29 @@ export const getGuestTableData = (table: string): any[] => {
       return sample;
     }
     const parsed = JSON.parse(raw);
+    const habitsVersionKey = GUEST_STORAGE_PREFIX + 'habits_v_2';
+    const isHabitsTable = table === 'habits' || table === 'habit_completions';
+    const needsHabitsUpgrade =
+      !localStorage.getItem(habitsVersionKey) ||
+      (table === 'habits' && (parsed.length !== sample.length || (parsed[0]?.target_count === 1 && sample[0]?.target_count === 7))) ||
+      (table === 'habit_completions' && sample.length > 0 && parsed.length > 0 && (
+        parsed.length !== sample.length ||
+        (sample[0]?.habit_id === parsed[0]?.habit_id && sample[0]?.completion_date !== parsed[0]?.completion_date)
+      ));
+
     // Auto-sync if sample data has changed or expanded
     if (
       Array.isArray(parsed) &&
       (
         ((table.includes('valuation') || table.includes('transaction')) &&
           (sample.length !== parsed.length || (sample.length > 0 && sample[sample.length - 1]?.current_value !== parsed[parsed.length - 1]?.current_value))) ||
-        (table.includes('revision') && sample.length > 0 && parsed.length > 0 && !parsed[0]?.description && !!sample[0]?.description)
+        (table.includes('revision') && sample.length > 0 && parsed.length > 0 && !parsed[0]?.description && !!sample[0]?.description) ||
+        (isHabitsTable && needsHabitsUpgrade)
       )
     ) {
+      if (table === 'habit_completions') {
+        localStorage.setItem(habitsVersionKey, 'true');
+      }
       localStorage.setItem(GUEST_STORAGE_PREFIX + resolved, JSON.stringify(sample));
       return sample;
     }

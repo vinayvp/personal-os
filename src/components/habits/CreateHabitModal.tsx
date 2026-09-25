@@ -21,7 +21,7 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
     name: '',
     goal: '',
     frequency_type: 'daily' as 'daily' | 'weekly' | 'custom' | 'none',
-    target_count: 1,
+    target_count: 7,
     target_period: 'weekly' as 'weekly' | 'monthly' | 'yearly' | 'total',
     custom_days: [] as number[],
     icon: 'radio_button_checked',
@@ -115,7 +115,7 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
       name: '',
       goal: '',
       frequency_type: 'daily',
-      target_count: 1,
+      target_count: 7,
       target_period: 'weekly',
       custom_days: [],
       icon: 'radio_button_checked',
@@ -231,6 +231,7 @@ const CreateHabitModal = ({ isOpen, onClose, onCreateHabit }: CreateHabitModalPr
                   ...prev, 
                   frequency_type: value, 
                   custom_days: [],
+                  target_count: value === 'daily' ? 7 : value === 'none' ? 10 : (prev.target_count === 7 || prev.target_count === 10) ? 1 : prev.target_count,
                   target_period: value === 'none' ? 'total' : prev.target_period === 'total' ? 'weekly' : prev.target_period
                 }))
               }

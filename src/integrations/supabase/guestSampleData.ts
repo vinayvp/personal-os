@@ -1,9 +1,16 @@
 const daysAgo = (days: number): string => {
-  return new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 const daysAgoIso = (days: number): string => {
-  return new Date(Date.now() - days * 86400000).toISOString();
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString();
 };
 
 const VALUATION_CHECKPOINTS = [180, 150, 120, 90, 60, 45, 30, 15, 0];
@@ -57,10 +64,10 @@ export const GUEST_SAMPLE_DATA: Record<string, any[]> = {
       color: '#10B981',
       icon: 'fitness_center',
       frequency_type: 'daily',
-      target_count: 1,
+      target_count: 7,
       target_period: 'weekly',
-      goal: '45 mins',
-      created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+      goal: '45 mins daily',
+      created_at: daysAgoIso(30),
     },
     {
       id: 'a2222222-2222-2222-2222-222222222222',
@@ -69,10 +76,10 @@ export const GUEST_SAMPLE_DATA: Record<string, any[]> = {
       color: '#3B82F6',
       icon: 'menu_book',
       frequency_type: 'daily',
-      target_count: 1,
+      target_count: 7,
       target_period: 'weekly',
-      goal: '20 pages',
-      created_at: new Date(Date.now() - 25 * 86400000).toISOString(),
+      goal: '20 pages daily',
+      created_at: daysAgoIso(25),
     },
     {
       id: 'a3333333-3333-3333-3333-333333333333',
@@ -84,7 +91,7 @@ export const GUEST_SAMPLE_DATA: Record<string, any[]> = {
       target_count: 10,
       target_period: 'total',
       goal: '10 cases total',
-      created_at: new Date(Date.now() - 20 * 86400000).toISOString(),
+      created_at: daysAgoIso(20),
     },
     {
       id: 'a4444444-4444-4444-4444-444444444444',
@@ -97,77 +104,95 @@ export const GUEST_SAMPLE_DATA: Record<string, any[]> = {
       target_count: 3,
       target_period: 'weekly',
       goal: 'Mon, Wed, Fri',
-      created_at: new Date(Date.now() - 15 * 86400000).toISOString(),
+      created_at: daysAgoIso(15),
     },
   ],
 
   habit_completions: [
-    // Habit 1 (Checked in today)
+    // Habit 1 (Daily, target 7/week - Checked in today, 4/7 this week, 4-day streak)
     {
       id: 'hc_1_today',
       habit_id: 'a1111111-1111-1111-1111-111111111111',
-      completion_date: new Date().toISOString().split('T')[0],
-      completed_at: new Date().toISOString(),
+      completion_date: daysAgo(0),
+      completed_at: daysAgoIso(0),
     },
     {
       id: 'hc_1_yest',
       habit_id: 'a1111111-1111-1111-1111-111111111111',
-      completion_date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
-      completed_at: new Date(Date.now() - 86400000).toISOString(),
+      completion_date: daysAgo(1),
+      completed_at: daysAgoIso(1),
     },
     {
       id: 'hc_1_2days',
       habit_id: 'a1111111-1111-1111-1111-111111111111',
-      completion_date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0],
-      completed_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+      completion_date: daysAgo(2),
+      completed_at: daysAgoIso(2),
+    },
+    {
+      id: 'hc_1_3days',
+      habit_id: 'a1111111-1111-1111-1111-111111111111',
+      completion_date: daysAgo(3),
+      completed_at: daysAgoIso(3),
     },
 
-    // Habit 2 (Unchecked today - completed yesterday & 2 days ago for streak)
+    // Habit 2 (Daily, target 7/week - Unchecked today, 3/7 this week, 3-day active streak from yesterday)
     {
       id: 'hc_2_yest',
       habit_id: 'a2222222-2222-2222-2222-222222222222',
-      completion_date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
-      completed_at: new Date(Date.now() - 86400000).toISOString(),
+      completion_date: daysAgo(1),
+      completed_at: daysAgoIso(1),
     },
     {
       id: 'hc_2_2days',
       habit_id: 'a2222222-2222-2222-2222-222222222222',
-      completion_date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0],
-      completed_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+      completion_date: daysAgo(2),
+      completed_at: daysAgoIso(2),
+    },
+    {
+      id: 'hc_2_3days',
+      habit_id: 'a2222222-2222-2222-2222-222222222222',
+      completion_date: daysAgo(3),
+      completed_at: daysAgoIso(3),
     },
 
     // Habit 3 (No frequency / total goal - 4 completions recorded towards 10)
     {
       id: 'hc_3_1',
       habit_id: 'a3333333-3333-3333-3333-333333333333',
-      completion_date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
-      completed_at: new Date(Date.now() - 86400000).toISOString(),
+      completion_date: daysAgo(1),
+      completed_at: daysAgoIso(1),
     },
     {
       id: 'hc_3_2',
       habit_id: 'a3333333-3333-3333-3333-333333333333',
-      completion_date: new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0],
-      completed_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+      completion_date: daysAgo(3),
+      completed_at: daysAgoIso(3),
     },
     {
       id: 'hc_3_3',
       habit_id: 'a3333333-3333-3333-3333-333333333333',
-      completion_date: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0],
-      completed_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+      completion_date: daysAgo(5),
+      completed_at: daysAgoIso(5),
     },
     {
       id: 'hc_3_4',
       habit_id: 'a3333333-3333-3333-3333-333333333333',
-      completion_date: new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0],
-      completed_at: new Date(Date.now() - 7 * 86400000).toISOString(),
+      completion_date: daysAgo(8),
+      completed_at: daysAgoIso(8),
     },
 
-    // Habit 4 (Custom days - Mon/Wed/Fri)
+    // Habit 4 (Custom days - Mon/Wed/Fri - 2/3 completions this week)
     {
       id: 'hc_4_1',
       habit_id: 'a4444444-4444-4444-4444-444444444444',
-      completion_date: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0],
-      completed_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+      completion_date: daysAgo(2),
+      completed_at: daysAgoIso(2),
+    },
+    {
+      id: 'hc_4_2',
+      habit_id: 'a4444444-4444-4444-4444-444444444444',
+      completion_date: daysAgo(4),
+      completed_at: daysAgoIso(4),
     },
   ],
 

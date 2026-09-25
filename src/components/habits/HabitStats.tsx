@@ -102,6 +102,7 @@ const HabitStats = ({ habits, completions }: HabitStatsProps) => {
       let tempStreak = 0;
       let checkDate = new Date();
       checkDate.setHours(0, 0, 0, 0);
+      let streakBroken = false;
 
       for (let i = 0; i < 365; i++) {
         const dateStr = format(checkDate, 'yyyy-MM-dd');
@@ -110,9 +111,11 @@ const HabitStats = ({ habits, completions }: HabitStatsProps) => {
         );
 
         if (isCompleted) {
+          if (!streakBroken) currentStreak++;
           tempStreak++;
-          if (i === 0 || (currentStreak === 0 && i < 7)) currentStreak = tempStreak;
         } else {
+          // If today (i === 0) is not completed yet, streak is not broken yet
+          if (i > 0 && !streakBroken) streakBroken = true;
           if (tempStreak > longestStreak) longestStreak = tempStreak;
           tempStreak = 0;
         }

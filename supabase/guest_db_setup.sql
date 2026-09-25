@@ -991,13 +991,13 @@ DELETE FROM public.habits WHERE id IN (
 
 INSERT INTO public.habits (id, title, name, color, icon, frequency_type, target_count, target_period, custom_days, goal)
 VALUES
-    -- Type 1: Checked in today (Daily)
-    ('a1111111-1111-1111-1111-111111111111', 'Morning Workout & Stretch', 'Morning Workout & Stretch', '#10B981', 'fitness_center', 'daily', 1, 'weekly', NULL, '45 mins'),
-    -- Type 2: Unchecked today (Daily, ready for user check-in with radio circle)
-    ('a2222222-2222-2222-2222-222222222222', 'Read Technical Book / Whitepaper', 'Read Technical Book / Whitepaper', '#3B82F6', 'menu_book', 'daily', 1, 'weekly', NULL, '20 pages'),
+    -- Type 1: Checked in today (Daily - target 7 per week)
+    ('a1111111-1111-1111-1111-111111111111', 'Morning Workout & Stretch', 'Morning Workout & Stretch', '#10B981', 'fitness_center', 'daily', 7, 'weekly', NULL, '45 mins daily'),
+    -- Type 2: Unchecked today (Daily - target 7 per week, ready for user check-in with radio circle)
+    ('a2222222-2222-2222-2222-222222222222', 'Read Technical Book / Whitepaper', 'Read Technical Book / Whitepaper', '#3B82F6', 'menu_book', 'daily', 7, 'weekly', NULL, '20 pages daily'),
     -- Type 3: No frequency (Total Goal with stepper counter)
     ('a3333333-3333-3333-3333-333333333333', 'Complete 10 System Design Cases', 'Complete 10 System Design Cases', '#8B5CF6', 'laptop', 'none', 10, 'total', NULL, '10 cases total'),
-    -- Type 4: Custom days (Mon, Wed, Fri)
+    -- Type 4: Custom days (Mon, Wed, Fri - target 3 per week)
     ('a4444444-4444-4444-4444-444444444444', 'Cold Outreach & Mentorship Calls', 'Cold Outreach & Mentorship Calls', '#06B6D4', 'work', 'custom', 3, 'weekly', ARRAY[1, 3, 5], 'Mon, Wed, Fri')
 ON CONFLICT (id) DO UPDATE SET
     title = EXCLUDED.title,
@@ -1015,13 +1015,16 @@ VALUES
     ('a1111111-1111-1111-1111-111111111111', CURRENT_DATE),
     ('a1111111-1111-1111-1111-111111111111', CURRENT_DATE - 1),
     ('a1111111-1111-1111-1111-111111111111', CURRENT_DATE - 2),
+    ('a1111111-1111-1111-1111-111111111111', CURRENT_DATE - 3),
     ('a2222222-2222-2222-2222-222222222222', CURRENT_DATE - 1),
     ('a2222222-2222-2222-2222-222222222222', CURRENT_DATE - 2),
+    ('a2222222-2222-2222-2222-222222222222', CURRENT_DATE - 3),
     ('a3333333-3333-3333-3333-333333333333', CURRENT_DATE - 1),
     ('a3333333-3333-3333-3333-333333333333', CURRENT_DATE - 3),
     ('a3333333-3333-3333-3333-333333333333', CURRENT_DATE - 5),
-    ('a3333333-3333-3333-3333-333333333333', CURRENT_DATE - 7),
-    ('a4444444-4444-4444-4444-444444444444', CURRENT_DATE - 2)
+    ('a3333333-3333-3333-3333-333333333333', CURRENT_DATE - 8),
+    ('a4444444-4444-4444-4444-444444444444', CURRENT_DATE - 2),
+    ('a4444444-4444-4444-4444-444444444444', CURRENT_DATE - 4)
 ON CONFLICT DO NOTHING;
 
 -- 2. Seed Todos

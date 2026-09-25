@@ -107,7 +107,7 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
     let checkDate = new Date(currentDate);
     let streakBroken = false;
 
-    for (let i = 0; i < habitCompletions.length + 30; i++) {
+    for (let i = 0; i < Math.max(60, habitCompletions.length + 30); i++) {
       const dateStr = format(checkDate, 'yyyy-MM-dd');
       const isCompleted = habitCompletions.some(d => 
         format(d, 'yyyy-MM-dd') === dateStr
@@ -117,7 +117,8 @@ const HabitDashboard = ({ habits, completions, onToggleCompletion, onDeleteHabit
         if (!streakBroken) currentStreak++;
         tempStreak++;
       } else {
-        if (!streakBroken) streakBroken = true;
+        // Today (i === 0) being incomplete doesn't break the streak yet since today is ongoing
+        if (i > 0 && !streakBroken) streakBroken = true;
         if (tempStreak > longestStreak) longestStreak = tempStreak;
         tempStreak = 0;
       }
