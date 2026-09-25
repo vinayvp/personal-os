@@ -133,9 +133,10 @@ const HistoricalChart = ({ assetType, investments, transactions, valuations }: H
                 name="Invested" 
                 stroke="hsl(var(--muted-foreground))" 
                 strokeWidth={2} 
-                dot={false} 
+                dot={chartData.length <= 1 ? { r: 4 } : false} 
                 activeDot={{ r: 4 }}
                 strokeDasharray="5 5" // Makes invested line slightly distinct
+                isAnimationActive={false}
               />
               <Line 
                 type="monotone" 
@@ -143,9 +144,10 @@ const HistoricalChart = ({ assetType, investments, transactions, valuations }: H
                 name="Current" 
                 stroke={assetType.color} 
                 strokeWidth={2.5} 
-                dot={false} 
+                dot={chartData.length <= 1 ? { r: 5 } : false} 
                 connectNulls
                 activeDot={{ r: 6 }}
+                isAnimationActive={false}
               />
             </LineChart>
           </ResponsiveContainer>

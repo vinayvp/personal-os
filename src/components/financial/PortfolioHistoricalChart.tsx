@@ -12,7 +12,20 @@ interface PortfolioHistoricalChartProps {
 
 const PortfolioHistoricalChart = ({ investments, transactions, valuations }: PortfolioHistoricalChartProps) => {
   if (transactions.length === 0 && valuations.length === 0) {
-    return null;
+    return (
+      <Card className="bg-card border-border flex flex-col h-full">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Total Portfolio History
+          </CardTitle>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded font-medium">Last 6 Months</span>
+        </CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center min-h-[300px]">
+          <p className="text-muted-foreground text-sm">No transaction or valuation history</p>
+        </CardContent>
+      </Card>
+    );
   }
 
   const normalizeDate = (isoString: string) => isoString.split('T')[0];
@@ -78,72 +91,76 @@ const PortfolioHistoricalChart = ({ investments, transactions, valuations }: Por
   };
 
   return (
-    <Card className="bg-card border-border">
+    <Card className="bg-card border-border flex flex-col h-full">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="flex items-center gap-2 text-lg">
           <TrendingUp className="h-5 w-5 text-primary" />
           Total Portfolio History
         </CardTitle>
-        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">Last 6 Months</span>
+        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded font-medium">Last 6 Months</span>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} opacity={0.5} />
-            <XAxis 
-              dataKey="dateFormatted" 
-              stroke="hsl(var(--muted-foreground))" 
-              fontSize={11} 
-              tickLine={false}
-              axisLine={false}
-              minTickGap={30}
-            />
-            <YAxis 
-              tickFormatter={formatCurrency} 
-              stroke="hsl(var(--muted-foreground))" 
-              fontSize={11} 
-              tickLine={false}
-              axisLine={false}
-              width={45}
-            />
-            <Tooltip
-              contentStyle={{ 
-                backgroundColor: 'hsl(var(--card))', 
-                border: '1px solid hsl(var(--border))', 
-                borderRadius: '8px',
-                fontSize: '12px'
-              }}
-              formatter={(value: number) => [
-                new Intl.NumberFormat('en-IN', { 
-                  style: 'currency', 
-                  currency: 'INR', 
-                  maximumFractionDigits: 0 
-                }).format(value)
-              ]}
-            />
-            <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '12px', paddingBottom: '20px' }} />
-            <Line 
-              type="monotone" 
-              dataKey="invested" 
-              name="Total Invested" 
-              stroke="hsl(var(--muted-foreground))" 
-              strokeWidth={2} 
-              dot={false} 
-              activeDot={{ r: 4 }}
-              strokeDasharray="5 5"
-            />
-            <Line 
-              type="monotone" 
-              dataKey="current" 
-              name="Total Value" 
-              stroke="hsl(var(--primary))" 
-              strokeWidth={2.5} 
-              dot={false} 
-              connectNulls
-              activeDot={{ r: 6 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+      <CardContent className="flex-1 flex flex-col justify-between pt-2">
+        <div className="w-full flex-1 min-h-[300px]">
+          <ResponsiveContainer width="100%" height={320}>
+            <LineChart data={chartData} margin={{ top: 12, right: 12, left: 0, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} opacity={0.5} />
+              <XAxis 
+                dataKey="dateFormatted" 
+                stroke="hsl(var(--muted-foreground))" 
+                fontSize={11} 
+                tickLine={false}
+                axisLine={false}
+                minTickGap={30}
+              />
+              <YAxis 
+                tickFormatter={formatCurrency} 
+                stroke="hsl(var(--muted-foreground))" 
+                fontSize={11} 
+                tickLine={false}
+                axisLine={false}
+                width={50}
+              />
+              <Tooltip
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))', 
+                  border: '1px solid hsl(var(--border))', 
+                  borderRadius: '8px',
+                  fontSize: '12px'
+                }}
+                formatter={(value: number) => [
+                  new Intl.NumberFormat('en-IN', { 
+                    style: 'currency', 
+                    currency: 'INR', 
+                    maximumFractionDigits: 0 
+                  }).format(value)
+                ]}
+              />
+              <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '12px', paddingBottom: '16px' }} />
+              <Line 
+                type="monotone" 
+                dataKey="invested" 
+                name="Total Invested" 
+                stroke="hsl(var(--muted-foreground))" 
+                strokeWidth={2} 
+                dot={chartData.length <= 1 ? { r: 4 } : false} 
+                activeDot={{ r: 4 }}
+                strokeDasharray="5 5"
+                isAnimationActive={false}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="current" 
+                name="Total Value" 
+                stroke="hsl(var(--primary))" 
+                strokeWidth={2.5} 
+                dot={chartData.length <= 1 ? { r: 5 } : false} 
+                connectNulls
+                activeDot={{ r: 6 }}
+                isAnimationActive={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );
