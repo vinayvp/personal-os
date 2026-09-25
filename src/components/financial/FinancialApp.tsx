@@ -22,6 +22,7 @@ import AddTransactionModal from "@/components/financial/AddTransactionModal";
 import AddAssetTypeModal from "@/components/financial/AddAssetTypeModal";
 import RecordValueModal from "@/components/financial/RecordValueModal";
 import AddSipModal from "@/components/financial/AddSipModal";
+import UpcomingFinancialFeature from "@/components/financial/UpcomingFinancialFeature";
 import PageLoader from "@/components/common/PageLoader";
 import RefreshButton from "@/components/common/RefreshButton";
 import { 
@@ -46,7 +47,33 @@ const FinancialApp = () => {
   const [isAddAssetTypeOpen, setIsAddAssetTypeOpen] = useState(false);
   const [isRecordValueOpen, setIsRecordValueOpen] = useState(false);
   const [isAddSipOpen, setIsAddSipOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("portfolio");
   const { toast } = useToast();
+
+  const handleTabChange = (val: string) => {
+    setActiveTab(val);
+    if (val === "income") {
+      toast({
+        title: "Upcoming Feature",
+        description: "Income Tracking is currently in development and will be available soon.",
+      });
+    } else if (val === "expenses") {
+      toast({
+        title: "Upcoming Feature",
+        description: "Expense Tracking is currently in development and will be available soon.",
+      });
+    }
+  };
+
+  const handleTabClick = (tabKey: "income" | "expenses") => {
+    if (activeTab === tabKey) {
+      const featureTitle = tabKey === "income" ? "Income Tracking" : "Expense Tracking";
+      toast({
+        title: "Upcoming Feature",
+        description: `${featureTitle} is currently in development and will be available soon.`,
+      });
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -257,40 +284,63 @@ const FinancialApp = () => {
 
         {/* Navigation Tabs with Actions */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <Tabs defaultValue="portfolio" className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <TabsList className="grid w-full max-w-md grid-cols-3">
-                <TabsTrigger value="income" disabled className="gap-2">
-                  <Wallet className="w-4 h-4" />
-                  Income
+                <TabsTrigger 
+                  value="income" 
+                  className="gap-1.5 sm:gap-2 text-xs sm:text-sm"
+                  onClick={() => handleTabClick("income")}
+                >
+                  <Wallet className="w-4 h-4 shrink-0" />
+                  <span>Income</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium hidden sm:inline-block">
+                    Soon
+                  </span>
                 </TabsTrigger>
-                <TabsTrigger value="expenses" disabled className="gap-2">
-                  <Receipt className="w-4 h-4" />
-                  Expenses
+                <TabsTrigger 
+                  value="expenses" 
+                  className="gap-1.5 sm:gap-2 text-xs sm:text-sm"
+                  onClick={() => handleTabClick("expenses")}
+                >
+                  <Receipt className="w-4 h-4 shrink-0" />
+                  <span>Expenses</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium hidden sm:inline-block">
+                    Soon
+                  </span>
                 </TabsTrigger>
-                <TabsTrigger value="portfolio" className="gap-2">
-                  <Briefcase className="w-4 h-4" />
-                  Portfolio
+                <TabsTrigger value="portfolio" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                  <Briefcase className="w-4 h-4 shrink-0" />
+                  <span>Portfolio</span>
                 </TabsTrigger>
               </TabsList>
-              <div className="flex gap-2 flex-wrap">
-                <Button variant="outline" size="sm" onClick={() => setIsAddAssetTypeOpen(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Asset Type
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setIsAddInvestmentOpen(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Investment
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setIsAddTransactionOpen(true)} disabled={investments.length === 0}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Transaction
-                </Button>
-                <Button size="sm" onClick={() => setIsRecordValueOpen(true)} disabled={investments.length === 0}>
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  Record Value
-                </Button>
-              </div>
+              {activeTab === "portfolio" ? (
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="outline" size="sm" onClick={() => setIsAddAssetTypeOpen(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Asset Type
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setIsAddInvestmentOpen(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Investment
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setIsAddTransactionOpen(true)} disabled={investments.length === 0}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Transaction
+                  </Button>
+                  <Button size="sm" onClick={() => setIsRecordValueOpen(true)} disabled={investments.length === 0}>
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    Record Value
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setActiveTab("portfolio")} className="gap-2">
+                    <Briefcase className="w-4 h-4" />
+                    Back to Portfolio
+                  </Button>
+                </div>
+              )}
             </div>
 
           <TabsContent value="portfolio" className="space-y-8 mt-8">
@@ -407,20 +457,52 @@ const FinancialApp = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="income">
-            <Card className="bg-card border-border">
-              <CardContent className="py-16 text-center">
-                <p className="text-muted-foreground">Income tracking coming soon</p>
-              </CardContent>
-            </Card>
+          <TabsContent value="income" className="mt-8">
+            <UpcomingFinancialFeature
+              title="Income Tracking"
+              type="income"
+              icon={Wallet}
+              description="Keep tabs on your full financial inflows. Log salaries, consulting invoices, corporate dividends, interest payouts, and rental yield alongside your capital investments."
+              highlights={[
+                {
+                  title: "Multiple Income Streams",
+                  description: "Categorize regular payroll, freelance retainers, dividends, capital yields, and interest payouts."
+                },
+                {
+                  title: "Recurring Inflow Forecasting",
+                  description: "Auto-project predictable incoming cash flow and model annual run-rates."
+                },
+                {
+                  title: "Savings & Inflow Analytics",
+                  description: "Measure the exact percentage of your monthly income that flows directly into long-term investments."
+                }
+              ]}
+              onBackToPortfolio={() => setActiveTab("portfolio")}
+            />
           </TabsContent>
 
-          <TabsContent value="expenses">
-            <Card className="bg-card border-border">
-              <CardContent className="py-16 text-center">
-                <p className="text-muted-foreground">Expense tracking coming soon</p>
-              </CardContent>
-            </Card>
+          <TabsContent value="expenses" className="mt-8">
+            <UpcomingFinancialFeature
+              title="Expense Management"
+              type="expenses"
+              icon={Receipt}
+              description="Gain crystal-clear visibility into where your capital goes each month. Monitor spending habits, manage category budgets, and optimize your burn rate."
+              highlights={[
+                {
+                  title: "Intelligent Categorization",
+                  description: "Tag expenditures across Housing, Utilities, Subscriptions, Food, Healthcare, and Discretionary."
+                },
+                {
+                  title: "Budget Limits & Alerts",
+                  description: "Establish monthly thresholds per category with proactive indicators before overspending."
+                },
+                {
+                  title: "Net Cash Flow Analysis",
+                  description: "Reconcile monthly income versus total expenditures to compute your real net savings rate."
+                }
+              ]}
+              onBackToPortfolio={() => setActiveTab("portfolio")}
+            />
           </TabsContent>
           </Tabs>
         </div>
