@@ -243,3 +243,19 @@
     padding-top: 20px !important;
   }
 }
+
+/* Suppress Netlify collaborative preview HUD / badge */
+#nl-badge-frame,
+iframe[title*="Netlify"],
+iframe[src*="netlify.com"],
+iframe[id*="nl-"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  clip: rect(0, 0, 0, 0) !important;
+}
+

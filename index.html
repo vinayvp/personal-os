@@ -23,6 +23,34 @@
         return payload; // This allows tracking for all other pages
       }
     </script>
+    <style>
+      #nl-badge-frame,
+      iframe[title*="Netlify"],
+      iframe[src*="netlify.com"],
+      iframe[id*="nl-"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        position: absolute !important;
+        clip: rect(0, 0, 0, 0) !important;
+      }
+    </style>
+    <script>
+      (function () {
+        function removeNetlifyBadge() {
+          const els = document.querySelectorAll('#nl-badge-frame, iframe[title*="Netlify"], iframe[id*="nl-"]');
+          els.forEach(function (el) { el.remove(); });
+        }
+        removeNetlifyBadge();
+        if (typeof MutationObserver !== 'undefined') {
+          const obs = new MutationObserver(removeNetlifyBadge);
+          obs.observe(document.documentElement, { childList: true, subtree: true });
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
