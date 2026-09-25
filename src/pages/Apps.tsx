@@ -73,7 +73,10 @@ const classifySharedContent = (rawText: string): { targetApp: 'movies' | 'jobs' 
 const Apps: React.FC<AppsProps> = ({ isGuest = false }) => {
   const location = useLocation();
   const isGuestMode = isGuest || location.pathname.startsWith('/app/guest');
-  const [selectedApp, setSelectedApp] = React.useState<string>('tracking');
+  const [selectedApp, setSelectedApp] = React.useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('app') || 'tracking';
+  });
   const [sharedMovieUrl, setSharedMovieUrl] = useState<string | null>(null);
   const [sharedJobUrl, setSharedJobUrl] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -81,9 +84,13 @@ const Apps: React.FC<AppsProps> = ({ isGuest = false }) => {
   const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Automatically show Guest Welcome Modal on initial visit to guest view
+  // Automatically show Guest Welcome Modal on initial visit to guest view (unless explicitly deep-linking to an app)
   useEffect(() => {
     if (isGuestMode) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('app') || params.get('nomodal')) {
+        return;
+      }
       const hasSeen = sessionStorage.getItem('guest_welcome_modal_shown');
       if (!hasSeen) {
         setIsWelcomeModalOpen(true);
@@ -547,6 +554,7 @@ const Apps: React.FC<AppsProps> = ({ isGuest = false }) => {
             isOpen={isWelcomeModalOpen}
             onClose={() => setIsWelcomeModalOpen(false)}
             onOpenDetailedTutorial={() => setIsTutorialOpen(true)}
+            onSelectApp={(appId) => setSelectedApp(appId)}
           />
           <SubappTutorialModal
             isOpen={isTutorialOpen}

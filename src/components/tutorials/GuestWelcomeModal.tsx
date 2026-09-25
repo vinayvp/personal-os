@@ -26,6 +26,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onOpenDetailedTutorial?: () => void;
+  onSelectApp?: (appId: string) => void;
 }
 
 interface AppInfo {
@@ -99,6 +100,7 @@ export const GuestWelcomeModal: React.FC<Props> = ({
   isOpen,
   onClose,
   onOpenDetailedTutorial,
+  onSelectApp,
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -124,7 +126,17 @@ export const GuestWelcomeModal: React.FC<Props> = ({
             {SUB_APPS.map((app) => (
               <div
                 key={app.id}
-                className={`p-3 rounded-lg border ${app.color} transition-all hover:shadow-sm`}
+                role={onSelectApp ? "button" : undefined}
+                tabIndex={onSelectApp ? 0 : undefined}
+                onClick={() => {
+                  if (onSelectApp) {
+                    onSelectApp(app.id);
+                    onClose();
+                  }
+                }}
+                className={`p-3 rounded-lg border ${app.color} transition-all hover:shadow-sm ${
+                  onSelectApp ? 'cursor-pointer hover:border-primary/50 hover:scale-[1.01]' : ''
+                }`}
               >
                 <div className="flex items-center gap-2 font-medium text-sm text-foreground mb-1">
                   {app.icon}
