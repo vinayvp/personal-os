@@ -112,7 +112,7 @@ const AddRevisionElementsModal = ({ isOpen, onClose, onSuccess, categoryId, cate
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-4 sm:p-6">
+      <DialogContent className="w-[95vw] sm:max-w-3xl md:max-w-4xl max-h-[92vh] flex flex-col p-4 sm:p-6 overflow-hidden">
         <DialogHeader>
           <DialogTitle>Add Items{categoryName ? ` to ${categoryName}` : ''}</DialogTitle>
         </DialogHeader>
@@ -249,7 +249,7 @@ const AddRevisionElementsModal = ({ isOpen, onClose, onSuccess, categoryId, cate
                         />
                       </div>
                     ) : (
-                      <div className="min-h-[85px] p-3 rounded-md border bg-background/50 overflow-y-auto max-h-[220px]">
+                      <div className="min-h-[95px] max-h-[350px] p-3.5 sm:p-4 rounded-md border bg-background/50 overflow-y-auto overflow-x-auto min-w-0 max-w-full break-words">
                         {entry.description.trim() ? (
                           <RevisionMarkdown content={entry.description} />
                         ) : (

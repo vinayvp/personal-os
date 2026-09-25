@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Save, Loader2 } from 'lucide-react';
+import { Save, Loader2, Maximize2, Minimize2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/appClient';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { RevisionElement } from './types';
 import MarkdownToolbar from './MarkdownToolbar';
 import RevisionMarkdown from './RevisionMarkdown';
@@ -22,14 +23,16 @@ const EditRevisionElementModal: React.FC<Props> = ({ element, isOpen, onClose, o
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (element) {
-      setName(element.name || '');
-      setDescription(element.description || '');
+      setName(element.name || (element as any).title || '');
+      setDescription(element.description || (element as any).content || '');
       setActiveTab('edit');
+      setIsExpanded(false);
     }
   }, [element]);
 
@@ -112,13 +115,32 @@ const EditRevisionElementModal: React.FC<Props> = ({ element, isOpen, onClose, o
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Edit Revision Item</DialogTitle>
+      <DialogContent 
+        className={cn(
+          "w-[95vw] max-h-[92vh] flex flex-col p-4 sm:p-6 overflow-hidden transition-all duration-200",
+          isExpanded 
+            ? "sm:max-w-5xl lg:max-w-6xl h-[90vh]" 
+            : activeTab === 'preview'
+              ? "sm:max-w-3xl md:max-w-4xl"
+              : "sm:max-w-2xl md:max-w-3xl"
+        )}
+      >
+        <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-1 shrink-0">
+          <DialogTitle className="text-lg font-bold">Edit Revision Item</DialogTitle>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hidden sm:inline-flex mr-8"
+            onClick={() => setIsExpanded(!isExpanded)}
+            title={isExpanded ? "Collapse modal size" : "Expand modal to wide view"}
+          >
+            {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
         </DialogHeader>
 
-        <form onSubmit={handleSave} className="space-y-4">
-          <div className="space-y-1.5">
+        <form onSubmit={handleSave} className="space-y-4 flex flex-col flex-1 overflow-hidden min-h-0">
+          <div className="space-y-1.5 shrink-0">
             <Label htmlFor="edit-element-name">Item Name</Label>
             <Input
               id="edit-element-name"
@@ -129,18 +151,20 @@ const EditRevisionElementModal: React.FC<Props> = ({ element, isOpen, onClose, o
             />
           </div>
 
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
+          <div className="space-y-1.5 flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div className="flex items-center justify-between shrink-0">
               <Label htmlFor="edit-element-description">Description / Notes (Markdown)</Label>
             </div>
 
-            <MarkdownToolbar
-              textareaRef={textareaRef}
-              value={description}
-              onChange={setDescription}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-            />
+            <div className="shrink-0">
+              <MarkdownToolbar
+                textareaRef={textareaRef}
+                value={description}
+                onChange={setDescription}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+              />
+            </div>
 
             {activeTab === 'edit' ? (
               <Textarea
@@ -149,15 +173,15 @@ const EditRevisionElementModal: React.FC<Props> = ({ element, isOpen, onClose, o
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Write notes with markdown...&#10;&#10;- Point 1&#10;- Point 2&#10;&#10;`const code = true;`"
-                rows={7}
-                className="font-mono text-sm leading-relaxed resize-y min-h-[160px]"
+                rows={8}
+                className="font-mono text-sm leading-relaxed resize-y flex-1 min-h-[200px] max-h-[60vh]"
               />
             ) : (
-              <div className="min-h-[160px] p-3 rounded-md border bg-background/50 overflow-y-auto max-h-[320px]">
+              <div className="flex-1 min-h-[200px] max-h-[65vh] p-4 sm:p-5 rounded-md border bg-background/50 overflow-y-auto overflow-x-auto min-w-0 max-w-full break-words">
                 {description.trim() ? (
                   <RevisionMarkdown content={description} />
                 ) : (
-                  <p className="text-xs text-muted-foreground italic py-8 text-center">
+                  <p className="text-xs text-muted-foreground italic py-12 text-center">
                     No description content to preview. Switch to Edit to write some notes.
                   </p>
                 )}
@@ -165,7 +189,7 @@ const EditRevisionElementModal: React.FC<Props> = ({ element, isOpen, onClose, o
             )}
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-0 shrink-0 pt-2 border-t border-border/50">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
               Cancel
             </Button>

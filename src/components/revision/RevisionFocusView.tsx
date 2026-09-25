@@ -48,7 +48,15 @@ const RevisionFocusView = ({ categoryId, onBack }: Props) => {
       if (elRes.error) throw elRes.error;
 
       const cat = catRes.data as RevisionCategory;
-      const els = (elRes.data || []) as RevisionElement[];
+      const rawEls = (elRes.data || []) as any[];
+      const els: RevisionElement[] = rawEls.map((e) => ({
+        id: e.id,
+        category_id: e.category_id,
+        name: e.name || e.title || 'Untitled',
+        description: e.description || e.content || null,
+        count: e.count ?? e.review_count ?? 0,
+        created_at: e.created_at,
+      }));
       setElements(els);
 
       const currValid = cat.curr_element_id && els.some((e) => e.id === cat.curr_element_id);

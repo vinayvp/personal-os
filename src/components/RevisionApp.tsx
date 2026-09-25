@@ -41,7 +41,15 @@ const RevisionApp = () => {
       }
 
       setCategories((catRes.data || []) as RevisionCategory[]);
-      setElements((elRes.data || []) as RevisionElement[]);
+      const rawEls = (elRes.data || []) as any[];
+      setElements(rawEls.map((e) => ({
+        id: e.id,
+        category_id: e.category_id,
+        name: e.name || e.title || 'Untitled',
+        description: e.description || e.content || null,
+        count: e.count ?? e.review_count ?? 0,
+        created_at: e.created_at,
+      })));
     } catch (error: any) {
       console.warn('Failed to load revision items:', error);
       setCategories([]);
