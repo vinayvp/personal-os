@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Filter, Grid, List, Play, Check, FolderPlus, Upload, ChevronUp, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/appClient";
+import { GUEST_SAMPLE_DATA } from "@/integrations/supabase/guestSampleData";
 import { useToast } from "@/hooks/use-toast";
 import AddMovieModal from "@/components/movies/AddMovieModal";
 import MovieCard from "@/components/movies/MovieCard";
@@ -89,7 +90,25 @@ const MoviesApp: React.FC<MoviesAppProps> = ({
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMovies(data || []);
+      const normalized = (data || []).map((m: any) => {
+        const fallback = GUEST_SAMPLE_DATA.movies?.find(
+          (sm: any) => sm.id === m.id || sm.title?.toLowerCase() === m.title?.toLowerCase()
+        );
+        return {
+          ...m,
+          release_year: fallback?.release_year || String(m.release_year || m.year || ''),
+          imdb_score: m.imdb_score || fallback?.imdb_score || (m.imdb_rating ? String(m.imdb_rating) : ''),
+          rotten_tomatoes_rating: m.rotten_tomatoes_rating || fallback?.rotten_tomatoes_rating || '',
+          rated: m.rated || fallback?.rated || '',
+          watched: m.watched !== undefined ? Boolean(m.watched) : (fallback?.watched !== undefined ? fallback.watched : m.status === 'watched'),
+          custom_category: m.custom_category || fallback?.custom_category || null,
+          actors: m.actors || fallback?.actors || null,
+          directors: m.directors || fallback?.directors || m.director || null,
+          poster_url: m.poster_url || fallback?.poster_url || '',
+          plot: m.plot || fallback?.plot || '',
+        };
+      });
+      setMovies(normalized);
     } catch (error) {
       toast({
         title: "Error",
@@ -154,25 +173,40 @@ const MoviesApp: React.FC<MoviesAppProps> = ({
 
   const toggleWatched = async (movie: Movie) => {
     try {
+      const nextWatched = !movie.watched;
+      let updatedMovie: Movie = { ...movie, watched: nextWatched };
+
       const { data, error } = await supabase
         .from('movies_tv')
-        .update({ watched: !movie.watched })
+        .update({ watched: nextWatched })
         .eq('id', movie.id)
-        .select()
-        .single();
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        // Fallback for legacy DB schema with status column
+        const fallbackRes = await supabase
+          .from('movies_tv')
+          .update({ status: nextWatched ? 'watched' : 'watchlist' })
+          .eq('id', movie.id)
+          .select();
+        if (fallbackRes.error) throw error;
+        if (fallbackRes.data && fallbackRes.data[0]) {
+          updatedMovie = { ...movie, ...fallbackRes.data[0], watched: nextWatched };
+        }
+      } else if (data && data[0]) {
+        updatedMovie = { ...movie, ...data[0], watched: nextWatched };
+      }
 
-      setMovies(prev => prev.map(m => m.id === movie.id ? data : m));
+      setMovies(prev => prev.map(m => m.id === movie.id ? updatedMovie : m));
       
       // Also update selectedMovie if this is the movie being viewed in detail modal
       if (selectedMovie && selectedMovie.id === movie.id) {
-        setSelectedMovie(data);
+        setSelectedMovie(updatedMovie);
       }
       
       toast({
         title: "Status Updated",
-        description: `Marked as ${!movie.watched ? 'watched' : 'not watched'}`,
+        description: `Marked as ${nextWatched ? 'watched' : 'not watched'}`,
       });
     } catch (error) {
       toast({

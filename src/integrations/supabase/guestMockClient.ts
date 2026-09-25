@@ -39,7 +39,8 @@ export const getGuestTableData = (table: string): any[] => {
           (sample.length !== parsed.length || (sample.length > 0 && sample[sample.length - 1]?.current_value !== parsed[parsed.length - 1]?.current_value))) ||
         (table.includes('revision') && sample.length > 0 && parsed.length > 0 && !parsed[0]?.description && !!sample[0]?.description) ||
         (table === 'notes' && (parsed.length !== sample.length || sample[0]?.title !== parsed[0]?.title)) ||
-        (isHabitsTable && needsHabitsUpgrade)
+        (isHabitsTable && needsHabitsUpgrade) ||
+        ((resolved === 'movies' || table.includes('movie')) && (parsed.length !== sample.length || sample[0]?.id !== parsed[0]?.id))
       )
     ) {
       if (table === 'habit_completions') {

@@ -280,19 +280,27 @@ ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'watch
 ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS personal_rating NUMERIC;
 ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS review TEXT;
 ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS poster_url TEXT;
-ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS release_year INTEGER;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS release_year TEXT;
+ALTER TABLE public.movies_tv ALTER COLUMN release_year TYPE TEXT USING release_year::TEXT;
 ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS year INTEGER;
 ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS director TEXT;
 ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS genre TEXT;
 ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS runtime TEXT;
 ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS plot TEXT;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS custom_category TEXT;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS imdb_score TEXT;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS rotten_tomatoes_rating TEXT;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS rated TEXT;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS watched BOOLEAN DEFAULT false;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS actors TEXT;
+ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS directors TEXT;
 ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES public.movies_categories(id) ON DELETE SET NULL;
 ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS platform_id UUID REFERENCES public.movies_platforms(id) ON DELETE SET NULL;
 ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS user_id UUID;
 ALTER TABLE public.movies_tv ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
-UPDATE public.movies_tv SET release_year = year WHERE release_year IS NULL AND year IS NOT NULL;
-UPDATE public.movies_tv SET year = release_year WHERE year IS NULL AND release_year IS NOT NULL;
+UPDATE public.movies_tv SET release_year = year::TEXT WHERE release_year IS NULL AND year IS NOT NULL;
+UPDATE public.movies_tv SET year = CAST(NULLIF(regexp_replace(release_year, '[^0-9]', '', 'g'), '') AS INTEGER) WHERE year IS NULL AND release_year IS NOT NULL;
 
 -- Safely drop legacy base tables if they exist so views can be created without ERROR 42809
 DO $$
@@ -1403,7 +1411,9 @@ INSERT INTO public.lessons (title, description, takeaways, content, category_id)
 INSERT INTO public.movies_categories (name, color) VALUES
     ('Sci-Fi', '#8B5CF6'),
     ('Thriller', '#EC4899'),
-    ('Drama', '#F59E0B')
+    ('Drama', '#F59E0B'),
+    ('Marvel', '#EC4899'),
+    ('kannada', '#F59E0B')
 ON CONFLICT (name) DO UPDATE SET color = EXCLUDED.color;
 
 INSERT INTO public.movies_platforms (name, icon, enabled, is_default) VALUES
@@ -1412,12 +1422,44 @@ INSERT INTO public.movies_platforms (name, icon, enabled, is_default) VALUES
     ('Apple TV+', 'Monitor', true, false)
 ON CONFLICT (name) DO UPDATE SET icon = EXCLUDED.icon;
 
-DELETE FROM public.movies_tv WHERE title IN ('Inception', 'Interstellar', 'Oppenheimer');
+DELETE FROM public.movies_tv;
 
-INSERT INTO public.movies_tv (title, type, imdb_rating, status, personal_rating, review, year, release_year, director, genre, plot, platform_id, category_id) VALUES
-    ('Inception', 'movie', 8.8, 'watched', 9.5, 'Masterpiece of cerebral cinema and sound design.', 2010, 2010, 'Christopher Nolan', 'Action, Sci-Fi', 'A thief who steals corporate secrets through dream-sharing technology.', (SELECT id FROM public.movies_platforms WHERE name = 'Netflix' LIMIT 1), (SELECT id FROM public.movies_categories WHERE name = 'Sci-Fi' LIMIT 1)),
-    ('Interstellar', 'movie', 8.7, 'watched', 10.0, 'Emotionally resonant and visually stunning sci-fi journey.', 2014, 2014, 'Christopher Nolan', 'Adventure, Drama, Sci-Fi', 'A team of explorers travel through a wormhole in space in an attempt to ensure humanity survival.', (SELECT id FROM public.movies_platforms WHERE name = 'Prime Video' LIMIT 1), (SELECT id FROM public.movies_categories WHERE name = 'Sci-Fi' LIMIT 1)),
-    ('Oppenheimer', 'movie', 8.9, 'watched', 9.2, 'Incredible performances, psychological tension, and pacing.', 2023, 2023, 'Christopher Nolan', 'Biography, Drama, History', 'The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb.', (SELECT id FROM public.movies_platforms WHERE name = 'Prime Video' LIMIT 1), (SELECT id FROM public.movies_categories WHERE name = 'Drama' LIMIT 1));
+INSERT INTO public.movies_tv (
+    id, title, release_year, genre, custom_category, imdb_score, rotten_tomatoes_rating, rated, poster_url, plot, watched, created_at, updated_at, actors, imdb_id, directors,
+    type, imdb_rating, status, year, director
+) VALUES
+    ('9209f228-1ffe-46b1-8910-71064c90a41c', 'Chernobyl', '2019', 'Drama, History, Thriller', null, '9.3', 'N/A', 'TV-MA', 'https://m.media-amazon.com/images/M/MV5BNzU0OTI4YTQtNGQ1ZS00ZjA4LTg3MTMtZjkyZWNjN2RiZDJmXkEyXkFqcGc@._V1_SX300.jpg', 'In April 1986, the city of Chernobyl in the Soviet Union suffers one of the worst nuclear disasters in the history of mankind. Consequently, many heroes put their lives on the line in the following days, weeks and months.', true, '2026-02-12 11:54:31.511225+00', '2026-02-12 12:26:07.859872+00', null, NULL, null, 'tv', 9.3, 'watched', 2019, null),
+    ('fc4ea6e2-5969-4f91-bdd1-f27a23a6ecc9', 'K.G.F: Chapter 2', '2022', 'Action, Crime, Drama', 'kannada', '8.2', '50%', 'Not Rated', 'https://m.media-amazon.com/images/M/MV5BZmQzZjVkZTUtYjI4ZC00ZDJmLWI0ZDUtZTFmMGM1Mzc5ZjIyXkEyXkFqcGc@._V1_SX300.jpg', 'In the blood-soaked Kolar Gold Fields, Rocky''s name strikes fear into his foes, while the government sees him as a threat to law and order. Rocky must battle threats from all sides for unchallenged supremacy.', false, '2026-02-07 10:37:11.601911+00', '2026-02-07 10:37:11.601911+00', null, NULL, null, 'movie', 8.2, 'watchlist', 2022, null),
+    ('07b8bbbe-0040-4239-8ee9-fbb24cfaaa77', 'The Terminal List', '2022–', 'Action, Drama, Thriller', null, '7.9', 'N/A', 'TV-MA', 'https://m.media-amazon.com/images/M/MV5BOTU3NDc5OTYtNjUxNS00MzgxLWI3YjItZmZmNWJkYTNiNGUwXkEyXkFqcGc@._V1_SX300.jpg', 'A former Navy SEAL officer investigates why his entire platoon was ambushed during a high-stakes covert mission.', true, '2026-02-12 11:53:45.705906+00', '2026-03-27 18:12:57.210736+00', null, NULL, null, 'tv', 7.9, 'watched', 2022, null),
+    ('fa4ce01c-6a42-47c9-bf7d-9f63ca682da0', 'Money Heist', '2017–2021', 'Action, Crime, Drama', null, '8.2', 'N/A', 'TV-MA', 'https://m.media-amazon.com/images/M/MV5BZjkxZWJiNTUtYjQwYS00MTBlLTgwODQtM2FkNWMyMjMwOGZiXkEyXkFqcGc@._V1_SX300.jpg', 'An unusual group of robbers attempt to carry out the most perfect robbery in Spanish history - stealing 2.4 billion euros from the Royal Mint of Spain.', false, '2026-02-12 11:53:11.132238+00', '2026-02-12 11:53:11.132238+00', null, NULL, null, 'tv', 8.2, 'watchlist', 2017, null),
+    ('52d45999-5903-43b8-9595-c20dc04e53f5', 'Demon Slayer: Kimetsu no Yaiba', '2019–2024', 'Animation, Action, Adventure', null, '8.6', 'N/A', 'TV-MA', 'https://m.media-amazon.com/images/M/MV5BMWU1OGEwNmQtNGM3MS00YTYyLThmYmMtN2FjYzQzNzNmNTE0XkEyXkFqcGc@._V1_SX300.jpg', 'A family is attacked by demons and only two members survive - Tanjiro and his sister Nezuko, who is turning into a demon slowly. Tanjiro sets out to become a demon slayer to avenge his family and cure his sister.', true, '2026-01-21 14:03:04.991718+00', '2026-02-03 20:21:10.471109+00', 'Natsuki Hanae, Zach Aguilar, Abby Trott', 'tt9335498', 'N/A', 'tv', 8.6, 'watched', 2019, 'N/A'),
+    ('79b4f4dd-2f99-4a06-964f-a8ed8d01ebe5', 'Tetris', '2023', 'Biography, Drama, History', null, '7.4', '81%', 'R', 'https://m.media-amazon.com/images/M/MV5BMDZhY2Y4ZGQtODk4MC00NGQwLWFiMWItNzU2M2Q3Nzk2MmVlXkEyXkFqcGc@._V1_SX300.jpg', 'Video game designer Henk Rogers seeks to secure global rights for Tetris (1984), leading to tense negotiations in the Soviet Union, involving creators, government, and corporate intrigues.', true, '2025-09-16 09:29:27.864562+00', '2026-02-03 20:21:10.471109+00', 'Taron Egerton, Mara Huf, Miles Barrow', 'tt12758060', 'Jon S. Baird', 'movie', 7.4, 'watched', 2023, 'Jon S. Baird'),
+    ('a20f28d6-ede4-4e4f-9546-a29c2fe2247c', 'Carry-On', '2024', 'Action, Crime, Thriller', null, '6.5', '88%', 'PG-13', 'https://m.media-amazon.com/images/M/MV5BNTNkMjQzNmQtNzE4ZC00NDlmLTkyYjAtZDZkYTQ5NjBmYThlXkEyXkFqcGc@._V1_SX300.jpg', 'A mysterious traveler blackmails a young TSA agent into letting a dangerous package slip through security and onto a Christmas Eve flight.', true, '2025-09-17 05:30:54.127557+00', '2026-02-03 20:21:10.471109+00', 'Taron Egerton, Jason Bateman, Sofia Carson', 'tt21382296', 'Jaume Collet-Serra', 'movie', 6.5, 'watched', 2024, 'Jaume Collet-Serra'),
+    ('0317d7e9-fb47-4da6-98ce-1b552f7043d5', 'Oppenheimer', '2023', 'Biography, Drama, History', null, '8.2', '93%', 'R', 'https://m.media-amazon.com/images/M/MV5BN2JkMDc5MGQtZjg3YS00NmFiLWIyZmQtZTJmNTM5MjVmYTQ4XkEyXkFqcGc@._V1_SX300.jpg', 'A dramatization of the life story of J. Robert Oppenheimer, the physicist who had a large hand in the development of the atomic bombs that brought an end to World War II.', true, '2026-02-03 09:43:15.675966+00', '2026-02-03 20:21:10.471109+00', 'Cillian Murphy, Emily Blunt, Matt Damon', 'tt15398776', 'Christopher Nolan', 'movie', 8.2, 'watched', 2023, 'Christopher Nolan'),
+    ('7fce110d-2c51-4f5d-bae1-3f8df8ebd862', 'Breaking Bad', '2008–2013', 'Crime, Drama, Thriller', null, '9.5', '96%', 'TV-MA', 'https://m.media-amazon.com/images/M/MV5BMzU5ZGYzNmQtMTdhYy00OGRiLTg0NmQtYjVjNzliZTg1ZGE4XkEyXkFqcGc@._V1_SX300.jpg', 'A chemistry teacher diagnosed with inoperable lung cancer turns to manufacturing and selling methamphetamine with a former student to secure his family''s future.', true, '2025-09-19 08:48:12.341358+00', '2026-02-03 20:21:10.471109+00', 'Bryan Cranston, Aaron Paul, Anna Gunn', 'tt0903747', 'N/A', 'tv', 9.5, 'watched', 2008, 'N/A'),
+    ('3783b2dc-e452-44c3-962f-cd150a3761f9', 'Guardians of the Galaxy Vol. 3', '2023', 'Action, Adventure, Comedy', 'Marvel', '7.9', '82%', 'PG-13', 'https://m.media-amazon.com/images/M/MV5BOTJhOTMxMmItZmE0Ny00MDc3LWEzOGEtOGFkMzY4MWYyZDQ0XkEyXkFqcGc@._V1_SX300.jpg', 'Still reeling from the loss of Gamora, Peter Quill rallies his team to defend the universe and one of their own - a mission that could mean the end of the Guardians if not successful.', true, '2025-09-29 01:09:13.296137+00', '2026-02-03 20:21:10.471109+00', 'Chris Pratt, Chukwudi Iwuji, Bradley Cooper', 'tt6791350', 'James Gunn', 'movie', 7.9, 'watched', 2023, 'James Gunn'),
+    ('3f7dd7f3-1e9b-428e-bb31-c7ff9d508f84', 'Interstellar', '2014', 'Adventure, Drama, Sci-Fi', null, '8.7', '73%', 'PG-13', 'https://m.media-amazon.com/images/M/MV5BYzdjMDAxZGItMjI2My00ODA1LTlkNzItOWFjMDU5ZDJlYWY3XkEyXkFqcGc@._V1_SX300.jpg', 'When Earth becomes uninhabitable in the future, a farmer and ex-NASA pilot, Joseph Cooper, is tasked to pilot a spacecraft, along with a team of researchers, to find a new planet for humans.', true, '2025-09-29 01:24:04.278359+00', '2026-02-03 20:21:10.471109+00', 'Matthew McConaughey, Anne Hathaway, Jessica Chastain', 'tt0816692', 'Christopher Nolan', 'movie', 8.7, 'watched', 2014, 'Christopher Nolan'),
+    ('2f4672fd-4d56-43c8-b72c-c51c780033df', 'The Avengers', '2012', 'Action, Sci-Fi', 'Marvel', '8.0', '91%', 'PG-13', 'https://m.media-amazon.com/images/M/MV5BNGE0YTVjNzUtNzJjOS00NGNlLTgxMzctZTY4YTE1Y2Y1ZTU4XkEyXkFqcGc@._V1_SX300.jpg', 'Earth''s mightiest heroes must come together and learn to fight as a team if they are going to stop the mischievous Loki and his alien army from enslaving humanity.', true, '2025-09-29 01:30:33.102716+00', '2026-02-03 20:21:10.471109+00', 'Robert Downey Jr., Chris Evans, Scarlett Johansson', 'tt0848228', 'Joss Whedon', 'movie', 8.0, 'watched', 2012, 'Joss Whedon'),
+    ('d04269d7-5083-4661-9fb3-9f2d48277068', 'John Wick: Chapter 2', '2017', 'Action, Crime, Thriller', null, '7.4', '89%', 'R', 'https://m.media-amazon.com/images/M/MV5BMjE2NDkxNTY2M15BMl5BanBnXkFtZTgwMDc2NzE0MTI@._V1_SX300.jpg', 'After returning to the criminal underworld to repay a debt, John Wick discovers that a large bounty has been put on his life.', true, '2025-11-28 03:14:42.881513+00', '2026-02-03 20:21:10.471109+00', 'Keanu Reeves, Riccardo Scamarcio, Ian McShane', 'tt4425200', 'Chad Stahelski', 'movie', 7.4, 'watched', 2017, 'Chad Stahelski'),
+    ('5c256033-fb0c-4dc3-89cb-628fc4045578', 'Super 30', '2019', 'Biography, Drama', null, '7.9', '31%', 'Not Rated', 'https://m.media-amazon.com/images/M/MV5BNTM0N2I4OTQtYmJlOC00MTUzLTlhZWMtZGIxODkxZTZkMDIyXkEyXkFqcGc@._V1_SX300.jpg', 'Based on the life of Patna-based mathematician Anand Kumar who runs the famed Super 30 program for IIT aspirants in Patna.', true, '2026-01-17 05:37:48.204761+00', '2026-02-03 20:21:10.471109+00', 'Hrithik Roshan, Mrunal Thakur, Nandish Singh Sandhu', 'tt7485048', 'Vikas Bahl', 'movie', 7.9, 'watched', 2019, 'Vikas Bahl'),
+    ('b5328363-7d7b-4f27-a7a0-3b6d9eb8ec9c', 'Ford v Ferrari', '2019', 'Action, Biography, Drama', null, '8.1', '92%', 'PG-13', 'https://m.media-amazon.com/images/M/MV5BOTBjNTEyNjYtYjdkNi00YzE5LTljYzUtZjVlYmYwZmJmZWYxXkEyXkFqcGc@._V1_SX300.jpg', 'American car designer Carroll Shelby and driver Ken Miles battle corporate interference and the laws of physics to build a revolutionary race car for Ford in order to defeat Ferrari at the 24 Hours of Le Mans in 1966.', true, '2026-02-03 09:40:34.429401+00', '2026-02-03 20:21:10.471109+00', 'Matt Damon, Christian Bale, Jon Bernthal', 'tt1950186', 'James Mangold', 'movie', 8.1, 'watched', 2019, 'James Mangold'),
+    ('a04262d9-58d7-4541-a43c-074588ed9206', 'The Martian', '2015', 'Adventure, Drama, Sci-Fi', null, '8.0', '91%', 'PG-13', 'https://m.media-amazon.com/images/M/MV5BMTc2MTQ3MDA1Nl5BMl5BanBnXkFtZTgwODA3OTI4NjE@._V1_SX300.jpg', 'An astronaut becomes stranded on Mars after his team assumes him dead, and must rely on his ingenuity to find a way to signal to Earth that he is alive and can survive until a potential rescue.', true, '2026-02-03 10:00:28.193536+00', '2026-02-03 20:21:10.471109+00', 'Matt Damon, Jessica Chastain, Kristen Wiig', 'tt3659388', 'Ridley Scott', 'movie', 8.0, 'watched', 2015, 'Ridley Scott'),
+    ('f95a4e20-a59f-47cf-87d6-310f4d375a36', 'Game of Thrones', '2011–2019', 'Action, Adventure, Drama', null, '9.2', 'N/A', 'TV-MA', 'https://m.media-amazon.com/images/M/MV5BMTNhMDJmNmYtNDQ5OS00ODdlLWE0ZDAtZTgyYTIwNDY3OTU3XkEyXkFqcGc@._V1_SX300.jpg', 'Nine noble families fight for control over the lands of Westeros, while an ancient enemy returns after being dormant for millennia.', true, '2026-02-12 11:54:40.161726+00', '2026-02-12 12:25:51.61001+00', null, NULL, null, 'tv', 9.2, 'watched', 2011, null),
+    ('29f52d53-f0d4-464b-9dfa-ada084c3b361', 'Uri: The Surgical Strike', '2019', 'Action, Drama, History', null, '8.2', '57%', 'Not Rated', 'https://m.media-amazon.com/images/M/MV5BYTgyMTlkZTgtMTMxYi00Mjk5LTg2NTMtNGYyMDVlZWM0NmZjXkEyXkFqcGc@._V1_SX300.jpg', 'Indian army special forces execute a covert operation, avenging the killing of fellow army soldiers at their base by a terrorist group.', true, '2026-02-12 11:53:30.93856+00', '2026-02-12 11:53:30.93856+00', null, NULL, null, 'movie', 8.2, 'watched', 2019, null)
+ON CONFLICT (id) DO UPDATE SET
+    title = EXCLUDED.title,
+    release_year = EXCLUDED.release_year,
+    genre = EXCLUDED.genre,
+    custom_category = EXCLUDED.custom_category,
+    imdb_score = EXCLUDED.imdb_score,
+    rotten_tomatoes_rating = EXCLUDED.rotten_tomatoes_rating,
+    rated = EXCLUDED.rated,
+    poster_url = EXCLUDED.poster_url,
+    plot = EXCLUDED.plot,
+    watched = EXCLUDED.watched,
+    actors = EXCLUDED.actors,
+    imdb_id = EXCLUDED.imdb_id,
+    directors = EXCLUDED.directors;
 
 -- 7. Seed Revision & Spaced Repetition (5 categories, 7 diverse technical topics)
 INSERT INTO public.revision_category (name, color) VALUES
