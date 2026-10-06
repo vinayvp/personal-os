@@ -17,6 +17,7 @@ import {
   Clock,
   Sparkles,
   Link as LinkIcon,
+  Pencil,
 } from 'lucide-react';
 import { SavedJobLink } from './types';
 import { useToast } from '@/hooks/use-toast';
@@ -24,14 +25,16 @@ import { useToast } from '@/hooks/use-toast';
 interface SavedLinksViewProps {
   links: SavedJobLink[];
   onAddNew: () => void;
+  onEdit: (link: SavedJobLink) => void;
   onApplyNow: (link: SavedJobLink) => void;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, updates: Partial<SavedJobLink>) => void;
+  onUpdate?: (id: string, updates: Partial<SavedJobLink>) => void;
 }
 
 const SavedLinksView: React.FC<SavedLinksViewProps> = ({
   links,
   onAddNew,
+  onEdit,
   onApplyNow,
   onDelete,
 }) => {
@@ -216,6 +219,16 @@ const SavedLinksView: React.FC<SavedLinksViewProps> = ({
                         title="Copy link URL"
                       >
                         <Copy className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        onClick={() => onEdit(link)}
+                        title="Edit saved link"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
                       </Button>
                       <Button
                         type="button"

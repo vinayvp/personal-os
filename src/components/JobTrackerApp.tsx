@@ -37,6 +37,7 @@ import EditJobModal from './jobs/EditJobModal';
 import JobDetailModal from './jobs/JobDetailModal';
 import SavedLinksView from './jobs/SavedLinksView';
 import AddSavedLinkModal from './jobs/AddSavedLinkModal';
+import EditSavedLinkModal from './jobs/EditSavedLinkModal';
 import { PlatformsView } from './jobs/PlatformsView';
 import { PlatformModal } from './jobs/PlatformModal';
 import {
@@ -113,6 +114,7 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
   const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
   const [isAddPlatformOpen, setIsAddPlatformOpen] = useState(false);
   const [editingPlatform, setEditingPlatform] = useState<JobPlatform | null>(null);
+  const [editingSavedLink, setEditingSavedLink] = useState<SavedJobLink | null>(null);
   const [editingJob, setEditingJob] = useState<JobApplication | null>(null);
   const [viewingJob, setViewingJob] = useState<JobApplication | null>(null);
   const [prefilledJobData, setPrefilledJobData] = useState<Partial<NewJobApplication> | null>(null);
@@ -652,6 +654,7 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
             <SavedLinksView
               links={savedLinks}
               onAddNew={() => setIsAddLinkOpen(true)}
+              onEdit={(link) => setEditingSavedLink(link)}
               onApplyNow={handleApplyNowFromSavedLink}
               onDelete={handleDeleteSavedLink}
               onUpdate={handleUpdateSavedLink}
@@ -712,6 +715,20 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
           onClearSharedUrl?.();
         }}
         initialUrl={activeSharedUrl || undefined}
+        platforms={platforms}
+        onOpenAddPlatform={() => {
+          setEditingPlatform(null);
+          setIsAddPlatformOpen(true);
+        }}
+      />
+
+      <EditSavedLinkModal
+        isOpen={Boolean(editingSavedLink)}
+        link={editingSavedLink}
+        onClose={() => setEditingSavedLink(null)}
+        onSuccess={(updated) => {
+          setSavedLinks((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
+        }}
         platforms={platforms}
         onOpenAddPlatform={() => {
           setEditingPlatform(null);
