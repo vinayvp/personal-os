@@ -48,6 +48,7 @@ import {
   JobFollowUp,
   FollowUpType,
   STATUS_CONFIG,
+  PRIMARY_JOB_STATUSES,
   COMMON_CURRENCIES,
   JOB_TYPE_OPTIONS,
   JobPlatform,
@@ -477,7 +478,7 @@ const EditJobModal: React.FC<Props> = ({
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(Object.keys(STATUS_CONFIG) as JobStatus[]).map((st) => (
+                  {PRIMARY_JOB_STATUSES.map((st) => (
                     <SelectItem key={st} value={st}>
                       {STATUS_CONFIG[st].label}
                     </SelectItem>

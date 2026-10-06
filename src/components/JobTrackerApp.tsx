@@ -45,6 +45,7 @@ import {
   JobStatus,
   NewJobApplication,
   STATUS_CONFIG,
+  PRIMARY_JOB_STATUSES,
   SavedJobLink,
   JobPlatform,
   VisaSponsorship,
@@ -194,8 +195,15 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
       }
 
       // Status filter
-      if (statusFilter !== 'all' && app.status !== statusFilter) {
-        return false;
+      if (statusFilter !== 'all') {
+        const normalizeStatus = (s: string) => {
+          if (s === 'not-selected' || s === 'not selected' || s === 'rejected') return 'not selected';
+          if (s === 'no-response' || s === 'no response') return 'no response';
+          return s;
+        };
+        if (normalizeStatus(app.status) !== normalizeStatus(statusFilter)) {
+          return false;
+        }
       }
 
       // Country filter
@@ -486,7 +494,7 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                {(Object.keys(STATUS_CONFIG) as JobStatus[]).map((st) => (
+                {PRIMARY_JOB_STATUSES.map((st) => (
                   <SelectItem key={st} value={st}>
                     {STATUS_CONFIG[st].label}
                   </SelectItem>

@@ -1,6 +1,7 @@
 export type TerminalStatus =
   | 'accepted'
   | 'withdrew'
+  | 'rejected'
   | 'not-selected'
   | 'not selected'
   | 'no-response'
@@ -19,12 +20,24 @@ export type JobStatus =
   | 'withdrew'
   | 'no response'
   | 'no-response'
+  | 'rejected'
   | 'not selected'
   | 'not-selected';
+
+export const PRIMARY_JOB_STATUSES: JobStatus[] = [
+  'applied',
+  'interviewing',
+  'negotiating',
+  'accepted',
+  'withdrew',
+  'no response',
+  'not selected',
+];
 
 export const TERMINAL_STATUSES: JobStatus[] = [
   'accepted',
   'withdrew',
+  'rejected',
   'not selected',
   'not-selected',
   'no response',
@@ -251,19 +264,19 @@ export const STATUS_CONFIG: Record<
     description: 'Awaiting response',
   },
   'not selected': {
-    label: 'Not Selected',
+    label: 'Rejected',
     badgeClass: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
     dotClass: 'bg-rose-400',
     description: 'Application rejected',
   },
-  'no-response': {
-    label: 'No Response',
-    badgeClass: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30',
-    dotClass: 'bg-zinc-400',
-    description: 'Awaiting response',
-  },
   'not-selected': {
-    label: 'Not Selected',
+    label: 'Rejected',
+    badgeClass: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+    dotClass: 'bg-rose-400',
+    description: 'Application rejected',
+  },
+  rejected: {
+    label: 'Rejected',
     badgeClass: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
     dotClass: 'bg-rose-400',
     description: 'Application rejected',
@@ -284,6 +297,7 @@ export const isTerminalStatus = (status?: string | null): boolean => {
   return (
     s === 'accepted' ||
     s === 'withdrew' ||
+    s === 'rejected' ||
     s === 'not-selected' ||
     s === 'not selected' ||
     s === 'no-response' ||

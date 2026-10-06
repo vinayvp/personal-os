@@ -48,6 +48,15 @@ const JobStats: React.FC<Props> = ({
       borderColor: 'border-blue-500/30',
     },
     {
+      id: 'not selected' as const,
+      label: 'Rejected',
+      count: stats.notSelected,
+      icon: XCircle,
+      textColor: 'text-rose-400',
+      bgColor: 'bg-rose-500/10',
+      borderColor: 'border-rose-500/30',
+    },
+    {
       id: 'interviewing' as const,
       label: 'Interviewing',
       count: stats.interviewing,
@@ -82,15 +91,6 @@ const JobStats: React.FC<Props> = ({
       textColor: 'text-zinc-400',
       bgColor: 'bg-zinc-500/10',
       borderColor: 'border-zinc-500/30',
-    },
-    {
-      id: 'not selected' as const,
-      label: 'Not Selected',
-      count: stats.notSelected,
-      icon: XCircle,
-      textColor: 'text-rose-400',
-      bgColor: 'bg-rose-500/10',
-      borderColor: 'border-rose-500/30',
     },
   ];
 

@@ -776,6 +776,7 @@ export const calculateJobStats = (applications: JobApplication[]): JobStatsData 
         break;
       case 'not selected':
       case 'not-selected':
+      case 'rejected':
         stats.notSelected++;
         break;
       case 'withdrew':
@@ -840,6 +841,7 @@ export const calculateCountryStats = (applications: JobApplication[]): CountrySt
         break;
       case 'not selected':
       case 'not-selected':
+      case 'rejected':
         stat.notSelected++;
         break;
       case 'withdrew':
@@ -1464,6 +1466,8 @@ export const calculatePlatformStats = (
           s.noResponse++;
           break;
         case 'not selected':
+        case 'not-selected':
+        case 'rejected':
           s.notSelected++;
           break;
         case 'withdrew':
