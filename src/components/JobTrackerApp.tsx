@@ -62,7 +62,6 @@ import {
   fetchSavedJobLinks,
   deleteSavedJobLink,
   updateSavedJobLink,
-  markSavedJobLinkAsApplied,
   fetchJobPlatforms,
   deleteJobPlatform,
 } from '@/integrations/supabase/jobClient';
@@ -232,13 +231,11 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
     setApplications((prev) => [created, ...prev]);
 
     if (fromSavedLinkId) {
-      await markSavedJobLinkAsApplied(fromSavedLinkId);
-      setSavedLinks((prev) =>
-        prev.map((l) => (l.id === fromSavedLinkId ? { ...l, status: 'applied' } : l))
-      );
+      await deleteSavedJobLink(fromSavedLinkId);
+      setSavedLinks((prev) => prev.filter((l) => l.id !== fromSavedLinkId));
       toast({
         title: 'Saved link converted!',
-        description: 'Marked as applied in your Apply Later list.',
+        description: 'Application created and link removed from Apply Later.',
       });
     }
 
