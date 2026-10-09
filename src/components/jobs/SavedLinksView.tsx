@@ -13,7 +13,6 @@ import {
   MapPin,
   Calendar,
   Send,
-  CheckCircle2,
   Clock,
   Sparkles,
   Link as LinkIcon,
@@ -40,22 +39,13 @@ const SavedLinksView: React.FC<SavedLinksViewProps> = ({
 }) => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'saved' | 'applied' | 'all'>('saved');
-
-  // Counts
-  const pendingCount = useMemo(() => links.filter((l) => l.status === 'saved').length, [links]);
-  const appliedCount = useMemo(() => links.filter((l) => l.status === 'applied').length, [links]);
-  const totalCount = links.length;
 
   // Filtered links
   const filteredLinks = useMemo(() => {
-    return links.filter((link) => {
-      if (statusFilter !== 'all' && link.status !== statusFilter) {
-        return false;
-      }
-      if (!searchQuery.trim()) return true;
+    if (!searchQuery.trim()) return links;
 
-      const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase();
+    return links.filter((link) => {
       return (
         link.company_name?.toLowerCase().includes(q) ||
         link.role_name?.toLowerCase().includes(q) ||
@@ -65,7 +55,7 @@ const SavedLinksView: React.FC<SavedLinksViewProps> = ({
         link.notes?.toLowerCase().includes(q)
       );
     });
-  }, [links, statusFilter, searchQuery]);
+  }, [links, searchQuery]);
 
   const handleCopy = (url: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -100,35 +90,10 @@ const SavedLinksView: React.FC<SavedLinksViewProps> = ({
             />
           </div>
 
-          {/* Status filter buttons */}
-          <div className="flex items-center gap-1 shrink-0 p-1 bg-muted/40 rounded-lg border border-border/60">
-            <Button
-              type="button"
-              variant={statusFilter === 'saved' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-7 text-xs px-2.5 font-medium"
-              onClick={() => setStatusFilter('saved')}
-            >
-              Pending ({pendingCount})
-            </Button>
-            <Button
-              type="button"
-              variant={statusFilter === 'applied' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-7 text-xs px-2.5 font-medium"
-              onClick={() => setStatusFilter('applied')}
-            >
-              Applied ({appliedCount})
-            </Button>
-            <Button
-              type="button"
-              variant={statusFilter === 'all' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-7 text-xs px-2.5 font-medium"
-              onClick={() => setStatusFilter('all')}
-            >
-              All ({totalCount})
-            </Button>
+          {/* Links count badge */}
+          <div className="flex items-center gap-1.5 shrink-0 px-3 py-1.5 bg-muted/40 rounded-lg border border-border/60 text-xs font-medium text-muted-foreground">
+            <span className="font-semibold text-foreground">{filteredLinks.length}</span>
+            <span>{filteredLinks.length === 1 ? 'saved link' : 'saved links'}</span>
           </div>
         </div>
 
@@ -168,17 +133,12 @@ const SavedLinksView: React.FC<SavedLinksViewProps> = ({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {filteredLinks.map((link) => {
-            const isApplied = link.status === 'applied';
             const domain = getDomainFromUrl(link.url);
 
             return (
               <Card
                 key={link.id}
-                className={`transition-all hover:border-border duration-150 relative border ${
-                  isApplied
-                    ? 'border-border/60 bg-card/40 opacity-75'
-                    : 'border-border/80 bg-card/80 hover:shadow-sm'
-                }`}
+                className="transition-all hover:border-border duration-150 relative border border-border/80 bg-card/80 hover:shadow-sm"
               >
                 <CardContent className="p-4 space-y-3">
                   {/* Top Header: Title, Company, Status */}
@@ -188,17 +148,10 @@ const SavedLinksView: React.FC<SavedLinksViewProps> = ({
                         <h4 className="font-semibold text-base text-foreground truncate max-w-full">
                           {link.role_name || domain}
                         </h4>
-                        {isApplied ? (
-                          <Badge variant="outline" className="text-[11px] gap-1 bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Applied
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-[11px] gap-1 bg-amber-500/10 text-amber-400 border-amber-500/30">
-                            <Clock className="w-3 h-3" />
-                            To Apply
-                          </Badge>
-                        )}
+                        <Badge variant="outline" className="text-[11px] gap-1 bg-amber-500/10 text-amber-400 border-amber-500/30">
+                          <Clock className="w-3 h-3" />
+                          To Apply
+                        </Badge>
                       </div>
 
                       {link.company_name && (
@@ -289,17 +242,15 @@ const SavedLinksView: React.FC<SavedLinksViewProps> = ({
                     </a>
 
                     <div className="flex items-center gap-1.5">
-                      {!isApplied && (
-                        <Button
-                          size="sm"
-                          className="h-7 px-2.5 text-xs font-semibold gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
-                          onClick={() => onApplyNow(link)}
-                          title="Open Application Form pre-filled with this link"
-                        >
-                          <Send className="w-3 h-3" />
-                          Apply Now
-                        </Button>
-                      )}
+                      <Button
+                        size="sm"
+                        className="h-7 px-2.5 text-xs font-semibold gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                        onClick={() => onApplyNow(link)}
+                        title="Open Application Form pre-filled with this link"
+                      >
+                        <Send className="w-3 h-3" />
+                        Apply Now
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"

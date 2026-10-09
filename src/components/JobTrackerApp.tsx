@@ -329,10 +329,7 @@ const JobTrackerApp: React.FC<JobTrackerAppProps> = ({
   const hasActiveFilters =
     searchQuery.trim() !== '' || statusFilter !== 'all' || countryFilter !== 'all' || visaFilter !== 'all';
 
-  const pendingSavedLinksCount = useMemo(
-    () => savedLinks.filter((l) => l.status === 'saved').length,
-    [savedLinks]
-  );
+  const pendingSavedLinksCount = savedLinks.length;
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-background overflow-y-auto">

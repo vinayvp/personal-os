@@ -124,7 +124,6 @@ const AddSavedLinkModal: React.FC<AddSavedLinkModalProps> = ({
         deadline: deadline.trim() || null,
         salary_note: salaryNote.trim() || null,
         notes: notes.trim() || null,
-        status: 'saved',
       };
 
       const created = await createSavedJobLink(payload);

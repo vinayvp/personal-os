@@ -389,7 +389,7 @@ export interface SavedJobLink {
   notes?: string | null;
   deadline?: string | null;
   salary_note?: string | null;
-  status: 'saved' | 'applied' | 'archived';
+  status?: string | null;
   created_at: string;
   updated_at: string;
 }

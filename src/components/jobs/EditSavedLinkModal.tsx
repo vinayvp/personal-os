@@ -22,9 +22,6 @@ import {
   Link2,
   Sparkles,
   Loader2,
-  Clock,
-  CheckCircle2,
-  Archive,
 } from 'lucide-react';
 import { SavedJobLink, JobPlatform } from './types';
 import { updateSavedJobLink, findPlatformByUrl } from '@/integrations/supabase/jobClient';
@@ -59,7 +56,6 @@ const EditSavedLinkModal: React.FC<EditSavedLinkModalProps> = ({
   const [deadline, setDeadline] = useState('');
   const [salaryNote, setSalaryNote] = useState('');
   const [notes, setNotes] = useState('');
-  const [status, setStatus] = useState<'saved' | 'applied' | 'archived'>('saved');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -71,7 +67,6 @@ const EditSavedLinkModal: React.FC<EditSavedLinkModalProps> = ({
       setDeadline(link.deadline || '');
       setSalaryNote(link.salary_note || '');
       setNotes(link.notes || '');
-      setStatus(link.status || 'saved');
 
       // Check if source matches an existing platform
       let matchedPlatform = link.platform_id
@@ -153,7 +148,6 @@ const EditSavedLinkModal: React.FC<EditSavedLinkModalProps> = ({
         deadline: deadline.trim() || null,
         salary_note: salaryNote.trim() || null,
         notes: notes.trim() || null,
-        status,
       };
 
       const updated = await updateSavedJobLink(link.id, updates);
@@ -311,48 +305,15 @@ const EditSavedLinkModal: React.FC<EditSavedLinkModalProps> = ({
             </div>
           </div>
 
-          {/* Status & Salary */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-job-link-status" className="text-sm font-semibold">Status</Label>
-              <Select
-                value={status}
-                onValueChange={(val) => setStatus(val as 'saved' | 'applied' | 'archived')}
-              >
-                <SelectTrigger id="edit-job-link-status">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="saved">
-                    <span className="flex items-center gap-2">
-                      <Clock className="w-3.5 h-3.5 text-amber-400" />
-                      To Apply (Pending)
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="applied">
-                    <span className="flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                      Applied
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="archived">
-                    <span className="flex items-center gap-2">
-                      <Archive className="w-3.5 h-3.5 text-muted-foreground" />
-                      Archived
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-job-link-salary" className="text-sm">Salary Info (optional)</Label>
-              <Input
-                id="edit-job-link-salary"
-                value={salaryNote}
-                onChange={(e) => setSalaryNote(e.target.value)}
-                placeholder="e.g. €70k - €90k or $140k"
-              />
-            </div>
+          {/* Salary Info */}
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-job-link-salary" className="text-sm">Salary Info (optional)</Label>
+            <Input
+              id="edit-job-link-salary"
+              value={salaryNote}
+              onChange={(e) => setSalaryNote(e.target.value)}
+              placeholder="e.g. €70k - €90k or $140k"
+            />
           </div>
 
           {/* Deadline */}

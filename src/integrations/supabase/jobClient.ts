@@ -1075,7 +1075,6 @@ export const createSavedJobLink = async (newLink: NewSavedJobLink): Promise<Save
   const candidate: SavedJobLink = {
     ...newLink,
     id: fallbackId,
-    status: newLink.status || 'saved',
     created_at: timestamp,
     updated_at: timestamp,
   };
@@ -1093,7 +1092,6 @@ export const createSavedJobLink = async (newLink: NewSavedJobLink): Promise<Save
         notes: candidate.notes || null,
         deadline: candidate.deadline || null,
         salary_note: candidate.salary_note || null,
-        status: candidate.status,
       } as any)
       .select()
       .single();
@@ -1129,9 +1127,12 @@ export const updateSavedJobLink = async (
   const timestamp = new Date().toISOString();
 
   try {
+    const patchPayload = { ...updates, updated_at: timestamp };
+    delete (patchPayload as any).status;
+
     const { data, error } = await supabase
       .from('saved_job_links' as any)
-      .update({ ...updates, updated_at: timestamp } as any)
+      .update(patchPayload as any)
       .eq('id', id)
       .select()
       .single();
