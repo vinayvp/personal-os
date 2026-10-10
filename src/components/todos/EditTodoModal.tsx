@@ -5,13 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { CalendarIcon, X } from 'lucide-react';
-import { format } from 'date-fns';
+import { Edit2, X } from 'lucide-react';
+import { format, addDays } from 'date-fns';
 import { Todo } from '../TodoApp';
 
 interface EditTodoModalProps {
@@ -24,7 +27,7 @@ const EditTodoModal: React.FC<EditTodoModalProps> = ({ todo, onTodoUpdated, onCl
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
-  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [dueDateStr, setDueDateStr] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
@@ -32,49 +35,49 @@ const EditTodoModal: React.FC<EditTodoModalProps> = ({ todo, onTodoUpdated, onCl
 
   useEffect(() => {
     if (todo) {
-      setTitle(todo.title);
+      setTitle(todo.title || '');
       setDescription(todo.description || '');
-      setPriority(todo.priority as 'low' | 'medium' | 'high');
-      setDueDate(todo.due_date ? new Date(todo.due_date) : undefined);
+      setPriority((todo.priority as 'low' | 'medium' | 'high') || 'medium');
+      setDueDateStr(
+        todo.due_date ? format(new Date(todo.due_date), 'yyyy-MM-dd') : ''
+      );
       setTags(todo.tags || []);
     }
   }, [todo]);
 
-  const resetForm = () => {
-    setTitle('');
-    setDescription('');
-    setPriority('medium');
-    setDueDate(undefined);
-    setTags([]);
-    setNewTag('');
-  };
-
   const addTag = () => {
-    if (newTag.trim() && !tags.includes(newTag.trim())) {
-      setTags(prev => [...prev, newTag.trim()]);
+    const clean = newTag.trim().replace(/^#/, '');
+    if (clean && !tags.includes(clean)) {
+      setTags((prev) => [...prev, clean]);
       setNewTag('');
     }
   };
 
   const removeTag = (tagToRemove: string) => {
-    setTags(prev => prev.filter(tag => tag !== tagToRemove));
+    setTags((prev) => prev.filter((tag) => tag !== tagToRemove));
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+  const handleTagKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
       addTag();
     }
   };
 
-  const handleUpdateTodo = async () => {
+  const setPresetDate = (daysFromNow: number) => {
+    const target = addDays(new Date(), daysFromNow);
+    setDueDateStr(format(target, 'yyyy-MM-dd'));
+  };
+
+  const handleUpdateTodo = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!todo) return;
-    
+
     if (!title.trim()) {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please enter a title for your todo.",
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Please enter a title for your task.',
       });
       return;
     }
@@ -83,13 +86,13 @@ const EditTodoModal: React.FC<EditTodoModalProps> = ({ todo, onTodoUpdated, onCl
 
     try {
       const { error } = await supabase
-        .from('todos')
+        .from('todos' as any)
         .update({
           title: title.trim(),
           description: description.trim() || null,
           priority,
-          due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
-          tags: tags,
+          due_date: dueDateStr ? dueDateStr : null,
+          tags: tags.length > 0 ? tags : null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', todo.id);
@@ -97,19 +100,18 @@ const EditTodoModal: React.FC<EditTodoModalProps> = ({ todo, onTodoUpdated, onCl
       if (error) throw error;
 
       toast({
-        title: "Success",
-        description: "Todo updated successfully!",
+        title: 'Success',
+        description: 'Task updated successfully!',
       });
 
-      resetForm();
       onClose();
       onTodoUpdated();
     } catch (error) {
       console.error('Error updating todo:', error);
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update todo. Please try again.",
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update task. Please try again.',
       });
     } finally {
       setIsUpdating(false);
@@ -118,127 +120,198 @@ const EditTodoModal: React.FC<EditTodoModalProps> = ({ todo, onTodoUpdated, onCl
 
   return (
     <Dialog open={!!todo} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Edit Todo</DialogTitle>
+      <DialogContent className="sm:max-w-md bg-card border-border/80 shadow-lg">
+        <DialogHeader className="pb-1">
+          <div className="flex items-center gap-2 text-foreground">
+            <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <Edit2 className="w-4 h-4" />
+            </div>
+            <DialogTitle className="text-lg font-bold">Edit Task</DialogTitle>
+          </div>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Update task details, deadline, and priority status
+          </DialogDescription>
         </DialogHeader>
-        
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
+
+        <form onSubmit={handleUpdateTodo} className="space-y-4 pt-2">
+          {/* Title */}
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-title" className="text-xs font-semibold text-foreground">
+              Task Title <span className="text-rose-400">*</span>
+            </Label>
             <Input
-              id="title"
-              placeholder="Enter todo title"
+              id="edit-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              placeholder="Task title"
+              required
+              className="text-sm h-9"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+          {/* Description */}
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-description" className="text-xs font-semibold text-foreground">
+              Description <span className="text-muted-foreground font-normal">(optional)</span>
+            </Label>
             <Textarea
-              id="description"
-              placeholder="Enter description (optional)"
+              id="edit-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={3}
+              placeholder="Additional notes or context..."
+              rows={2}
+              className="text-xs sm:text-sm resize-none"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="priority">Priority</Label>
-            <Select value={priority} onValueChange={(value: 'low' | 'medium' | 'high') => setPriority(value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Due Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-left font-normal"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dueDate ? format(dueDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dueDate}
-                  onSelect={setDueDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-            {dueDate && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setDueDate(undefined)}
-                className="text-muted-foreground"
+          {/* Priority Segmented Control */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold text-foreground">Priority</Label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setPriority('low')}
+                className={`py-1.5 px-3 rounded-lg text-xs font-semibold border transition-all text-center ${
+                  priority === 'low'
+                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40 shadow-sm'
+                    : 'bg-muted/40 text-muted-foreground border-border/60 hover:bg-muted'
+                }`}
               >
-                Clear date
-              </Button>
-            )}
+                Low
+              </button>
+              <button
+                type="button"
+                onClick={() => setPriority('medium')}
+                className={`py-1.5 px-3 rounded-lg text-xs font-semibold border transition-all text-center ${
+                  priority === 'medium'
+                    ? 'bg-amber-500/15 text-amber-400 border-amber-500/40 shadow-sm'
+                    : 'bg-muted/40 text-muted-foreground border-border/60 hover:bg-muted'
+                }`}
+              >
+                Medium
+              </button>
+              <button
+                type="button"
+                onClick={() => setPriority('high')}
+                className={`py-1.5 px-3 rounded-lg text-xs font-semibold border transition-all text-center ${
+                  priority === 'high'
+                    ? 'bg-rose-500/15 text-rose-400 border-rose-500/40 shadow-sm'
+                    : 'bg-muted/40 text-muted-foreground border-border/60 hover:bg-muted'
+                }`}
+              >
+                High
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="edit-tags">Tags</Label>
+          {/* Due Date with Quick Presets */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="edit-due_date" className="text-xs font-semibold text-foreground">
+                Due Date
+              </Label>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setPresetDate(0)}
+                  className="text-[10px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded bg-muted/40 border border-border/50"
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPresetDate(1)}
+                  className="text-[10px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded bg-muted/40 border border-border/50"
+                >
+                  Tomorrow
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPresetDate(7)}
+                  className="text-[10px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded bg-muted/40 border border-border/50"
+                >
+                  +7d
+                </button>
+                {dueDateStr && (
+                  <button
+                    type="button"
+                    onClick={() => setDueDateStr('')}
+                    className="text-[10px] text-rose-400 hover:text-rose-300 px-1 py-0.5"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+            <Input
+              id="edit-due_date"
+              type="date"
+              value={dueDateStr}
+              onChange={(e) => setDueDateStr(e.target.value)}
+              className="text-xs sm:text-sm h-9"
+            />
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-tags" className="text-xs font-semibold text-foreground">
+              Tags & Categories
+            </Label>
             <div className="flex gap-2">
               <Input
                 id="edit-tags"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleTagKeyDown}
                 placeholder="Add a tag..."
-                className="flex-1"
+                className="text-xs h-9 flex-1"
               />
-              <Button type="button" onClick={addTag} variant="outline" size="sm">
+              <Button type="button" onClick={addTag} variant="outline" size="sm" className="h-9 px-3 text-xs">
                 Add
               </Button>
             </div>
             {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {tags.map(tag => (
-                  <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                    {tag}
-                    <X
-                      className="w-3 h-3 cursor-pointer"
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {tags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant="secondary"
+                    className="text-[11px] font-mono py-0.5 pl-2 pr-1.5 gap-1 bg-muted/60 text-muted-foreground border border-border/60"
+                  >
+                    <span>#{tag}</span>
+                    <button
+                      type="button"
                       onClick={() => removeTag(tag)}
-                    />
+                      className="hover:text-foreground rounded-full p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </Badge>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="flex gap-2 pt-4">
-            <Button 
-              onClick={handleUpdateTodo} 
-              disabled={isUpdating}
-              className="flex-1"
-            >
-              {isUpdating ? 'Updating...' : 'Update Todo'}
-            </Button>
-            <Button 
-              variant="outline" 
+          {/* Action Footer */}
+          <div className="flex gap-2 pt-3 border-t border-border/50">
+            <Button
+              type="button"
+              variant="outline"
               onClick={onClose}
-              className="flex-1"
+              className="flex-1 text-xs h-9"
+              disabled={isUpdating}
             >
               Cancel
             </Button>
+            <Button
+              type="submit"
+              disabled={isUpdating}
+              className="flex-1 text-xs h-9 font-semibold shadow-sm"
+            >
+              {isUpdating ? 'Saving...' : 'Save Changes'}
+            </Button>
           </div>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
