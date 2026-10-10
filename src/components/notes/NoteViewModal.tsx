@@ -77,7 +77,7 @@ const NoteViewModal: React.FC<NoteViewModalProps> = ({ note, onClose, onEdit, on
 
   return (
     <Dialog open={!!note} onOpenChange={onClose}>
-      <DialogContent className="min-w-[500px] min-h-[400px] max-w-none max-h-none w-[90vw] h-[90vh] p-0 resize overflow-hidden">
+      <DialogContent className="min-w-0 sm:min-w-[500px] min-h-[350px] sm:min-h-[400px] max-w-none max-h-none w-[95vw] sm:w-[90vw] h-[90vh] p-0 resize overflow-hidden bg-card border-border/80">
         <div className="flex flex-col h-full overflow-hidden">
           <DialogHeader className="flex flex-row items-center justify-between space-y-0 p-6 pb-4 border-b shrink-0">
             <DialogTitle className="text-2xl font-bold flex-1 pr-4">
