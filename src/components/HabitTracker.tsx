@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, BarChart3, Plus, Settings } from 'lucide-react';
+import { Calendar, BarChart3, Plus, CheckCircle2, Flame, LayoutDashboard } from 'lucide-react';
 import HabitDashboard, { parseCustomDays } from './habits/HabitDashboard';
 import HabitCalendar from './habits/HabitCalendar';
 import HabitStats from './habits/HabitStats';
@@ -261,33 +261,63 @@ const HabitTracker = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto p-3 md:p-4">
-        <div className="flex items-center justify-between gap-2 mb-4 md:mb-6">
+      <div className="app-container py-4 sm:py-6">
+        <div className="flex items-center justify-between gap-3 mb-4 md:mb-6 pb-2 border-b border-border/60">
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl md:text-3xl font-bold text-foreground truncate">Habit Tracker</h1>
-            <p className="text-xs md:text-sm text-muted-foreground">Build better habits, one day at a time</p>
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Flame className="w-4 h-4" />
+              </div>
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground truncate">
+                Habit Tracker
+              </h1>
+            </div>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+              Build daily momentum and master long-term milestone goals
+            </p>
           </div>
-          <RefreshButton onRefresh={async () => { await Promise.all([fetchHabits(), fetchCompletions()]); }} />
-          <Button onClick={() => setIsCreateModalOpen(true)} size="sm" className="flex items-center gap-1.5 text-xs md:text-sm px-2.5 md:px-4 shrink-0">
-            <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
-            <span className="hidden sm:inline">New Habit</span>
-            <span className="sm:hidden">New</span>
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <RefreshButton
+              onRefresh={async () => {
+                await Promise.all([fetchHabits(), fetchCompletions()]);
+              }}
+            />
+            <Button
+              onClick={() => setIsCreateModalOpen(true)}
+              size="sm"
+              className="gap-1.5 text-xs sm:text-sm font-semibold shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>New Habit</span>
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-4 md:space-y-6">
-          <TabsList className="grid w-full grid-cols-3 h-9 md:h-10">
-            <TabsTrigger value="dashboard" className="flex items-center gap-1.5 text-xs md:text-sm px-2 md:px-3">
-              <Settings className="w-3.5 h-3.5 md:w-4 md:h-4" />
-              <span className="hidden sm:inline">Dashboard</span>
+          <TabsList className="grid w-full grid-cols-3 h-9 md:h-10 border border-border/60">
+            <TabsTrigger
+              value="dashboard"
+              className="flex items-center gap-1.5 text-xs sm:text-sm px-2 md:px-3 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>Dashboard</span>
+              <span className="text-[10px] ml-0.5 px-1.5 py-0.2 rounded-full bg-muted-foreground/15 text-muted-foreground font-mono">
+                {habits.length}
+              </span>
             </TabsTrigger>
-            <TabsTrigger value="calendar" className="flex items-center gap-1.5 text-xs md:text-sm px-2 md:px-3">
-              <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4" />
-              <span className="hidden sm:inline">Calendar</span>
+            <TabsTrigger
+              value="stats"
+              className="flex items-center gap-1.5 text-xs sm:text-sm px-2 md:px-3 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>Statistics</span>
             </TabsTrigger>
-            <TabsTrigger value="stats" className="flex items-center gap-1.5 text-xs md:text-sm px-2 md:px-3">
-              <BarChart3 className="w-3.5 h-3.5 md:w-4 md:h-4" />
-              <span className="hidden sm:inline">Statistics</span>
+            <TabsTrigger
+              value="calendar"
+              className="flex items-center gap-1.5 text-xs sm:text-sm px-2 md:px-3 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Calendar</span>
             </TabsTrigger>
           </TabsList>
 
