@@ -907,6 +907,7 @@ export const getInrExchangeRate = async (currency: string): Promise<number> => {
     AED: 25.7,
     SGD: 71.0,
     CAD: 68.5,
+    JPY: 0.60,
   };
   return fallbackRates[curr] || 1;
 };
@@ -914,6 +915,7 @@ export const getInrExchangeRate = async (currency: string): Promise<number> => {
 /**
  * Convert salary to INR using FastForex.
  * If already INR, skips conversion.
+ * If JPY, amounts are taken in millions (e.g. 10 = 10,000,000 JPY).
  */
 export const convertSalaryToInr = async (
   salaryMin?: number | null,
@@ -935,9 +937,22 @@ export const convertSalaryToInr = async (
 
   const rate = await getInrExchangeRate(curr);
 
+  // If JPY, input is in millions (e.g. 10 = 10M JPY).
+  // If user entered a large raw number >= 100,000, keep as raw amount.
+  const toActualAmount = (val: number | null | undefined): number | null => {
+    if (val == null) return null;
+    if (curr === 'JPY') {
+      return val < 100000 ? val * 1000000 : val;
+    }
+    return val;
+  };
+
+  const actualMin = toActualAmount(salaryMin);
+  const actualMax = toActualAmount(salaryMax);
+
   return {
-    salary_min_inr: salaryMin != null ? Math.round(salaryMin * rate) : null,
-    salary_max_inr: salaryMax != null ? Math.round(salaryMax * rate) : null,
+    salary_min_inr: actualMin != null ? Math.round(actualMin * rate) : null,
+    salary_max_inr: actualMax != null ? Math.round(actualMax * rate) : null,
     salary_inr_rate: rate,
   };
 };
@@ -958,17 +973,33 @@ export const formatSalaryInLakhs = (
     return l % 1 === 0 ? `${l}L` : `${l.toFixed(1)}L`;
   };
 
+  const curr = (originalCurrency || 'USD').toUpperCase().trim();
+
   // If minInr/maxInr are missing but original salary exists, estimate dynamically
   let effectiveMinInr = minInr;
   let effectiveMaxInr = maxInr;
 
+  const fallbackRates: Record<string, number> = {
+    USD: 94.5,
+    EUR: 102.5,
+    GBP: 122.0,
+    AED: 25.7,
+    SGD: 71.0,
+    CAD: 68.5,
+    JPY: 0.60,
+  };
+
+  const getEffectiveYen = (val: number): number => {
+    return curr === 'JPY' && val < 100000 ? val * 1000000 : val;
+  };
+
   if (effectiveMinInr == null && originalMin != null) {
-    const rate = originalCurrency === 'INR' ? 1 : rateCache[originalCurrency]?.rate || 94.5;
-    effectiveMinInr = Math.round(originalMin * rate);
+    const rate = curr === 'INR' ? 1 : rateCache[curr]?.rate || fallbackRates[curr] || 94.5;
+    effectiveMinInr = Math.round(getEffectiveYen(originalMin) * rate);
   }
   if (effectiveMaxInr == null && originalMax != null) {
-    const rate = originalCurrency === 'INR' ? 1 : rateCache[originalCurrency]?.rate || 94.5;
-    effectiveMaxInr = Math.round(originalMax * rate);
+    const rate = curr === 'INR' ? 1 : rateCache[curr]?.rate || fallbackRates[curr] || 94.5;
+    effectiveMaxInr = Math.round(getEffectiveYen(originalMax) * rate);
   }
 
   let lakhsText = '—';
@@ -981,13 +1012,27 @@ export const formatSalaryInLakhs = (
   }
 
   let originalText: string | null = null;
-  if (originalCurrency !== 'INR' && (originalMin != null || originalMax != null)) {
-    if (originalMin != null && originalMax != null) {
-      originalText = `${originalMin.toLocaleString()} - ${originalMax.toLocaleString()} ${originalCurrency}`;
-    } else if (originalMin != null) {
-      originalText = `${originalMin.toLocaleString()}+ ${originalCurrency}`;
-    } else if (originalMax != null) {
-      originalText = `Up to ${originalMax.toLocaleString()} ${originalCurrency}`;
+  if (curr !== 'INR' && (originalMin != null || originalMax != null)) {
+    if (curr === 'JPY') {
+      const formatYen = (val: number) => {
+        const inM = val >= 100000 ? val / 1000000 : val;
+        return inM % 1 === 0 ? `¥${inM}M` : `¥${inM.toFixed(1)}M`;
+      };
+      if (originalMin != null && originalMax != null) {
+        originalText = `${formatYen(originalMin)} - ${formatYen(originalMax)}`;
+      } else if (originalMin != null) {
+        originalText = `${formatYen(originalMin)}+`;
+      } else if (originalMax != null) {
+        originalText = `Up to ${formatYen(originalMax)}`;
+      }
+    } else {
+      if (originalMin != null && originalMax != null) {
+        originalText = `${originalMin.toLocaleString()} - ${originalMax.toLocaleString()} ${originalCurrency}`;
+      } else if (originalMin != null) {
+        originalText = `${originalMin.toLocaleString()}+ ${originalCurrency}`;
+      } else if (originalMax != null) {
+        originalText = `Up to ${originalMax.toLocaleString()} ${originalCurrency}`;
+      }
     }
   }
 

@@ -290,6 +290,13 @@ const CreateJobModal: React.FC<Props> = ({
       const numMax = salaryMax ? parseFloat(salaryMax) : null;
       const salaryConversion = await convertSalaryToInr(numMin, numMax, salaryCurrency);
 
+      const normalizedMin = salaryCurrency === 'JPY' && numMin != null && numMin >= 100000
+        ? numMin / 1000000
+        : numMin;
+      const normalizedMax = salaryCurrency === 'JPY' && numMax != null && numMax >= 100000
+        ? numMax / 1000000
+        : numMax;
+
       let finalPlatformId: string | null = null;
       let finalFoundIn: string | null = null;
 
@@ -312,8 +319,8 @@ const CreateJobModal: React.FC<Props> = ({
         job_type: (isCustomJobType ? customJobType.trim() : jobType) || null,
         visa_sponsorship: visaSponsorship,
         status,
-        salary_min: numMin,
-        salary_max: numMax,
+        salary_min: normalizedMin,
+        salary_max: normalizedMax,
         salary_currency: salaryCurrency,
         salary_min_inr: salaryConversion.salary_min_inr,
         salary_max_inr: salaryConversion.salary_max_inr,
@@ -633,22 +640,29 @@ const CreateJobModal: React.FC<Props> = ({
             <div className="sm:col-span-2 space-y-1.5">
               <Label className="text-xs font-semibold flex items-center gap-1">
                 <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-                Estimated Compensation Range
+                <span>Estimated Compensation Range</span>
+                {salaryCurrency === 'JPY' && (
+                  <span className="text-[11px] text-amber-400/90 font-medium ml-1">
+                    (in Millions ¥)
+                  </span>
+                )}
               </Label>
               <div className="grid grid-cols-3 gap-2">
                 <Input
                   type="number"
-                  placeholder="Min (120000)"
+                  placeholder={salaryCurrency === 'JPY' ? 'Min in M (e.g. 10)' : 'Min (120000)'}
                   value={salaryMin}
                   onChange={(e) => setSalaryMin(e.target.value)}
                   className="h-9"
+                  step={salaryCurrency === 'JPY' ? 'any' : undefined}
                 />
                 <Input
                   type="number"
-                  placeholder="Max (160000)"
+                  placeholder={salaryCurrency === 'JPY' ? 'Max in M (e.g. 14)' : 'Max (160000)'}
                   value={salaryMax}
                   onChange={(e) => setSalaryMax(e.target.value)}
                   className="h-9"
+                  step={salaryCurrency === 'JPY' ? 'any' : undefined}
                 />
                 <Select value={salaryCurrency} onValueChange={setSalaryCurrency}>
                   <SelectTrigger className="h-9">

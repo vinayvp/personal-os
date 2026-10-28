@@ -362,6 +362,7 @@ export const COMMON_CURRENCIES = [
   { code: 'USD', symbol: '$', label: 'USD ($)' },
   { code: 'EUR', symbol: '€', label: 'EUR (€)' },
   { code: 'GBP', symbol: '£', label: 'GBP (£)' },
+  { code: 'JPY', symbol: '¥', label: 'JPY (¥)' },
   { code: 'AED', symbol: 'AED', label: 'AED (د.إ)' },
   { code: 'SGD', symbol: 'S$', label: 'SGD (S$)' },
   { code: 'CAD', symbol: 'CA$', label: 'CAD (CA$)' },
