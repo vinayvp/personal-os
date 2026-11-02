@@ -366,6 +366,7 @@ export const COMMON_CURRENCIES = [
   { code: 'AED', symbol: 'AED', label: 'AED (د.إ)' },
   { code: 'SGD', symbol: 'S$', label: 'SGD (S$)' },
   { code: 'CAD', symbol: 'CA$', label: 'CAD (CA$)' },
+  { code: 'AUD', symbol: 'A$', label: 'AUD (A$)' },
   { code: 'INR', symbol: '₹', label: 'INR (₹)' },
 ];
 

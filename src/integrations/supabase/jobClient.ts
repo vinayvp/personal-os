@@ -907,6 +907,7 @@ export const getInrExchangeRate = async (currency: string): Promise<number> => {
     AED: 25.7,
     SGD: 71.0,
     CAD: 68.5,
+    AUD: 66.5,
     JPY: 0.60,
   };
   return fallbackRates[curr] || 1;
@@ -986,6 +987,7 @@ export const formatSalaryInLakhs = (
     AED: 25.7,
     SGD: 71.0,
     CAD: 68.5,
+    AUD: 66.5,
     JPY: 0.60,
   };
 
